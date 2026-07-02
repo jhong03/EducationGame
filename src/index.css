@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+/* Rounded display font, self-hosted via @fontsource (no runtime CDN fetch). */
+@import '@fontsource/fredoka/400.css';
+@import '@fontsource/fredoka/500.css';
+@import '@fontsource/fredoka/600.css';
+@import '@fontsource/fredoka/700.css';
+
+@import './theme/tokens.css';
+@import './theme/animations.css';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Keep top/bottom bars clear of notches and home indicators. */
+.safe-pt {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.safe-pb {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--ink);
+  background: var(--sky-1);
+  -webkit-font-smoothing: antialiased;
+  /* Kids poke at things; kill accidental text selection & long-press menus. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Always-visible, chunky focus ring for keyboard play. */
+:focus-visible {
+  outline: 4px solid var(--grape);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* Honor reduced-motion everywhere: near-instant, no bouncing. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
