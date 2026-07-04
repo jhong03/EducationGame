@@ -4,7 +4,8 @@
 answers there). This is the map we build from; approved slices become data in
 [`content/math.ts`](src/content/math.ts) (see [CONTEXT.md](CONTEXT.md) for how
 content-as-data works). **ALL PHASES (0–6) ARE BUILT — the full 4–12 spine is
-playable: 33 categories · 124 levels · 59 activity types across three bands.**
+playable: 33 categories · 146 levels · 62 activity types across three bands, and
+the upper band is AGE-TIERED (ages 10/11/12 see 30/41/52 levels via `minAge`).**
 
 > **How to read this doc.** §1 sets up bands and sources. §2 is the 12 strands at a
 > glance. §3 is the meat — each strand's rung-by-rung progression with the countries
@@ -284,6 +285,7 @@ own and reuses as much prior UI as possible.
 | **4 ✅** | mid | Written methods (column +/− with a forced carry/borrow), fraction equivalence & same-denominator ops, read partitioned scales/rulers, tally→bar construction — 10 levels (`math-mid-39..48`) → mid band **48 levels** | `column-op`, `fraction-op`, `read-scale`, `build-graph` | *Built 2026-07-04 — the mid band is complete* |
 | **5 ✅** | mid→upper | Big numbers (words→numerals, round to 1000), decimals (tenths/hundredths), fraction↔decimal↔percent, percentages of amounts, angles, symmetry, coordinates | `find-number`, `decimal`, `equiv-pick`, `percent-of`, `angle`, `symmetry`, `coord` | *Built 2026-07-05 (with Phase 6, as one upper-band opening)* |
 | **6 ✅** | upper | Short × in columns, order of operations, ratio, negatives (number line + compare), volume by layers, unit conversion, mean + probability language, two-step stories — 30 levels (`math-upper-1..30`), 11 categories | `order-ops`, `ratio`, `negatives`, `volume`, `convert`, `mean`, `chance` + `column-op ×` / `word-problem 2-step` upgrades | *Built 2026-07-05 — the 4–12 spine is complete* |
+| **6.5 ✅** | upper | **Age tiers**: every upper chapter gains an 11+ and a 12+ rung (`math-upper-31..52`, `minAge` prefix rungs) — mixed rounding, decimal compare/sums, temperature gaps & minus sums, angle sums, 3-digit column ×, double brackets, share-in-ratio, missing-score means, chance fractions, reverse conversions, volume by formula, four-quadrant & translated coordinates, number riddles. Ages 10/11/12 see 30/41/52 levels | `angle-sum`, `riddle`, `chance-frac` + 12 mode upgrades | *Built 2026-07-05 — user-directed per-age granularity* |
 
 Rough scale: **~70–90 levels** total across the three bands if we keep Phase-0's
 granularity (one skill per rung, MG 3). Fewer if we bundle; more if we split bands (§6).
@@ -301,6 +303,9 @@ granularity (one skill per rung, MG 3). Fewer if we bundle; more if we split ban
    (Europe), 🇸🇬 SGD (Asia, matching the syllabus we anchor on), 🇦🇺 AUD (Oceania),
    🇿🇦 ZAR (Africa). Denominations live in `content/currency.ts` (build with Phase 2's
    money levels). Units stay metric for v1; spelling "math".
+   **Extended 2026-07-05 (user-requested): + the Southeast-Asia core set — 🇲🇾 MYR ·
+   🇮🇩 IDR · 🇹🇭 THB · 🇻🇳 VND · 🇵🇭 PHP** (11 currencies total; amounts stay small
+   abstract values, real-world denominations deliberately not modeled).
 4. **Build order: follow the phase flow.** ✅ **Phase 1 built 2026-07-04** — subitize,
    numeral↔quantity (match), counting on (sequence), add-to-10, and a new *Taking Away*
    (subtract) category; ids `math-early-6..11`. Phase 2 (shapes, patterns, time, money)
