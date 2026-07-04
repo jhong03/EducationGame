@@ -35,6 +35,8 @@ interface GameActions {
   setPace: (pace: PaceId) => void
   /** Set the child's age (first-launch gate / grown-ups panel). */
   setAge: (age: number) => void
+  /** Set the child's name (name screen / grown-ups panel). '' clears it. */
+  setName: (name: string | null) => void
   /** Set the family's currency (grown-ups panel). */
   setCurrency: (currency: string) => void
   /** Record a sprint result — kept only if it beats the level's best. */
@@ -57,8 +59,15 @@ const initialState: GameState = {
   muted: false,
   pace: null,
   age: null,
+  name: null,
   currency: DEFAULT_CURRENCY,
   bestScores: {},
+}
+
+/** One write path for names: trimmed, capped, empty → null. */
+export function sanitizeName(raw: string | null): string | null {
+  const trimmed = (raw ?? '').trim().slice(0, 20)
+  return trimmed ? trimmed : null
 }
 
 const PACES: readonly PaceId[] = ['gentle', 'steady', 'eager']
@@ -80,6 +89,7 @@ export function migratePersistedState(persisted: unknown): GameState {
       typeof s.age === 'number' && Number.isInteger(s.age) && s.age >= 4 && s.age <= 12
         ? s.age
         : null,
+    name: typeof s.name === 'string' ? sanitizeName(s.name) : null,
     // Opaque id; unknown values fall back at render time.
     currency: typeof s.currency === 'string' && s.currency ? s.currency : DEFAULT_CURRENCY,
     // Keep only well-formed numeric bests.
@@ -127,6 +137,8 @@ export const useGameStore = create<GameStore>()(
 
       setAge: (age) => set({ age }),
 
+      setName: (name) => set({ name: sanitizeName(name) }),
+
       setCurrency: (currency) => set({ currency }),
 
       recordSprintScore: (levelId, score) =>
@@ -151,8 +163,8 @@ export const useGameStore = create<GameStore>()(
           return { progress }
         }),
 
-      // Reset wipes the CHILD's progress AND the age (a fresh start is often
-      // a different child — the age gate re-asks, and placement re-offers).
+      // Reset wipes the CHILD's progress, age AND name (a fresh start is
+      // often a different child — the gate re-asks, placement re-offers).
       // Pace, mute and currency describe the household/device, so they survive.
       reset: () =>
         set((s) => ({
@@ -173,6 +185,7 @@ export const useGameStore = create<GameStore>()(
         muted: s.muted,
         pace: s.pace,
         age: s.age,
+        name: s.name,
         currency: s.currency,
         bestScores: s.bestScores,
       }),

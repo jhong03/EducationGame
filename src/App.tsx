@@ -5,6 +5,7 @@ import { categoryById, levelById, nextLevelAfter } from './content/math'
 import { bandForAge } from './engine/band'
 import { placementPlanFor } from './content/placement'
 import AgeScreen from './screens/AgeScreen'
+import NameScreen from './screens/NameScreen'
 import PlacementScreen from './screens/PlacementScreen'
 import Home from './screens/Home'
 import CategoryScreen from './screens/CategoryScreen'
@@ -15,6 +16,7 @@ import ParentView from './screens/ParentView'
 
 type Route =
   | { screen: 'home' }
+  | { screen: 'name' }
   | { screen: 'placement'; age: number }
   | { screen: 'category'; categoryId: string }
   | { screen: 'play'; levelId: string }
@@ -64,17 +66,31 @@ export default function App() {
       <AgeScreen
         onPick={(picked) => {
           setAge(picked)
-          const fresh = !Object.values(useGameStore.getState().progress).some(
-            (p) => p.cleared,
-          )
-          if (fresh && placementPlanFor(picked).length > 0) {
-            setRoute({ screen: 'placement', age: picked })
-          }
+          // The name comes next; placement (if any) follows from there.
+          setRoute({ screen: 'name' })
         }}
       />
     )
   }
   const band = bandForAge(age)
+
+  if (route.screen === 'name') {
+    return (
+      <NameScreen
+        onDone={(picked) => {
+          if (picked) useGameStore.getState().setName(picked)
+          const fresh = !Object.values(useGameStore.getState().progress).some(
+            (p) => p.cleared,
+          )
+          if (fresh && placementPlanFor(age).length > 0) {
+            setRoute({ screen: 'placement', age })
+          } else {
+            setRoute({ screen: 'home' })
+          }
+        }}
+      />
+    )
+  }
 
   if (route.screen === 'placement') {
     return (

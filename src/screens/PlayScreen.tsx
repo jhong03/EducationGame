@@ -13,6 +13,7 @@ import Countable from '../components/Countable'
 import ProgressDots from '../components/ProgressDots'
 import Confetti from '../components/Confetti'
 import MuteButton from '../components/MuteButton'
+import PlayerChip from '../components/PlayerChip'
 
 /**
  * PlayScreen (spec §5) — Twinkle + one activity, with tap-to-count as the core
@@ -228,20 +229,23 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
     <div className="relative flex h-full w-full flex-col bg-gradient-to-b from-sky-1 to-sky-2">
       <Confetti fire={confetti} />
 
-      {/* Top bar: back · progress · replay · mute */}
+      {/* Top bar: back · player chip · progress · replay · mute */}
       <header className="safe-pt z-20 flex items-center justify-between gap-2 p-3 sm:p-4">
-        <button
-          type="button"
-          onClick={onExit}
-          aria-label="Back to the levels"
-          className="flex items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
-          style={{ height: 64 }}
-        >
-          <span aria-hidden="true" style={{ fontSize: 24 }}>
-            ⬅️
-          </span>
-          <span className="hidden font-bold text-ink sm:inline">Levels</span>
-        </button>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Back to the levels"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
+            style={{ height: 64 }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 24 }}>
+              ⬅️
+            </span>
+            <span className="hidden font-bold text-ink sm:inline">Levels</span>
+          </button>
+          <PlayerChip />
+        </div>
 
         <ProgressDots total={level.masteryGoal} filled={streak} />
 

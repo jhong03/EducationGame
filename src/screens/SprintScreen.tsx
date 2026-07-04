@@ -7,6 +7,7 @@ import { audio } from '../audio/AudioManager'
 import Twinkle, { type TwinkleMood } from '../components/Twinkle'
 import Confetti from '../components/Confetti'
 import MuteButton from '../components/MuteButton'
+import PlayerChip from '../components/PlayerChip'
 import { ActivityStage } from './PlayScreen'
 
 /**
@@ -170,20 +171,23 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
     <div className="relative flex h-full w-full flex-col bg-gradient-to-b from-sky-1 to-sky-2">
       <Confetti fire={confetti} />
 
-      {/* Top bar: back · score jar · mute */}
+      {/* Top bar: back · player chip · score jar · mute */}
       <header className="safe-pt z-20 flex items-center justify-between gap-2 p-3 sm:p-4">
-        <button
-          type="button"
-          onClick={exitSaving}
-          aria-label="Back to the levels"
-          className="flex items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
-          style={{ height: 64 }}
-        >
-          <span aria-hidden="true" style={{ fontSize: 24 }}>
-            ⬅️
-          </span>
-          <span className="hidden font-bold text-ink sm:inline">Levels</span>
-        </button>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={exitSaving}
+            aria-label="Back to the levels"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
+            style={{ height: 64 }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 24 }}>
+              ⬅️
+            </span>
+            <span className="hidden font-bold text-ink sm:inline">Levels</span>
+          </button>
+          <PlayerChip />
+        </div>
 
         <div
           className="flex items-center gap-2 rounded-full bg-cream/85 px-5 shadow-md backdrop-blur"

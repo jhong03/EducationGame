@@ -121,6 +121,31 @@ describe('ParentView', () => {
     expect(text.match(/Locked/g)?.length).toBe(112)
   })
 
+  it('sets, changes and clears the child’s name', () => {
+    const typeInto = (input: HTMLInputElement | null, text: string) => {
+      if (!input) throw new Error('input not found')
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )!.set!
+      act(() => {
+        setter.call(input, text)
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+    }
+
+    expect(container.textContent).toContain('Child’s name')
+    const input = container.querySelector<HTMLInputElement>('input')
+    typeInto(input, '  Maya  ')
+    click(buttonByAria('Save name'))
+    expect(useGameStore.getState().name).toBe('Maya') // trimmed on the way in
+    expect(container.textContent).toContain('Playing as Maya')
+
+    typeInto(input, '   ')
+    click(buttonByAria('Save name'))
+    expect(useGameStore.getState().name).toBeNull() // empty save clears it
+  })
+
   it('offers the currency picker and reflects the choice', () => {
     expect(container.textContent).toContain('Money currency')
     click(buttonByAria('British Pound'))

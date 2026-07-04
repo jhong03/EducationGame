@@ -895,6 +895,13 @@ export interface GameState {
    */
   age: number | null
   /**
+   * The child's name — asked (skippably) right after the age gate, editable
+   * by a grown-up. Purely cosmetic: greets on the meadow and rides the
+   * status chip during play. Part of the child's profile, so reset clears it
+   * (new-sibling handoff). null = not set.
+   */
+  name: string | null
+  /**
    * The family's currency (content/currency.ts id, e.g. 'USD'). Money content
    * stores plain values; only rendering reads this, so switching currency
    * never touches progress.

@@ -124,6 +124,9 @@ export default function ParentView({ onClose }: ParentViewProps) {
           />
         </section>
 
+        {/* Child's name → the meadow greeting + in-play status chip */}
+        <NameSection />
+
         {/* Child's age → which band of the meadow they see */}
         <AgeSection />
 
@@ -344,6 +347,68 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
         })}
       </main>
     </div>
+  )
+}
+
+/**
+ * Child's name — greets on the meadow and rides the in-play status chip.
+ * Cosmetic only; saved locally like everything else. Saving an empty field
+ * clears it.
+ */
+function NameSection() {
+  const name = useGameStore((s) => s.name)
+  const setName = useGameStore((s) => s.setName)
+  const [draft, setDraft] = useState(name ?? '')
+
+  return (
+    <section
+      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      aria-label="Child's name"
+    >
+      <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
+        <span aria-hidden="true" style={{ fontSize: 20 }}>
+          🧒
+        </span>
+        Child’s name
+      </h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          setName(draft)
+        }}
+        className="flex gap-2"
+      >
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={20}
+          autoComplete="off"
+          autoCapitalize="words"
+          aria-label="Child's name input"
+          placeholder="Add a name"
+          className="min-w-0 flex-1 rounded-2xl bg-cream px-4 font-bold text-ink shadow-sm outline-none"
+          style={{ height: 48, fontSize: 17 }}
+        />
+        <button
+          type="submit"
+          aria-label="Save name"
+          className="rounded-2xl bg-grape px-5 font-bold text-cream shadow-sm transition-transform active:scale-95"
+          style={{ height: 48, boxShadow: '0 4px 0 var(--grape-dp)' }}
+        >
+          Save
+        </button>
+      </form>
+      <p className="px-1 text-sm font-semibold text-ink/70">
+        {name ? (
+          <>
+            Playing as <strong>{name}</strong> — greeted on the meadow, and shown
+            with their stars while playing. Saving an empty box clears it.
+          </>
+        ) : (
+          'Not set — add a name and the meadow says hello with it.'
+        )}
+      </p>
+    </section>
   )
 }
 

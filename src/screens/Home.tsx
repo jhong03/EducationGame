@@ -32,6 +32,10 @@ const GROWING_NOTE = 'This part of the meadow is still growing! Play here for no
 // every return to Home (the banner itself stays visible throughout).
 let growingNoteSpoken = false
 
+// Same latch pattern for the name greeting — "Hi Maya!" once per session,
+// not on every trip back to the meadow.
+let greetingSpoken = false
+
 /**
  * Card colors cycle through the theme's chunky-button pairs. Text color is
  * per-card for WCAG contrast: cream passes on grape (4.1:1) but not on the
@@ -47,6 +51,7 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
   const progress = useGameStore((s) => s.progress)
   const stars = useGameStore((s) => s.stars)
   const age = useGameStore((s) => s.age) // gates the age-tier rungs off the dots
+  const name = useGameStore((s) => s.name)
 
   // The child's band, or the early meadow while their band has no content yet.
   const bandCategories = categoriesForBand(band)
@@ -65,6 +70,17 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
     }, 1800)
     return () => clearTimeout(id)
   }, [growing])
+
+  // Greet the child by name once per session. The delay clears any in-flight
+  // speech from the name/age flow this screen can mount right after.
+  useEffect(() => {
+    if (!name || greetingSpoken) return
+    const id = setTimeout(() => {
+      greetingSpoken = true
+      audio.speak(`Hi ${name}!`)
+    }, 1200)
+    return () => clearTimeout(id)
+  }, [name])
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-gradient-to-b from-sky-1 to-sky-2">
@@ -117,6 +133,14 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
       >
         Number Meadow
       </h1>
+      {name && (
+        <p
+          className="z-10 text-center font-bold text-ink/70"
+          style={{ fontSize: 'clamp(16px, 4.2vw, 22px)' }}
+        >
+          Hi {name}! 👋
+        </p>
+      )}
 
       {/* Category cards. NB: the cards sit in an inner `m-auto` wrapper instead
           of `justify-center` on the scroll container — centered AND fully

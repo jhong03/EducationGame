@@ -80,6 +80,19 @@ function click(el: HTMLElement | null) {
   act(() => el.click())
 }
 
+/** Type into a controlled input (React reads the value off the native event). */
+function typeInto(input: HTMLInputElement | null, text: string) {
+  if (!input) throw new Error('input not found')
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    'value',
+  )!.set!
+  act(() => {
+    setter.call(input, text)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
 function advance(ms: number) {
   act(() => {
     vi.advanceTimersByTime(ms)
@@ -201,17 +214,25 @@ describe('full play loop', () => {
     expect(categoryCard('Counting')).not.toBeNull()
   })
 
-  it('asks for the child’s age on first launch, then shows their meadow', () => {
+  it('asks age, then name, then shows their meadow with a greeting', () => {
     act(() => {
-      useGameStore.setState({ age: null }) // fresh household
+      useGameStore.setState({ age: null, name: null }) // fresh household
     })
     expect(container.textContent).toContain('How old are you?')
     expect(categoryCard('Counting')).toBeNull() // nothing else renders yet
 
-    // Age 4 has no placement plan — straight into the meadow.
     click(buttonByAria('4 years old'))
     expect(useGameStore.getState().age).toBe(4)
+
+    // The name screen follows — a grown-up types it, ✔️ confirms.
+    expect(container.textContent).toContain("What's your name?")
+    typeInto(container.querySelector('input'), 'Maya')
+    click(buttonByAria("Done, that's my name"))
+    expect(useGameStore.getState().name).toBe('Maya')
+
+    // Age 4 has no placement plan — straight into the meadow, greeted.
     expect(categoryCard('Counting')).not.toBeNull() // early-band meadow
+    expect(container.textContent).toContain('Hi Maya!')
   })
 
   it('ages 5+ get the placement check: passes place rungs, the first miss starts them there', () => {
@@ -219,6 +240,7 @@ describe('full play loop', () => {
       useGameStore.setState({ age: null, progress: {} }) // fresh household
     })
     click(buttonByAria('6 years old'))
+    click(buttonByAria('Skip name')) // the name step is always skippable
 
     // The placement check appears instead of the meadow.
     expect(container.textContent).toContain('Show me what you can do!')
@@ -249,7 +271,9 @@ describe('full play loop', () => {
       useGameStore.setState({ age: null, progress: {} })
     })
     click(buttonByAria('5 years old'))
+    click(buttonByAria('Skip name'))
     expect(container.textContent).toContain('Show me what you can do!')
+    expect(useGameStore.getState().name).toBeNull()
     click(buttonByAria('Skip, start from the beginning'))
     expect(useGameStore.getState().progress).toEqual({})
     expect(categoryCard('Counting')).not.toBeNull()
@@ -260,6 +284,7 @@ describe('full play loop', () => {
       useGameStore.setState({ age: null, progress: {} }) // fresh household
     })
     click(buttonByAria('12 years old'))
+    click(buttonByAria('Skip name'))
     expect(container.textContent).toContain('Show me what you can do!')
 
     // Checkpoint 1 (mocked question, correct answer 2): places the first
@@ -282,6 +307,19 @@ describe('full play loop', () => {
     click(categoryCard('Big Numbers'))
     expect(buttonByAria('Bigger number')).not.toBeNull()
     expect(buttonByAria('Find the number')).not.toBeNull() // placed stays replayable
+  })
+
+  it('the player chip shows the name and LIVE stars while playing', () => {
+    act(() => {
+      useGameStore.setState({ name: 'Maya' }) // age 5 from the suite setup
+    })
+    click(categoryCard('Counting'))
+    click(buttonByAria('Count to 3'))
+    expect(container.querySelector('[aria-label="Maya, 0 stars"]')).not.toBeNull()
+
+    click(buttonByAria('2')) // correct → a star lands immediately
+    expect(container.querySelector('[aria-label="Maya, 1 star"]')).not.toBeNull()
+    advance(1100) // let the celebration timer settle
   })
 
   it('a mid-band child (age 9) gets the mid meadow — Phase 3 content, no fallback', () => {

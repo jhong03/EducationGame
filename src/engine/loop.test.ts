@@ -284,6 +284,28 @@ describe('sprint scores', () => {
   })
 })
 
+describe('player name', () => {
+  it('setName trims, caps at 20 characters, and empties to null', () => {
+    useGameStore.getState().setName('  Maya  ')
+    expect(useGameStore.getState().name).toBe('Maya')
+    useGameStore.getState().setName('X'.repeat(30))
+    expect(useGameStore.getState().name).toHaveLength(20)
+    useGameStore.getState().setName('   ')
+    expect(useGameStore.getState().name).toBeNull()
+  })
+
+  it('reset clears the name with the rest of the child profile', () => {
+    useGameStore.getState().setName('Maya')
+    useGameStore.getState().reset()
+    expect(useGameStore.getState().name).toBeNull()
+  })
+
+  it('migration keeps a sane name and trims it like every other write', () => {
+    expect(migratePersistedState({ name: '  Maya  ' }).name).toBe('Maya')
+    expect(migratePersistedState({ name: '' }).name).toBeNull()
+  })
+})
+
 describe('persisted-state migration (v1 → v2)', () => {
   it('keeps earned fields and drops the old unlockedOrder', () => {
     const v1 = {
@@ -303,6 +325,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       muted: true,
       pace: null, // v1 predates the pace profile
       age: null, // …and the age gate, which will ask once
+      name: null, // …and the name screen
       currency: 'USD', // …and the currency setting (defaulted)
       bestScores: {}, // …and sprint scores
     })
@@ -326,17 +349,19 @@ describe('persisted-state migration (v1 → v2)', () => {
       muted: false,
       pace: null,
       age: null,
+      name: null,
       currency: 'USD',
       bestScores: {},
     })
     expect(
-      migratePersistedState({ stars: 'nope', muted: 'yes', pace: 'warp', age: 99 }),
+      migratePersistedState({ stars: 'nope', muted: 'yes', pace: 'warp', age: 99, name: 42 }),
     ).toEqual({
       stars: 0,
       progress: {},
       muted: false,
       pace: null, // unknown pace value is discarded, not trusted
       age: null, // implausible age re-asks the gate
+      name: null, // non-string names are discarded
       currency: 'USD',
       bestScores: {},
     })
