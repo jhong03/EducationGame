@@ -41,7 +41,13 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
   const [wrong, setWrong] = useState<Answer | null>(null)
   const [shakeToken, setShakeToken] = useState(0)
   const [remainingPct, setRemainingPct] = useState(100)
+  const [remainingSec, setRemainingSec] = useState(level.sprintSeconds)
   const [round, setRound] = useState(0) // bumping re-arms the clock ("Again!")
+  const [streak, setStreak] = useState(0)
+
+  // Older bands earned a REAL scoreboard (decision #7): visible countdown and
+  // a 🔥 streak bonus (3+ in a row → +2 each). Early keeps the ambient sun.
+  const arcade = level.band !== 'early'
 
   // Tap-to-count bookkeeping (same shape as PlayScreen).
   const countedRef = useRef<Record<string, number>>({})
@@ -62,6 +68,7 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
     const tick = setInterval(() => {
       const left = Math.max(0, total - (Date.now() - startedAt))
       setRemainingPct((left / total) * 100)
+      setRemainingSec(Math.ceil(left / 1000))
     }, 500)
     const stop = setTimeout(() => finishRound(), total)
     return () => {
@@ -118,9 +125,13 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
   function answer(given: Answer) {
     if (phase !== 'running' || doneRef.current) return
     if (isCorrect(question, given)) {
-      const next = score + 1
+      const nextStreak = streak + 1
+      // Arcade bands: the third-in-a-row and beyond are worth double.
+      const gain = arcade && nextStreak >= 3 ? 2 : 1
+      const next = score + gain
       scoreRef.current = next
       setScore(next)
+      setStreak(nextStreak)
       setPhase('between')
       setMood('cheer')
       setBeat((b) => b + 1)
@@ -133,6 +144,7 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
         }
       }, 400)
     } else {
+      setStreak(0)
       // Sprint pace: a miss scores nothing and the round MOVES ON — no
       // getting stuck on one question while the sun drifts. (Mastery mode
       // keeps retry-until-correct; that's where the learning loop lives.)
@@ -180,17 +192,27 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
           aria-label={`${score} correct so far`}
         >
           <span aria-hidden="true" style={{ fontSize: 26 }}>
-            🏆
+            {arcade && streak >= 3 ? '🔥' : '🏆'}
           </span>
           <span className="font-bold text-ink" style={{ fontSize: 28 }}>
             {score}
           </span>
+          {arcade && (
+            <span
+              className="ml-1 font-bold"
+              style={{ fontSize: 20, color: remainingSec <= 10 ? 'var(--coral)' : 'var(--ink)' }}
+              aria-label={`${remainingSec} seconds left`}
+            >
+              {Math.floor(remainingSec / 60)}:{String(remainingSec % 60).padStart(2, '0')}
+            </span>
+          )}
         </div>
 
         <MuteButton />
       </header>
 
-      {/* Ambient time: a sun drifting home — no numerals, no alarm. */}
+      {/* Time track: ambient sun for the early band; the arcade bands also
+          get the numeric countdown up in the scoreboard. */}
       <div className="z-10 px-5" aria-hidden="true">
         <div
           className="relative h-3 w-full overflow-visible rounded-full"
@@ -267,8 +289,10 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
                 scoreRef.current = 0
                 prevBest.current = useGameStore.getState().bestScores[level.id] ?? 0
                 setScore(0)
+                setStreak(0)
                 setConfetti(0)
                 setRemainingPct(100)
+                setRemainingSec(level.sprintSeconds)
                 setMood('happy')
                 setRound((r) => r + 1)
                 loadNext()

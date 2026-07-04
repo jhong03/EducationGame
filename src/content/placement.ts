@@ -1,4 +1,5 @@
 import type { Level } from '../engine/types'
+import { bandForAge } from '../engine/band'
 import { levelById } from './math'
 
 /**
@@ -30,19 +31,22 @@ const AGE_5_PLAN: readonly PlacementCheckpoint[] = [
   { probe: 'math-early-3', places: ['math-early-3'] }, // count to 10
 ]
 
-/**
- * Age 6 and up (older children land in the early meadow too until their band
- * has content — they deserve the fast lane most of all).
- */
+/** Age 6: the early band's fast lane past the counting/compare/add basics. */
 const AGE_6_PLAN: readonly PlacementCheckpoint[] = [
   { probe: 'math-early-3', places: ['math-early-1', 'math-early-2', 'math-early-3'] }, // count to 10
   { probe: 'math-early-4', places: ['math-early-4'] }, // which is more
   { probe: 'math-early-5', places: ['math-early-5'] }, // add within 5
 ]
 
-/** The checkpoint sequence for an age; empty = no placement (start at rung 1). */
+/**
+ * The checkpoint sequence for an age; empty = no placement (start at rung 1).
+ * Only EARLY-band ages need placing — mid/upper children land in their own
+ * band, whose categories all start fresh at rung 1 (a mid placement plan
+ * arrives when the mid ladder grows tall enough to skip).
+ */
 export function placementPlanFor(age: number): readonly PlacementCheckpoint[] {
   if (!Number.isFinite(age) || age <= 4) return []
+  if (bandForAge(age) !== 'early') return []
   if (age === 5) return AGE_5_PLAN
   return AGE_6_PLAN
 }

@@ -28,6 +28,12 @@ import { generateWeightCompare } from './weightCompare'
 import { generateMakeAmount } from './makeAmount'
 import { generateSetClock } from './setClock'
 import { generateTapAll } from './tapAll'
+import { generatePlaceValue } from './placeValue'
+import { generateRound } from './round'
+import { generateMultiply } from './multiply'
+import { generateDivide } from './divide'
+import { generateShare } from './share'
+import { generateArith } from './arith'
 
 /**
  * The activity registry: ActivityType → generator. This is the only place the
@@ -64,6 +70,12 @@ export const GENERATORS: Record<ActivityType, QuestionGenerator> = {
   'make-amount': generateMakeAmount,
   'set-clock': generateSetClock,
   'tap-all': generateTapAll,
+  'place-value': generatePlaceValue,
+  round: generateRound,
+  multiply: generateMultiply,
+  divide: generateDivide,
+  share: generateShare,
+  arith: generateArith,
 }
 
 /** Generate the next Question for a level by dispatching on its activity. */
@@ -105,4 +117,10 @@ export {
   generateMakeAmount,
   generateSetClock,
   generateTapAll,
+  generatePlaceValue,
+  generateRound,
+  generateMultiply,
+  generateDivide,
+  generateShare,
+  generateArith,
 }

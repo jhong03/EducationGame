@@ -255,13 +255,46 @@ describe('full play loop', () => {
     expect(categoryCard('Counting')).not.toBeNull()
   })
 
-  it('an older child’s empty band falls back to the meadow with a growing note', () => {
+  it('a mid-band child (age 9) gets the mid meadow — Phase 3 content, no fallback', () => {
     act(() => {
-      useGameStore.setState({ age: 9 }) // mid band — no content until Phase 3
+      useGameStore.setState({ age: 9 })
+    })
+    expect(categoryCard('Place Value')).not.toBeNull()
+    expect(categoryCard('Times Tables')).not.toBeNull()
+    expect(categoryCard('Counting')).toBeNull() // early meadow is the early band's
+    expect(container.textContent).not.toContain('still growing')
+  })
+
+  it('an upper-band child’s empty band still falls back with the growing note', () => {
+    act(() => {
+      useGameStore.setState({ age: 11 }) // upper — no content until Phases 5–6
     })
     expect(container.textContent).toContain('still growing')
     // No dead end: the early categories are playable.
     expect(categoryCard('Counting')).not.toBeNull()
+  })
+
+  it('mid sprint is arcade: visible countdown and a 🔥 double-score streak', () => {
+    act(() => {
+      useGameStore.setState({
+        age: 9,
+        progress: { 'math-mid-1': { cleared: true, bestStreak: 3 } },
+      })
+    })
+    click(categoryCard('Place Value'))
+    click(buttonByAria('Sprint Tens and ones'))
+
+    // The countdown is visible (early sprints never show numerals).
+    expect(container.textContent).toMatch(/\d:\d\d/)
+
+    // Four straight corrects: 1 + 1 + 2 + 2 (third-in-a-row doubles).
+    for (let i = 0; i < 4; i++) {
+      click(buttonByAria('2'))
+      advance(500)
+    }
+    advance(60_000)
+    expect(container.textContent).toContain('You got 6!')
+    expect(useGameStore.getState().bestScores['math-mid-1']).toBe(6)
   })
 
   it('sprint mode: scores climb, bests persist forward-only, endings always celebrate', () => {

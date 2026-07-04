@@ -45,6 +45,13 @@ export type ActivityType =
   | 'make-amount'
   | 'set-clock'
   | 'tap-all'
+  // mid band (7–9)
+  | 'place-value'
+  | 'round'
+  | 'multiply'
+  | 'divide'
+  | 'share'
+  | 'arith'
 
 /**
  * A skill strand a child picks from on the home screen (e.g. "Counting").
@@ -345,6 +352,56 @@ export interface TapAllQuestion extends BaseQuestion {
   answer: number // === count (submitted when all are found)
 }
 
+// ---- Mid band (7–9) --------------------------------------------------------
+
+/** "What number do the blocks show?" — base-ten blocks to read. */
+export interface PlaceValueQuestion extends BaseQuestion {
+  activity: 'place-value'
+  payload: { value: number } // hundreds/tens/ones derived at render
+  options: number[] // includes the classic digit-swap distractor
+  answer: number
+}
+
+/** "Round 47 to the nearest ten!" */
+export interface RoundQuestion extends BaseQuestion {
+  activity: 'round'
+  payload: { value: number; nearest: number }
+  options: number[]
+  answer: number
+}
+
+/** "3 groups of 5 — how many?" (visual) or "3 × 5?" (numeric). */
+export interface MultiplyQuestion extends BaseQuestion {
+  activity: 'multiply'
+  payload: { a: number; b: number; visual: boolean; theme: Theme }
+  options: number[] // distractors are ADJACENT table entries ((a±1)·b)
+  answer: number
+}
+
+/** "15 ÷ 5?" — division facts, always exact. */
+export interface DivideQuestion extends BaseQuestion {
+  activity: 'divide'
+  payload: { n: number; b: number }
+  options: number[]
+  answer: number
+}
+
+/** "12 strawberries shared between 3 plates — how many each?" */
+export interface ShareQuestion extends BaseQuestion {
+  activity: 'share'
+  payload: { total: number; plates: number; theme: Theme }
+  options: number[]
+  answer: number
+}
+
+/** "17 + 8?" / "23 − 6?" — bare-number arithmetic (mid band). */
+export interface ArithQuestion extends BaseQuestion {
+  activity: 'arith'
+  payload: { a: number; b: number; op: '+' | '-' }
+  options: number[]
+  answer: number
+}
+
 /** Discriminated on `activity`. Narrow before rendering/checking. */
 export type Question =
   | CountQuestion
@@ -376,6 +433,12 @@ export type Question =
   | MakeAmountQuestion
   | SetClockQuestion
   | TapAllQuestion
+  | PlaceValueQuestion
+  | RoundQuestion
+  | MultiplyQuestion
+  | DivideQuestion
+  | ShareQuestion
+  | ArithQuestion
 
 /** What a child answers with — a number (count/add) or a side (compare). */
 export type Answer = number | 'left' | 'right'

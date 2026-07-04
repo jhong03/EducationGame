@@ -20,8 +20,14 @@ describe('placement plans', () => {
     expect(placementPlanFor(NaN)).toHaveLength(0)
   })
 
-  it('ages 5+ have plans whose probes and places all resolve to real levels', () => {
-    for (const age of [5, 6, 7, 9, 12]) {
+  it('mid/upper ages skip early placement — their band starts fresh at rung 1', () => {
+    for (const age of [7, 9, 12]) {
+      expect(placementPlanFor(age)).toHaveLength(0)
+    }
+  })
+
+  it('early ages 5–6 have plans whose probes and places all resolve to real levels', () => {
+    for (const age of [5, 6]) {
       const plan = placementPlanFor(age)
       expect(plan.length).toBeGreaterThan(0)
       for (const cp of plan) {

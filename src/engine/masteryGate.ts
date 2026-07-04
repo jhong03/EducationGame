@@ -36,6 +36,12 @@ export function isCorrect(question: Question, answer: Answer): boolean {
     case 'make-amount': // built total
     case 'set-clock': // dialled hour
     case 'tap-all': // found-them-all count
+    case 'place-value': // the number the blocks show
+    case 'round': // nearest ten
+    case 'multiply': // product
+    case 'divide': // quotient
+    case 'share': // per-plate count
+    case 'arith': // sum / difference
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
     case 'num-compare':

@@ -80,10 +80,16 @@ export const CATEGORIES: readonly Category[] = [
   { id: 'money', name: 'Money', icon: '🪙', order: 8, band: 'early', subjectId: MATH_SUBJECT_ID },
   { id: 'puzzle-grove', name: 'Puzzle Grove', icon: '🦉', order: 9, band: 'early', subjectId: MATH_SUBJECT_ID },
   { id: 'big-small', name: 'Big & Small', icon: '📏', order: 10, band: 'early', subjectId: MATH_SUBJECT_ID },
+  // ---- mid band (7–9) — Phase 3 --------------------------------------------
+  { id: 'place-value', name: 'Place Value', icon: '🧱', order: 1, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'times-tables', name: 'Times Tables', icon: '✖️', order: 2, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'number-crunch', name: 'Add & Subtract', icon: '➕', order: 3, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'sharing', name: 'Sharing', icon: '🍰', order: 4, band: 'mid', subjectId: MATH_SUBJECT_ID },
 ] as const
 
-/** Small helper so the level table below stays readable and consistent. */
-function level(
+/** Small helper so the level tables below stay readable and consistent. */
+function makeLevel(
+  band: Band,
   id: number, // stable numeric suffix — NEVER renumber; persisted progress is keyed on it
   categoryId: string,
   order: number, // position within the category
@@ -94,9 +100,9 @@ function level(
   masteryGoal = DEFAULT_MASTERY_GOAL,
 ): Level {
   return {
-    id: `${MATH_SUBJECT_ID}-early-${id}`,
+    id: `${MATH_SUBJECT_ID}-${band}-${id}`,
     subjectId: MATH_SUBJECT_ID,
-    band: 'early',
+    band,
     categoryId,
     order,
     name,
@@ -107,6 +113,28 @@ function level(
     sprintSeconds: sprintSecondsFor(activity),
   }
 }
+
+const level = (
+  id: number,
+  categoryId: string,
+  order: number,
+  name: string,
+  icon: string,
+  activity: ActivityType,
+  params: Record<string, number>,
+  masteryGoal?: number,
+) => makeLevel('early', id, categoryId, order, name, icon, activity, params, masteryGoal)
+
+const midLevel = (
+  id: number,
+  categoryId: string,
+  order: number,
+  name: string,
+  icon: string,
+  activity: ActivityType,
+  params: Record<string, number>,
+  masteryGoal?: number,
+) => makeLevel('mid', id, categoryId, order, name, icon, activity, params, masteryGoal)
 
 /**
  * Phase 0 levels (spec §4), organised into categories. The ids keep their
@@ -191,12 +219,33 @@ export const EXPANSION_LEVELS: readonly Level[] = [
   level(46, 'shapes', 4, 'Find them all!', '🔎', 'tap-all', { board: 6 }),
 ] as const
 
+/**
+ * Phase 3 — the mid band (7–9) opens: place value, tables, bare-number
+ * arithmetic, sharing/division. Ids live in their own `math-mid-*` space.
+ */
+export const PHASE3_LEVELS: readonly Level[] = [
+  midLevel(1, 'place-value', 1, 'Tens and ones', '🧱', 'place-value', { max: 99 }),
+  midLevel(2, 'place-value', 2, 'Hundreds too!', '🏗️', 'place-value', { max: 999 }),
+  midLevel(3, 'place-value', 3, 'Round it', '🎯', 'round', { nearest: 10, max: 100 }),
+  midLevel(4, 'times-tables', 1, 'Equal groups', '🫐', 'multiply', { tableSet: 1, visual: 1 }),
+  midLevel(5, 'times-tables', 2, '×2, ×5, ×10', '✌️', 'multiply', { tableSet: 1 }),
+  midLevel(6, 'times-tables', 3, '×3, ×4, ×6', '🎲', 'multiply', { tableSet: 2 }),
+  midLevel(7, 'times-tables', 4, 'All the tables!', '🌟', 'multiply', { tableSet: 3 }),
+  midLevel(8, 'number-crunch', 1, 'Add within 20', '🐣', 'arith', { op: 0, max: 20 }),
+  midLevel(9, 'number-crunch', 2, 'Add within 100', '🦅', 'arith', { op: 0, max: 100 }),
+  midLevel(10, 'number-crunch', 3, 'Subtract within 20', '🍂', 'arith', { op: 1, max: 20 }),
+  midLevel(11, 'number-crunch', 4, 'Subtract within 100', '🍁', 'arith', { op: 1, max: 100 }),
+  midLevel(12, 'sharing', 1, 'Share it out', '🍰', 'share', { max: 20 }),
+  midLevel(13, 'sharing', 2, 'Divide it', '➗', 'divide', { tableSet: 1 }),
+] as const
+
 /** Every playable level, flat (ParentView totals, tests). */
 export const TRAIL: readonly Level[] = [
   ...PHASE0_LEVELS,
   ...PHASE1_LEVELS,
   ...PHASE2_LEVELS,
   ...EXPANSION_LEVELS,
+  ...PHASE3_LEVELS,
 ]
 
 /** Look up a category by id. */

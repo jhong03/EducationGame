@@ -24,7 +24,7 @@ polish, or a new subject/level) rather than finishing something half-done.
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **112 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **121 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -312,7 +312,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **112 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **121 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -442,6 +442,19 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   per-increment "Uncommitted" notes above are historical. *Lesson recorded: commit per
   increment from now on — these overlapped too much in the same files to slice
   retroactively.*
+- **2026-07-04 — Phase 3: the mid band opens (7–9).** Four `band: 'mid'` categories —
+  **Place Value 🧱** (tens/ones → hundreds via base-ten-block renderer, rounding to
+  ten), **Times Tables ✖️** (equal-groups visual → ×2/5/10 → ×3/4/6 → all-to-12;
+  distractors are *adjacent table entries*), **Add & Subtract ➕** (bare-number `arith`
+  within 20/100 on the new ExprCard), **Sharing 🍰** (fair-share visual + exact division
+  facts). Ids live in their own `math-mid-1..13` space (`makeLevel` is band-general
+  now). `bandForAge(7..9)` now serves real content — the "still growing" fallback
+  remains only for `upper`. Place-value options always include the **digit-swap**
+  misread (73↔37). **Mid sprints went arcade** per decision #7: visible m:ss countdown
+  (coral under 10s) + 🔥 streak bonus (3-in-a-row and beyond score double); early
+  sprints unchanged. Placement: ages 7+ skip the early plan (their band starts fresh).
+  **121 tests passing**, build & lint clean. Committed & pushed as the Phase 3
+  increment.
 - **2026-07-04 — Reset re-asks the age.** User-reported: once an age is persisted, the
   gate never reappears (correct for returning players, but there was NO in-app path
   back to it). `reset()` now clears `age` too (pace/mute survive) → closing the

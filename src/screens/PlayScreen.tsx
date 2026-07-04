@@ -74,6 +74,12 @@ function hasNumberButtons(
       | 'one-more'
       | 'bond'
       | 'sides'
+      | 'place-value'
+      | 'round'
+      | 'multiply'
+      | 'divide'
+      | 'share'
+      | 'arith'
   }
 > {
   return !INDEX_ANSWER_ACTIVITIES.has(q.activity)
@@ -425,6 +431,24 @@ export function ActivityStage({
             onComplete={onAnswer}
             onWrongTap={() => onAnswer(-1)}
           />
+        ) : question.activity === 'place-value' ? (
+          <PlaceValueStage value={question.payload.value} />
+        ) : question.activity === 'round' ? (
+          <ExprCard text={`${question.payload.value}`} sub="round to the nearest ten" />
+        ) : question.activity === 'multiply' ? (
+          question.payload.visual ? (
+            <MultiplyStage question={question} />
+          ) : (
+            <ExprCard text={`${question.payload.a} × ${question.payload.b}`} />
+          )
+        ) : question.activity === 'divide' ? (
+          <ExprCard text={`${question.payload.n} ÷ ${question.payload.b}`} />
+        ) : question.activity === 'arith' ? (
+          <ExprCard
+            text={`${question.payload.a} ${question.payload.op === '+' ? '+' : '−'} ${question.payload.b}`}
+          />
+        ) : question.activity === 'share' ? (
+          <ShareStage question={question} />
         ) : (
           <CountStage question={question} counted={counted} onTapObject={onTapObject} />
         )}
@@ -1953,6 +1977,154 @@ function TapAllStage({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/** A big expression card ("17 + 8", "3 × 5") — the mid band's symbol stage. */
+function ExprCard({ text, sub }: { text: string; sub?: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-3xl bg-cream/80 px-8 py-6 shadow-md">
+      <span
+        className="font-bold text-ink"
+        style={{ fontSize: 'clamp(44px, 12vw, 68px)', lineHeight: 1.1 }}
+      >
+        {text}
+      </span>
+      {sub && (
+        <span className="font-semibold text-ink/60" style={{ fontSize: 'clamp(13px, 3.5vw, 16px)' }}>
+          {sub}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Base-ten blocks: flats of 100, rods of 10, single units. */
+function PlaceValueStage({ value }: { value: number }) {
+  const hundreds = Math.floor(value / 100)
+  const tens = Math.floor((value % 100) / 10)
+  const ones = value % 10
+
+  const grid = (deg: number, cell: number) =>
+    `repeating-linear-gradient(${deg}deg, var(--cream) 0 1.5px, transparent 1.5px ${cell}px)`
+
+  return (
+    <div
+      className="flex flex-wrap items-end justify-center gap-3 rounded-3xl bg-cream/40 p-4"
+      style={{ maxWidth: 'min(92vw, 420px)' }}
+      role="img"
+      aria-label="base-ten blocks — count the hundreds, tens and ones"
+    >
+      {Array.from({ length: hundreds }, (_, i) => (
+        <span
+          key={`h${i}`}
+          className="anim-pop rounded-md"
+          aria-hidden="true"
+          style={{
+            width: 62,
+            height: 62,
+            background: 'var(--grape)',
+            backgroundImage: `${grid(0, 6.2)}, ${grid(90, 6.2)}`,
+            border: '2px solid var(--cream)',
+            animationDelay: `${i * 60}ms`,
+          }}
+        />
+      ))}
+      {Array.from({ length: tens }, (_, i) => (
+        <span
+          key={`t${i}`}
+          className="anim-pop rounded-md"
+          aria-hidden="true"
+          style={{
+            width: 15,
+            height: 62,
+            background: 'var(--coral)',
+            backgroundImage: grid(0, 6.2),
+            border: '2px solid var(--cream)',
+            animationDelay: `${(hundreds + i) * 60}ms`,
+          }}
+        />
+      ))}
+      {Array.from({ length: ones }, (_, i) => (
+        <span
+          key={`o${i}`}
+          className="anim-pop rounded-md"
+          aria-hidden="true"
+          style={{
+            width: 15,
+            height: 15,
+            background: 'var(--sun)',
+            border: '2px solid var(--cream)',
+            animationDelay: `${(hundreds + tens + i) * 60}ms`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** Multiplication as equal groups: a boxes, b things in each. */
+function MultiplyStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'multiply' }>
+}) {
+  const { a, b, theme } = question.payload
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2.5">
+      {Array.from({ length: a }, (_, g) => (
+        <span
+          key={g}
+          className="anim-pop flex flex-wrap items-center justify-center gap-0.5 rounded-2xl bg-cream/80 p-2"
+          style={{ maxWidth: 120, animationDelay: `${g * 90}ms` }}
+          role="img"
+          aria-label={`a group of ${b} ${theme.plural}`}
+        >
+          {Array.from({ length: b }, (_, i) => (
+            <span key={i} aria-hidden="true" style={{ fontSize: 'clamp(18px, 5vw, 26px)', lineHeight: 1.1 }}>
+              {theme.emoji}
+            </span>
+          ))}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** Sharing: the pile up top, the empty plates waiting below. */
+function ShareStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'share' }>
+}) {
+  const { total, plates, theme } = question.payload
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <div
+        className="flex flex-wrap items-center justify-center gap-0.5 rounded-3xl bg-cream/60 p-3"
+        style={{ maxWidth: 'min(90vw, 360px)' }}
+        role="img"
+        aria-label={`${total} ${theme.plural} to share`}
+      >
+        {Array.from({ length: total }, (_, i) => (
+          <span
+            key={i}
+            className="anim-pop"
+            aria-hidden="true"
+            style={{ fontSize: 'clamp(18px, 5vw, 26px)', lineHeight: 1.1, animationDelay: `${i * 35}ms` }}
+          >
+            {theme.emoji}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center justify-center gap-3" role="img" aria-label={`${plates} plates`}>
+        {Array.from({ length: plates }, (_, i) => (
+          <span key={i} aria-hidden="true" style={{ fontSize: 'clamp(34px, 9vw, 46px)' }}>
+            🍽️
+          </span>
+        ))}
+      </div>
     </div>
   )
 }

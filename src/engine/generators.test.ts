@@ -29,6 +29,12 @@ import { generateWeightCompare } from './generators/weightCompare'
 import { generateMakeAmount } from './generators/makeAmount'
 import { generateSetClock } from './generators/setClock'
 import { generateTapAll } from './generators/tapAll'
+import { generatePlaceValue } from './generators/placeValue'
+import { generateRound } from './generators/round'
+import { generateMultiply, TABLE_SETS } from './generators/multiply'
+import { generateDivide } from './generators/divide'
+import { generateShare } from './generators/share'
+import { generateArith } from './generators/arith'
 import { generateQuestion, GENERATORS } from './generators'
 import { TRAIL } from '../content/math'
 import { SHAPES, SHAPE_SIDES } from '../content/shapes'
@@ -718,6 +724,104 @@ describe('expansion: new activity generators', () => {
       expect(q.payload.count).toBeGreaterThanOrEqual(2)
       expect(q.payload.shapeIds).toHaveLength(6)
       expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+})
+
+describe('mid band (Phase 3) generators', () => {
+  const some = seeds.slice(0, 700)
+
+  it('place-value: value in range, digit-swap distractor offered, one correct', () => {
+    for (const [max, lo] of [
+      [99, 11],
+      [999, 101],
+    ] as const) {
+      let sawSwap = false
+      for (const s of some) {
+        const q = generatePlaceValue({ max }, mulberry32(s))
+        expect(q.answer).toBe(q.payload.value)
+        expect(q.payload.value).toBeGreaterThanOrEqual(lo)
+        expect(q.payload.value).toBeLessThanOrEqual(max)
+        expect(q.options).toHaveLength(3)
+        expect(new Set(q.options).size).toBe(3)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        const swapped = Number(String(q.payload.value).split('').reverse().join(''))
+        if (swapped !== q.payload.value && q.options.includes(swapped)) sawSwap = true
+      }
+      expect(sawSwap).toBe(true) // the classic misread is really being drilled
+    }
+  })
+
+  it('round: answer is genuinely the nearest ten, value never a multiple of ten', () => {
+    for (const s of some) {
+      const q = generateRound({ nearest: 10, max: 100 }, mulberry32(s))
+      expect(q.payload.value % 10).not.toBe(0)
+      expect(q.answer).toBe(Math.round(q.payload.value / 10) * 10)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      for (const o of q.options) expect(o % 10).toBe(0) // all options are tens
+    }
+  })
+
+  it('multiply: product correct, table from the set, distractors are adjacent entries', () => {
+    for (const tableSet of [1, 2, 3]) {
+      for (const s of some) {
+        const q = generateMultiply({ tableSet }, mulberry32(s))
+        expect(q.answer).toBe(q.payload.a * q.payload.b)
+        expect(TABLE_SETS[tableSet]).toContain(q.payload.b)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        for (const o of q.options) expect(o).toBeGreaterThan(0)
+      }
+    }
+    // Visual mode keeps groups drawable.
+    for (const s of some.slice(0, 200)) {
+      const q = generateMultiply({ tableSet: 1, visual: 1 }, mulberry32(s))
+      expect(q.payload.visual).toBe(true)
+      expect(q.payload.a).toBeLessThanOrEqual(5)
+    }
+  })
+
+  it('divide: always exact (n = b·answer), quotient ≥ 2', () => {
+    for (const s of some) {
+      const q = generateDivide({ tableSet: 1 }, mulberry32(s))
+      expect(q.payload.n % q.payload.b).toBe(0)
+      expect(q.answer).toBe(q.payload.n / q.payload.b)
+      expect(q.answer).toBeGreaterThanOrEqual(2)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('share: total splits exactly across the plates', () => {
+    for (const s of some) {
+      const q = generateShare({ max: 20 }, mulberry32(s))
+      expect(q.payload.total).toBe(q.payload.plates * q.answer)
+      expect(q.payload.plates).toBeGreaterThanOrEqual(2)
+      expect(q.payload.total).toBeLessThanOrEqual(20)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('arith: op semantics hold and results stay within bounds', () => {
+    for (const [op, max] of [
+      [0, 20],
+      [0, 100],
+      [1, 20],
+      [1, 100],
+    ] as const) {
+      for (const s of some) {
+        const q = generateArith({ op, max }, mulberry32(s))
+        const { a, b } = q.payload
+        if (op === 0) {
+          expect(q.payload.op).toBe('+')
+          expect(q.answer).toBe(a + b)
+          expect(q.answer).toBeLessThanOrEqual(max)
+        } else {
+          expect(q.payload.op).toBe('-')
+          expect(q.answer).toBe(a - b)
+          expect(q.answer).toBeGreaterThanOrEqual(1)
+        }
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        for (const o of q.options) expect(o).toBeGreaterThanOrEqual(0)
+      }
     }
   })
 })

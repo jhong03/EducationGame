@@ -1,0 +1,36 @@
+import type { RoundQuestion, Rng } from '../types'
+import { makeId, randInt, shuffle } from '../random'
+
+/**
+ * round — to the nearest ten (NC-Y4, CCSS-3). The value is never itself a
+ * multiple of ten (nothing to do), and the options are the two neighbouring
+ * tens plus one more — the child picks WHICH ten it is nearest.
+ */
+export function generateRound(
+  params: Record<string, number>,
+  rng: Rng = Math.random,
+): RoundQuestion {
+  const nearest = params.nearest ?? 10
+  const maxTens = Math.max(2, Math.floor((params.max ?? 100) / nearest) - 1)
+  const tensPart = randInt(1, maxTens, rng)
+  const ones = randInt(1, 9, rng) // never .0 — there'd be nothing to round
+  const value = tensPart * nearest + ones
+  const answer = Math.round(value / nearest) * nearest
+
+  const below = Math.floor(value / nearest) * nearest
+  const above = below + nearest
+  const wrongNeighbor = answer === below ? above : below
+  const third = answer + (answer === below ? -nearest : nearest)
+  const options = new Set<number>([answer, wrongNeighbor])
+  if (third >= 0) options.add(third)
+  if (options.size < 3) options.add(answer + 2 * nearest)
+
+  return {
+    id: makeId('round', rng),
+    activity: 'round',
+    prompt: `Round ${value} to the nearest ten!`,
+    payload: { value, nearest },
+    options: shuffle([...options].slice(0, 3), rng),
+    answer,
+  }
+}
