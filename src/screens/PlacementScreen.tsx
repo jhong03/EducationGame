@@ -8,15 +8,17 @@ import { audio } from '../audio/AudioManager'
 import Twinkle, { type TwinkleMood } from '../components/Twinkle'
 import ProgressDots from '../components/ProgressDots'
 import MuteButton from '../components/MuteButton'
-import { CountStage, CompareStage } from './PlayScreen'
+import { ActivityStage } from './PlayScreen'
 
 /**
- * PlacementScreen — "Show me what you can do!" (the calibration seam, v1).
- * Runs once, straight after the age gate, for ages 5+. One question per
- * checkpoint: a correct answer places the child past rungs they clearly know
- * (cleared+placed, no stars); the FIRST miss ends the check warmly and they
- * simply start there. Nothing here can be lost — it only ever moves the start
- * forward, and skipping is always fine.
+ * PlacementScreen — "Show me what you can do!" (the calibration seam).
+ * Runs once, straight after the age gate, for ages with a plan (early 5–6,
+ * upper 11–12). One question per checkpoint: a correct answer places the
+ * child past rungs they clearly know (cleared+placed, no stars); the FIRST
+ * miss ends the check warmly and they simply start there. Nothing here can
+ * be lost — it only ever moves the start forward, and skipping is always
+ * fine. Probes render through the shared ActivityStage, so ANY activity can
+ * be a checkpoint and it looks exactly like real play.
  *
  * Speech works here without caveats: this screen always mounts from the age
  * tap, so user activation is already granted.
@@ -145,45 +147,19 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
           </p>
         </div>
 
-        {/* The probe question, in the game's own visual language. */}
-        <div className="flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4">
-          {question.activity === 'compare' ? (
-            <CompareStage
-              question={question}
-              disabled={phase !== 'answering'}
-              wrong={null}
-              shakeToken={0}
-              highlightCorrect={false}
-              onPick={answer}
-            />
-          ) : (
-            <CountStage question={question} counted={counted} onTapObject={tapObject} />
-          )}
-        </div>
-
-        {question.activity !== 'compare' && 'options' in question && (
-          <div className="flex w-full max-w-xl flex-wrap items-center justify-center gap-3">
-            {question.options.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                disabled={phase !== 'answering'}
-                onClick={() => answer(opt)}
-                aria-label={`${opt}`}
-                className="grid place-items-center rounded-3xl font-bold text-cream transition-transform active:translate-y-1"
-                style={{
-                  minWidth: 'clamp(78px, 24vw, 110px)',
-                  height: 'clamp(78px, 20vw, 104px)',
-                  fontSize: 'clamp(34px, 9vw, 46px)',
-                  background: 'var(--grape)',
-                  boxShadow: '0 6px 0 var(--grape-dp)',
-                }}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* The probe question, in the game's own visual language — the same
+            stage every activity uses in real play. Misses end the check, so
+            wrong-shake props stay inert. */}
+        <ActivityStage
+          question={question}
+          disabled={phase !== 'answering'}
+          wrong={null}
+          shakeToken={0}
+          highlightCorrect={false}
+          counted={counted}
+          onTapObject={tapObject}
+          onAnswer={answer}
+        />
 
         {/* Adults' escape hatch — starting at the very beginning is always fine. */}
         <button

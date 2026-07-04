@@ -20,9 +20,31 @@ describe('placement plans', () => {
     expect(placementPlanFor(NaN)).toHaveLength(0)
   })
 
-  it('mid/upper ages skip early placement — their band starts fresh at rung 1', () => {
-    for (const age of [7, 9, 12]) {
+  it('mid ages and age 10 have no plan — their ladder starts fresh at rung 1', () => {
+    for (const age of [7, 9, 10]) {
       expect(placementPlanFor(age)).toHaveLength(0)
+    }
+  })
+
+  it('upper 11/12 have plans, and 12 probes strictly deeper than 11', () => {
+    const plan11 = placementPlanFor(11)
+    const plan12 = placementPlanFor(12)
+    expect(plan11.length).toBeGreaterThan(0)
+    expect(plan12.length).toBeGreaterThan(plan11.length)
+    // The 12 plan extends the 11 plan — same base checkpoints first.
+    expect(plan12.slice(0, plan11.length)).toEqual(plan11)
+  })
+
+  it('upper plans only touch rungs that age can SEE (minAge respected)', () => {
+    for (const age of [11, 12]) {
+      for (const cp of placementPlanFor(age)) {
+        for (const id of [cp.probe, ...cp.places]) {
+          const level = levelById(id)
+          expect(level, id).toBeDefined()
+          expect(level!.band).toBe('upper')
+          expect(level!.minAge ?? 0, id).toBeLessThanOrEqual(age)
+        }
+      }
     }
   })
 
@@ -43,7 +65,7 @@ describe('placement plans', () => {
   })
 
   it('passing checkpoints in order never leaves an unlock gap in any category', () => {
-    for (const age of [5, 6]) {
+    for (const age of [5, 6, 11, 12]) {
       useGameStore.getState().reset()
       for (const cp of placementPlanFor(age)) {
         useGameStore.getState().placeLevels(cp.places)

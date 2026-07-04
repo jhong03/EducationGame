@@ -255,6 +255,35 @@ describe('full play loop', () => {
     expect(categoryCard('Counting')).not.toBeNull()
   })
 
+  it('a fresh 12-year-old gets the UPPER placement check and skips proven rungs', () => {
+    act(() => {
+      useGameStore.setState({ age: null, progress: {} }) // fresh household
+    })
+    click(buttonByAria('12 years old'))
+    expect(container.textContent).toContain('Show me what you can do!')
+
+    // Checkpoint 1 (mocked question, correct answer 2): places the first
+    // Big Numbers rungs — the grindy number-work an older starter skips.
+    click(buttonByAria('2'))
+    advance(1000)
+    let state = useGameStore.getState()
+    expect(state.progress['math-upper-1']?.placed).toBe(true)
+    expect(state.progress['math-upper-2']?.placed).toBe(true)
+    expect(state.stars).toBe(0) // placement grants position, never rewards
+
+    // Checkpoint 2: miss → gentle end on the upper meadow, nothing further.
+    click(buttonByAria('1'))
+    advance(1300)
+    state = useGameStore.getState()
+    expect(state.progress['math-upper-3']).toBeUndefined()
+    expect(categoryCard('Big Numbers')).not.toBeNull()
+
+    // The placed rungs render as open: rung 3 is the first playable.
+    click(categoryCard('Big Numbers'))
+    expect(buttonByAria('Bigger number')).not.toBeNull()
+    expect(buttonByAria('Find the number')).not.toBeNull() // placed stays replayable
+  })
+
   it('a mid-band child (age 9) gets the mid meadow — Phase 3 content, no fallback', () => {
     act(() => {
       useGameStore.setState({ age: 9 })
