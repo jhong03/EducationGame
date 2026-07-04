@@ -56,7 +56,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **183 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **184 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -297,13 +297,16 @@ brief's §8 exactly.
   cheering; "Next level" / "🏆 Sprint!" / back (celebrates the whole category on its
   last level).
 - [`screens/ParentView.tsx`](src/screens/ParentView.tsx) — **adults-only** panel (the
-  buyer). Summary stats (stars / mastered X/146 / categories finished X/33 —
-  the grown-up list shows FULL ladders incl. rungs above the child's tier), **Child's
+  buyer). Kept deliberately SHORT: summary stats (stars / mastered X/146 /
+  categories finished X/33), **Child's
   age** section (age chips → band; changing age never touches progress), **Money
   currency** picker, **Learning pace** section (the 5-question quiz → suggested
-  session plan), per-category level lists with status pills ("Placed" is distinct
-  from "Mastered") + best streaks + 🏆 sprint bests, a local-only-storage privacy
-  note, and **Reset all progress** gated behind a one-shot addition challenge — reset
+  session plan), a **"Chapter progress" card → its own `ProgressPage`** (sticky
+  header + back-to-settings; stats + all 33 categories' level lists with status
+  pills — "Placed" distinct from "Mastered" — best streaks and 🏆 sprint bests;
+  the grown-up sees FULL ladders incl. rungs above the child's tier), a
+  local-only-storage privacy note, and **Reset all progress** gated behind a
+  one-shot addition challenge — reset
   wipes progress **and the age** (gate re-asks; new-sibling handoff) while pace, mute
   and currency survive. Reached from a discreet "⚙️ For grown-ups" button on
   [`Home`](src/screens/Home.tsx). Deliberately the one screen that breaks the
@@ -331,7 +334,7 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (183, all passing)
+### Tests (184, all passing)
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
@@ -455,7 +458,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **183 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **184 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -700,5 +703,13 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   warmly, Skip, no-stars, never-downgrade all unchanged; App routing needed
   zero changes (already generic on `placementPlanFor`). **183 tests passing**
   (12-deeper-than-11, minAge visibility, gap-free extended to upper, full App
-  flow), build & lint clean. Committed & pushed as **`72447ec`** (+ this
+  flow), build & lint clean. Committed & pushed as **`72447ec`** (+ docs
+  `e3bcbf9`).
+- **2026-07-05 — Parent settings split (user-requested: "settings page shouldn't
+  be so long").** The 33-category × 146-level breakdown moved off the grown-ups
+  screen into its own **`ProgressPage`** (sticky header, back-to-settings),
+  reached via a "Chapter progress" card. Settings is now a short scroll:
+  stats · age · currency · pace · progress card · privacy · reset. Unchanged
+  content, new home. **184 tests passing** (settings-stays-short + navigation
+  round-trip), build & lint clean. Committed & pushed as **`d402e58`** (+ this
   docs true-up).
