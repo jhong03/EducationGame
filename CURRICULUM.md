@@ -3,8 +3,8 @@
 **Status: APPROVED 2026-07-04** (user pass on all six §6 decisions — see the locked
 answers there). This is the map we build from; approved slices become data in
 [`content/math.ts`](src/content/math.ts) (see [CONTEXT.md](CONTEXT.md) for how
-content-as-data works). **Phases 0–4 are built — the early and mid bands are
-complete; Phases 5–6 (upper band) remain.**
+content-as-data works). **ALL PHASES (0–6) ARE BUILT — the full 4–12 spine is
+playable: 33 categories · 124 levels · 59 activity types across three bands.**
 
 > **How to read this doc.** §1 sets up bands and sources. §2 is the 12 strands at a
 > glance. §3 is the meat — each strand's rung-by-rung progression with the countries
@@ -282,8 +282,8 @@ own and reuses as much prior UI as possible.
 | **3 ✅** | mid | Mid band opened: Place Value ×3 (blocks to 999 + rounding), Times Tables ×4 (equal groups → all-to-12, adjacent-entry distractors), Add & Subtract ×4 (numeric within 20/100), Sharing ×2 (fair share + exact division) — 13 levels (`math-mid-1..13`) + **arcade sprints** (m:ss countdown, 🔥 3-streak doubles) | `place-value`, `round`, `multiply`, `divide`, `share`, `arith` | *Built 2026-07-04 — column written-method + arrays deferred to the mid deepening wave* |
 | **3.5 ✅** | mid | **Deepening wave** — mid triples to 12 chapters / 38 levels: Fractions (bar-model reading to eighths), Measuring (units + area/perimeter), Time Master (five-minute clock, elapsed hours), Money Math (change), Data & Graphs (block graphs), Shape Lab, Number Detective (□-equations, skip-trails), Story Problems, + remainders/tricky-tables/round-to-100 in the original four | `fraction-of`, `unit-pick`, `grid-rect`, `elapsed`, `change`, `graph-count/most`, `shape-sort`, `missing`, `leftover`, `word-problem` | *Built 2026-07-04* |
 | **4 ✅** | mid | Written methods (column +/− with a forced carry/borrow), fraction equivalence & same-denominator ops, read partitioned scales/rulers, tally→bar construction — 10 levels (`math-mid-39..48`) → mid band **48 levels** | `column-op`, `fraction-op`, `read-scale`, `build-graph` | *Built 2026-07-04 — the mid band is complete* |
-| **5** | mid→upper | Decimals, percentages, angles, symmetry, coordinates, word problems | `percent-of`, `angle`, `symmetry`, `grid`, `word-problem` | Bridges into upper |
-| **6** | upper | Long ×/÷, ratio, negative numbers, volume, averages, multi-step problems, logic/IQ | `ratio`, `number-line`, `compute`, `mixed`, `logic`, `spatial` | Completes 10–12 |
+| **5 ✅** | mid→upper | Big numbers (words→numerals, round to 1000), decimals (tenths/hundredths), fraction↔decimal↔percent, percentages of amounts, angles, symmetry, coordinates | `find-number`, `decimal`, `equiv-pick`, `percent-of`, `angle`, `symmetry`, `coord` | *Built 2026-07-05 (with Phase 6, as one upper-band opening)* |
+| **6 ✅** | upper | Short × in columns, order of operations, ratio, negatives (number line + compare), volume by layers, unit conversion, mean + probability language, two-step stories — 30 levels (`math-upper-1..30`), 11 categories | `order-ops`, `ratio`, `negatives`, `volume`, `convert`, `mean`, `chance` + `column-op ×` / `word-problem 2-step` upgrades | *Built 2026-07-05 — the 4–12 spine is complete* |
 
 Rough scale: **~70–90 levels** total across the three bands if we keep Phase-0's
 granularity (one skill per rung, MG 3). Fewer if we bundle; more if we split bands (§6).

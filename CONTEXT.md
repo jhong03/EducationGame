@@ -4,7 +4,7 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-04 · Branch: `main` · HEAD: `6d5c539` (pushed to
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `1833abe` (pushed to
 [jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — the working tree
 is CLEAN; everything in the §7 session log is committed and pushed._
 
@@ -12,7 +12,8 @@ is CLEAN; everything in the §7 session log is committed and pushed._
 
 ## 1. TL;DR — where we are
 
-**The game serves ages 4–9 for real: 22 categories · 94 levels · 45 activity types.**
+**The game serves the FULL 4–12 promise: 33 categories · 124 levels · 59 activity
+types across all three bands.** The last "still growing" fallback is gone.
 - **Early band (4–6): complete and deep** — 10 categories / 46 levels: counting (incl.
   zero, ±1, count-down, count-by-tens), compare (more/fewer/equal/numerals), add
   (doubles, bonds), subtract (to zero), shapes (+sides, tap-all), patterns (AB→ABC),
@@ -27,20 +28,27 @@ is CLEAN; everything in the §7 session log is committed and pushed._
   scales/rulers**), Time Master (five-minute clock, elapsed), Money Math (change),
   Data & Graphs (read + **build from tallies**), Shape Lab, Number Detective
   (□-equations), Story Problems.
-- **Upper band (10–12): not started** — the last "still growing" fallback (Phases 5–6).
+- **Upper band (10–12): OPEN** — 11 chapters / 30 levels: Big Numbers (words→numerals
+  to 9,999, round to 1000, thousands counting), Decimals (tenths/hundredths + fraction↔
+  decimal↔percent), Percentages, Below Zero (number line, crossing zero, negative
+  compare), Angles & Mirrors (right/acute/obtuse, symmetry lines), Big Calculations
+  (short × in columns, order of operations), Ratios, Averages & Chance (mean +
+  probability language), Volume & Units (metric hops, cube layers), Grid World
+  (coordinates), Puzzle Peak (two-step stories).
 - **Systems all live:** category navigation (derived unlock, never re-locks), age gate
   + band filtering, placement check (ages 5–6), pace profiler, per-continent currency,
   **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
   countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
   (reset re-asks age → new-sibling handoff).
 
-Resume by reading §7's last entries; next work: **Phases 5–6 — open the upper band
-(10–12)**, the only remaining band.
+Resume by reading §7's last entries; the curriculum phases are ALL BUILT (0–6).
+Next work is polish/systems: adaptive difficulty, spaced review, parent export,
+recorded VO, PWA PNG icons (§5).
 
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **139 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **157 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -103,6 +111,19 @@ brief's §8 exactly.
     `[2,3,1]→231` so one number rides the answer path; decoys are buildable
     near-misses), `columnOp` (forced ones-carry/borrow; distractors are the
     forgot-the-carry and per-column big-minus-small slips; `flipDigits` exported).
+  - **Upper set (Phases 5–6)**: `findNumber` (prompt is WORDS via `numberWordBig`,
+    numerals only on buttons; digit-swap decoys), `decimal` (0.7-vs-0.07 trap),
+    `equivPick` (`EQUIV_TABLE` families; decoys are other rows' same-form values),
+    `percentOf` (amounts are multiples of 20 → whole answers), `negatives` (read
+    mode always on a negative tick; crossing mode carries the expression),
+    `angle` (one card per family — exactly one can match), `symmetry`
+    (side-count-confusion decoy), `orderOps` (naive evaluation provably ≠ answer),
+    `ratio` (±one-group decoys), `mean` (built backward from a whole mean; the raw
+    sum always a decoy), `chance` (fixed-order scale words), `convert` (both wrong
+    powers of ten), `volume` (single-layer decoy), `coord` (x ≠ y forced so the
+    (y,x) swap is always wrong). Plus upgrades: `columnOp` op:2 short ×,
+    `round` nearest 1000, `numCompare` neg:1, `wordProblem` ops:3/4 two-step
+    (regex-verified against `TWO_STEP_TEMPLATES` in tests).
   - Every generator is seed-swept in
     [`generators.test.ts`](src/engine/generators.test.ts) (mulberry32 streams; the
     exactly-one-correct options contract is enforced throughout).
@@ -137,18 +158,22 @@ brief's §8 exactly.
 
 ### Content — all the math lives here (data, not code)
 - [`content/math.ts`](src/content/math.ts) — `MATH_SPINE` (full 3-band ladder as
-  reference data) + **`CATEGORIES`** (**22** — 10 early: `counting` 🍎 / `comparing` 🎈 /
+  reference data) + **`CATEGORIES`** (**33** — 10 early: `counting` 🍎 / `comparing` 🎈 /
   `adding` 🍪 / `taking-away` 🐸 / `shapes` 🔷 / `patterns` 🧩 / `time` 🕐 / `money` 🪙 /
   `puzzle-grove` 🦉 / `big-small` 📏; 12 mid: `place-value` 🧱 / `times-tables` ✖️ /
   `number-crunch` ➕ / `sharing` 🍰 / `fractions` 🍕 / `measuring` 📐 / `time-mid` ⏰ /
-  `money-mid` 💰 / `data` 📊 / `shape-lab` 🔺 / `detective` 🕵️ / `stories` 📖).
+  `money-mid` 💰 / `data` 📊 / `shape-lab` 🔺 / `detective` 🕵️ / `stories` 📖;
+  11 upper: `big-numbers` 🔢 / `decimals-lab` 🔟 / `percents` 💯 / `below-zero` 🧊 /
+  `angles` 📐 / `upper-crunch` 🧮 / `ratios` ⚖️ / `averages` 📈 / `volume-units` 📦 /
+  `grid-world` 🗺️ / `puzzle-peak` 🧗).
   Level tables: `PHASE0_LEVELS` (early 1–5) + `PHASE1_LEVELS` (6–11) + `PHASE2_LEVELS`
   (12–21) + `EXPANSION_LEVELS` (22–46) + `PHASE3_LEVELS` (`math-mid-1..13`) +
-  `PHASE3B_LEVELS` (`math-mid-14..38`) + `PHASE4_LEVELS` (`math-mid-39..48`).
+  `PHASE3B_LEVELS` (`math-mid-14..38`) + `PHASE4_LEVELS` (`math-mid-39..48`) +
+  `PHASE56_LEVELS` (`math-upper-1..30`).
   **Ids are stable forever** — persisted progress is keyed on them; `makeLevel` is
   band-general and stamps `sprintSeconds` per activity. Helpers: `categoryById`,
   `categoriesForBand`, `levelsInCategory`, `levelById`, `nextLevelAfter`
-  (gap-tolerant), `TRAIL` (flat list, **94 levels**).
+  (gap-tolerant), `TRAIL` (flat list, **124 levels**).
 - [`content/shapes.ts`](src/content/shapes.ts) — the 2D shape vocabulary (circle →
   heart), drawn by [`components/ShapeGlyph`](src/components/ShapeGlyph.tsx) in ONE
   color (shape, never color, is the discriminator).
@@ -157,12 +182,17 @@ brief's §8 exactly.
   the persisted `currency` (device setting, picked in ParentView, survives reset).
 - [`content/words.ts`](src/content/words.ts) — number words 0–20 (`numberWord`,
   `capitalize`) + `fractionWord` ("3/4" → "three quarters"; TTS can't read a raw
-  label), shared by spoken prompts and the AudioManager. Swap to localise.
+  label) + `numberWordBig` (to 9,999 — find-number prints WORDS and hides the
+  numerals in the buttons), shared by spoken prompts and the AudioManager.
 - [`content/themes.ts`](src/content/themes.ts) — 15 countable objects, each with
   emoji + plural + a `kind` tag (food/animal/nature/toy) powering sorting play.
 - [`content/world.ts`](src/content/world.ts) — weight pairs (heavier-first),
   day scenes, `MEASURE_OBJECTS` (thing + right unit + same-dimension foil),
-  `SCALE_UNITS` (cm/g/ml — printed label + spoken name for read-scale).
+  `SCALE_UNITS` (cm/g/ml — printed label + spoken name for read-scale),
+  `CONVERT_PAIRS` (metric hops + factors), `CHANCE_LABELS`/`CHANCE_SCENARIOS`
+  (the probability-language scale). [`content/shapes.ts`](src/content/shapes.ts)
+  gained `SHAPE_SYMMETRY` (mirror-line counts as ShapeGlyph draws them);
+  [`content/stories.ts`](src/content/stories.ts) gained `TWO_STEP_TEMPLATES`.
 - [`content/stories.ts`](src/content/stories.ts) — word-problem templates
   (+/−/× with `{a}` `{b}` `{things}` placeholders).
 - [`content/placement.ts`](src/content/placement.ts) — placement plans (ages 5–6
@@ -196,9 +226,10 @@ brief's §8 exactly.
   pre-age saves).
 - [`screens/Home.tsx`](src/screens/Home.tsx) — **category cards** on the meadow (one per
   strand of the child's **band**, always open, mini progress dots, tap speaks the
-  category name); star counter; discreet "⚙️ For grown-ups" entry. A band with no
-  content yet (mid/upper until Phase 3+) falls back to the early meadow with a spoken
-  🌱 "still growing" banner — never a dead end. *(Replaced the old winding trail.)*
+  category name); star counter; discreet "⚙️ For grown-ups" entry. The 🌱 "still
+  growing" fallback (empty band → early meadow + spoken banner) is now UNREACHABLE —
+  every band has content — but stays as the safety net for any future empty band.
+  *(Replaced the old winding trail.)*
 - [`screens/CategoryScreen.tsx`](src/screens/CategoryScreen.tsx) — one category's levels
   as a **grid of chunky tiles** (locked 🔒 / open+glowing / cleared ⭐); tap speaks the
   level name and starts it. Deliberately *not* a path.
@@ -206,12 +237,19 @@ brief's §8 exactly.
   **transient** play state (current question, in-attempt streak, tap-count map,
   wrong-shake token); only earned progress goes to the store; `clearLevel` persists
   **synchronously** on the mastering answer (only navigation waits on the timer).
-  Exports **`ActivityStage`** — the full 45-activity renderer switch + number-button
+  Exports **`ActivityStage`** — the full 59-activity renderer switch + number-button
   row, shared verbatim by PlacementScreen and SprintScreen — plus `CountStage`/
   `CompareStage`, `ClockFace`, `CoinFace`, `ExprCard`. Phase 4 stages: shared
   `FractionBar`/`FractionCards` (fraction-of + fraction-op), `ReadScaleStage`
-  (SVG ruler), `ColumnOpStage` (digit-aligned written layout), `BuildGraphStage`
-  (+`TallyMarks`; tap towers wrap past the top, ✔️ submits the encoded board). Correct → chime, Twinkle
+  (SVG ruler), `ColumnOpStage` (digit-aligned written layout; also renders ×),
+  `BuildGraphStage` (+`TallyMarks`; tap towers wrap past the top, ✔️ submits the
+  encoded board). Upper stages: `DecimalStage` (tenths bar / hundred-square),
+  `NumberLineStage` (−max..max, zero glows coral; arrow only in read mode),
+  `AngleGlyph`/`AngleStage` (SVG rays + arc cards), `RatioStage` (emoji rows +
+  ? tile), `MeanStage` (score chips), `ChanceStage` (scenario + scale words),
+  `VolumeStage` (layer grids), `CoordStage` (SVG grid + ⭐, coordinate cards
+  via FractionCards). equiv-pick/percent-of/order-ops/convert/find-number ride
+  ExprCard; symmetry reuses the ShapeGlyph display. Correct → chime, Twinkle
   cheers, praise, confetti, dot fills, +1 star, next question (or cleared at goal).
   Wrong → soft tone, "Try again!", control shakes, **nothing lost** (mastery mode
   only — sprints move on instead).
@@ -224,7 +262,7 @@ brief's §8 exactly.
   cheering; "Next level" / "🏆 Sprint!" / back (celebrates the whole category on its
   last level).
 - [`screens/ParentView.tsx`](src/screens/ParentView.tsx) — **adults-only** panel (the
-  buyer). Summary stats (stars / mastered X/94 / categories finished X/22), **Child's
+  buyer). Summary stats (stars / mastered X/124 / categories finished X/33), **Child's
   age** section (age chips → band; changing age never touches progress), **Money
   currency** picker, **Learning pace** section (the 5-question quiz → suggested
   session plan), per-category level lists with status pills ("Placed" is distinct
@@ -254,7 +292,7 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (139, all passing)
+### Tests (157, all passing)
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
@@ -270,7 +308,7 @@ brief's §8 exactly.
   flows, band homes (age 9 = mid, age 11 = fallback), sprint (early + arcade streak),
   back-routes, grown-ups reset → age gate.
 - [`screens/ParentView.test.tsx`](src/screens/ParentView.test.tsx) — stats/status
-  counts pinned exactly (1/94, 0/22 …), currency picker, pace quiz, Placed pill,
+  counts pinned exactly (1/124, 0/33 …), currency picker, pace quiz, Placed pill,
   gated reset.
 
 ---
@@ -340,25 +378,24 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 > national curricula, ALL SEVEN decisions locked (full spine incl. Probability &
 > Financial Literacy · 3 bands · per-continent currency · phase flow · Puzzle Grove ·
 > parent-tuned pacing · Sprint scoring). Its §5 phase table tracks build status:
-> Phases 0–4 ✅ built (early + mid bands complete); Phases 5–6 remain.
+> **ALL PHASES 0–6 ✅ BUILT** — the full 4–12 spine is playable.
 
 ### Near-term
-1. **Phases 5–6: open the upper band (10–12)** — decimals, %, ratio, negatives,
-   angles/protractor, volume, averages, order of operations, multi-step problems —
-   removes the last "still growing" fallback. Upper sprints already have arcade rails.
-2. **Adaptive difficulty (last unfilled seam).** Nudge generator `params` within a
+1. **Adaptive difficulty (last unfilled seam).** Nudge generator `params` within a
    level from recent accuracy; can also read the pace profile.
-3. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
+2. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
    use-case, richer per-level stats (attempts, accuracy) once tracked.
 
 ### Later (seams noted, not built)
-5. **Spaced review** — a scheduler that re-surfaces older cleared skills.
-6. **Mid/upper placement plans** — early's placement (ages 5–6) is live; add probe
-   plans for 7+ once the mid ladder is tall enough to be worth skipping.
-7. **New subjects** (reading, shapes-as-subject, …) — the engine is already
+3. **Spaced review** — a scheduler that re-surfaces older cleared skills.
+4. **Mid/upper placement plans** — early's placement (ages 5–6) is live; the mid
+   and upper ladders are now tall enough to be worth skipping into.
+5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
-8. **Recorded human voice-over** — replace the TTS block at
+6. **Recorded human voice-over** — replace the TTS block at
    [AudioManager.ts:148](src/audio/AudioManager.ts#L148) with clip playback.
+7. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
+   coordinates in four quadrants, logic grids) — strand rungs beyond the core spine.
 
 ### Pre-launch (product/legal — not engineering-blocked, keep in mind)
 - **COPPA (US) / GDPR-K (EU)** constrain accounts, data collection, ads. Currently no
@@ -372,7 +409,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **139 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **157 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -558,4 +595,24 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   `FractionBar`/`FractionCards` extracted so fraction-of/fraction-op render
   identically. **139 tests passing** (seed sweeps for all four incl. carry/borrow
   forcing and decoy buildability), build & lint clean. Committed & pushed as
-  **`6d5c539`** (+ this docs true-up).
+  **`6d5c539`** (+ docs `9e8384f`).
+- **2026-07-05 — Phases 5–6: the upper band opens — ALL CURRICULUM PHASES BUILT.**
+  The 10–12 band arrives whole: **11 categories / 30 levels (`math-upper-1..30`) /
+  14 new activities**, each around its signature misconception — **find-number**
+  (prompt speaks/prints WORDS via `numberWordBig`, numerals only on the buttons;
+  digit-swap decoys), **decimal** (tenths bar & hundred-square; the 0.7-vs-0.07
+  trap), **equiv-pick** (fraction↔decimal↔percent families), **percent-of** (whole
+  answers by construction), **negatives** (line-read always on a negative tick;
+  crossing-zero mode keeps the line as support), **angle** (SVG rays+arc, one card
+  per family), **symmetry** (`SHAPE_SYMMETRY`; side-count confusion decoy),
+  **order-ops** (the left-to-right evaluation is provably never the answer),
+  **ratio** (one-group-off decoys), **mean** (whole by construction; the raw sum
+  always offered), **chance** (certain/maybe/impossible as a FIXED-order scale),
+  **convert** (both wrong powers of ten), **volume** (layers of cubes; single-layer
+  decoy), **coord** (x≠y forced so the (y,x) swap is always wrong). Upgrades:
+  `column-op` op:2 = short multiplication (forced ones-carry + dropped-carry decoy),
+  `round` to 1000, `num-compare` below zero, `word-problem` two-step stories
+  (`TWO_STEP_TEMPLATES`, regex-verified in tests). The age-11 test flipped from
+  "growing note" to the real upper meadow; upper sprints inherit the arcade rails.
+  **33 categories / 124 levels / 59 activities · 157 tests passing**, build & lint
+  clean. Committed & pushed as **`1833abe`** (+ this docs true-up).
