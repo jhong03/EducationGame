@@ -45,7 +45,11 @@ import { generateShapeSort } from './generators/shapeSort'
 import { generateMissing } from './generators/missing'
 import { generateLeftover } from './generators/leftover'
 import { generateWordProblem } from './generators/wordProblem'
-import { MEASURE_OBJECTS } from '../content/world'
+import { generateFractionOp } from './generators/fractionOp'
+import { generateReadScale } from './generators/readScale'
+import { generateBuildGraph, encodeHeights } from './generators/buildGraph'
+import { generateColumnOp, flipDigits } from './generators/columnOp'
+import { MEASURE_OBJECTS, SCALE_UNITS } from '../content/world'
 import { generateQuestion, GENERATORS } from './generators'
 import { TRAIL } from '../content/math'
 import { SHAPES, SHAPE_SIDES } from '../content/shapes'
@@ -994,6 +998,144 @@ describe('mid deepening wave generators', () => {
       else down = true
     }
     expect(up && down).toBe(true)
+  })
+})
+
+describe('Phase 4 generators', () => {
+  const some = seeds.slice(0, 600)
+
+  /** a/b value-equals c/d? Cross-multiply — no float traps. */
+  const sameValue = (l1: string, l2: string) => {
+    const [n1, d1] = l1.split('/').map(Number)
+    const [n2, d2] = l2.split('/').map(Number)
+    return n1 * d2 === n2 * d1
+  }
+
+  it('fraction-op equivalence: exactly one card is value-equal, written differently', () => {
+    for (const s of some) {
+      const q = generateFractionOp({ op: 0 }, mulberry32(s))
+      const { op, aNum, den, optionLabels } = q.payload
+      expect(op).toBe('same')
+      expect(aNum).toBeGreaterThanOrEqual(1)
+      expect(aNum).toBeLessThan(den)
+      const base = `${aNum}/${den}`
+      const equalCards = optionLabels.filter((l) => sameValue(l, base))
+      expect(equalCards).toHaveLength(1) // one right answer, provably
+      expect(equalCards[0]).toBe(optionLabels[q.answer])
+      expect(optionLabels[q.answer]).not.toBe(base) // …and it LOOKS different
+      expect(new Set(optionLabels).size).toBe(optionLabels.length)
+      expect(optionLabels).toHaveLength(3)
+    }
+  })
+
+  it('fraction-op add/sub: result card right and proper; add offers the added-denominators trap', () => {
+    for (const op of [1, 2] as const) {
+      for (const s of some) {
+        const q = generateFractionOp({ op }, mulberry32(s))
+        const { aNum, bNum, den, optionLabels } = q.payload
+        expect(q.payload.op).toBe(op === 1 ? 'add' : 'sub')
+        expect(bNum).toBeGreaterThanOrEqual(1)
+        const result = op === 1 ? aNum + bNum : aNum - bNum
+        expect(result).toBeGreaterThanOrEqual(1)
+        expect(result).toBeLessThan(den) // stays proper — never past one whole
+        expect(optionLabels[q.answer]).toBe(`${result}/${den}`)
+        expect(optionLabels.filter((l) => sameValue(l, `${result}/${den}`))).toHaveLength(1)
+        expect(new Set(optionLabels).size).toBe(optionLabels.length)
+        expect(optionLabels).toHaveLength(3)
+        if (op === 1) expect(optionLabels).toContain(`${result}/${den * 2}`)
+      }
+    }
+  })
+
+  it('read-scale: the pointer sits on an UNLABELED tick and every option is a real tick', () => {
+    for (const params of [
+      { max: 10, step: 1, labelEvery: 2, unit: 0 },
+      { max: 100, step: 10, labelEvery: 20, unit: 1 },
+    ]) {
+      for (const s of some) {
+        const q = generateReadScale(params, mulberry32(s))
+        const { max, step, labelEvery, value, unit } = q.payload
+        expect(value % step).toBe(0)
+        expect(value % labelEvery).not.toBe(0) // must count divisions, not read a printed number
+        expect(value).toBeGreaterThan(0)
+        expect(value).toBeLessThan(max)
+        expect(q.answer).toBe(value)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        for (const o of q.options) {
+          expect(o % step).toBe(0) // plausible ticks only
+          expect(o).toBeGreaterThanOrEqual(0)
+          expect(o).toBeLessThanOrEqual(max)
+        }
+        expect(new Set(q.options).size).toBe(q.options.length)
+        expect(unit).toBe(SCALE_UNITS[params.unit].label)
+      }
+    }
+  })
+
+  it('build-graph: the answer encodes the tally targets; decoys are buildable near-misses', () => {
+    for (const params of [
+      { cols: 3, max: 4 },
+      { cols: 4, max: 5 },
+    ]) {
+      for (const s of some) {
+        const q = generateBuildGraph(params, mulberry32(s))
+        const { items, maxHeight } = q.payload
+        expect(items).toHaveLength(params.cols)
+        expect(maxHeight).toBe(params.max)
+        for (const item of items) {
+          expect(item.value).toBeGreaterThanOrEqual(1)
+          expect(item.value).toBeLessThanOrEqual(maxHeight)
+        }
+        expect(q.answer).toBe(encodeHeights(items.map((i) => i.value)))
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+        for (const o of q.options) {
+          // Every decoy must decode to a board the child could actually build.
+          const digits = String(o).split('').map(Number)
+          expect(digits).toHaveLength(params.cols)
+          for (const d of digits) {
+            expect(d).toBeGreaterThanOrEqual(1)
+            expect(d).toBeLessThanOrEqual(maxHeight)
+          }
+        }
+      }
+    }
+  })
+
+  it('column-op add: ones always carry, sums stay under the bound, forgot-the-carry on offer', () => {
+    for (const max of [100, 1000]) {
+      for (const s of some) {
+        const q = generateColumnOp({ op: 0, max }, mulberry32(s))
+        const { a, b } = q.payload
+        expect(q.payload.op).toBe('+')
+        expect((a % 10) + (b % 10)).toBeGreaterThanOrEqual(10) // the carry is the lesson
+        expect(q.answer).toBe(a + b)
+        expect(q.answer).toBeLessThan(max)
+        expect(String(a)).toHaveLength(max === 1000 ? 3 : 2)
+        expect(String(b)).toHaveLength(max === 1000 ? 3 : 2)
+        expect(q.options).toContain(q.answer - 10) // the forgotten carry
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+      }
+    }
+  })
+
+  it('column-op subtract: ones always borrow, results positive, the no-borrow flip on offer', () => {
+    for (const max of [100, 1000]) {
+      for (const s of some) {
+        const q = generateColumnOp({ op: 1, max }, mulberry32(s))
+        const { a, b } = q.payload
+        expect(q.payload.op).toBe('-')
+        expect(a % 10).toBeLessThan(b % 10) // the borrow is the lesson
+        expect(a).toBeGreaterThan(b)
+        expect(q.answer).toBe(a - b)
+        expect(q.answer).toBeGreaterThanOrEqual(1)
+        const flip = flipDigits(a, b)
+        if (flip !== q.answer) expect(q.options).toContain(flip)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+      }
+    }
   })
 })
 

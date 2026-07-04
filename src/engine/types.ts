@@ -63,6 +63,11 @@ export type ActivityType =
   | 'missing'
   | 'leftover'
   | 'word-problem'
+  // mid band — Phase 4 (fraction ops, scales, graph building, written methods)
+  | 'fraction-op'
+  | 'read-scale'
+  | 'build-graph'
+  | 'column-op'
 
 /**
  * A skill strand a child picks from on the home screen (e.g. "Counting").
@@ -501,6 +506,64 @@ export interface WordProblemQuestion extends BaseQuestion {
   answer: number
 }
 
+// ---- Mid band — Phase 4 ----------------------------------------------------
+
+/**
+ * Fractions beyond reading a bar (E3/E4): `op: 'same'` asks for the equivalent
+ * fraction of the shaded bar; `'add'`/`'sub'` combine two same-denominator
+ * bars. Answers are fraction cards, so `answer` is an index into
+ * `optionLabels` (like fraction-of).
+ */
+export interface FractionOpQuestion extends BaseQuestion {
+  activity: 'fraction-op'
+  payload: {
+    op: 'same' | 'add' | 'sub'
+    aNum: number // shaded pieces in the (first) bar
+    bNum: number // second bar's shading for add/sub; 0 for 'same'
+    den: number
+    optionLabels: string[] // e.g. "5/8"
+  }
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+/** Read a partitioned scale/ruler (H3/H4) — the pointer sits on a tick that
+ *  is deliberately NOT labeled, so the child works along the divisions. */
+export interface ReadScaleQuestion extends BaseQuestion {
+  activity: 'read-scale'
+  payload: {
+    max: number // scale end (starts at 0)
+    step: number // minor tick spacing — the unit being read
+    labelEvery: number // labeled-tick spacing (a multiple of step)
+    value: number // where the pointer points
+    unit: string // display label, e.g. 'cm'
+  }
+  options: number[] // all plausible tick values
+  answer: number
+}
+
+/** Build the block graph to match the tallies (K3), then confirm. The built
+ *  column heights are digit-encoded ([2,3,1] → 231) so one number carries the
+ *  whole board through the ordinary answer path. */
+export interface BuildGraphQuestion extends BaseQuestion {
+  activity: 'build-graph'
+  payload: {
+    items: Array<NamedItem & { value: number }> // target height per column
+    maxHeight: number // tallest buildable column (≤ 9 so encoding is unambiguous)
+  }
+  options: number[]
+  answer: number // digit-encoded target heights
+}
+
+/** Column addition/subtraction (C4/C5) — the written method, with a carry or
+ *  borrow always forced (without one it's just `arith` again). */
+export interface ColumnOpQuestion extends BaseQuestion {
+  activity: 'column-op'
+  payload: { a: number; b: number; op: '+' | '-' }
+  options: number[] // includes the forgot-the-carry / digit-flip classics
+  answer: number
+}
+
 /** Discriminated on `activity`. Narrow before rendering/checking. */
 export type Question =
   | CountQuestion
@@ -549,6 +612,10 @@ export type Question =
   | MissingQuestion
   | LeftoverQuestion
   | WordProblemQuestion
+  | FractionOpQuestion
+  | ReadScaleQuestion
+  | BuildGraphQuestion
+  | ColumnOpQuestion
 
 /** What a child answers with — a number (count/add) or a side (compare). */
 export type Answer = number | 'left' | 'right'

@@ -53,6 +53,10 @@ export function isCorrect(question: Question, answer: Answer): boolean {
     case 'unit-pick': // unit card index
     case 'graph-most': // tallest column index
     case 'shape-sort': // matching shape index
+    case 'fraction-op': // fraction card index
+    case 'read-scale': // the tick the arrow points at
+    case 'build-graph': // digit-encoded column heights
+    case 'column-op': // sum / difference
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
     case 'num-compare':

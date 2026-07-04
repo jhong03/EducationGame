@@ -30,6 +30,18 @@ export interface MeasureObject extends NamedItem {
   foil: string // wrong unit of the SAME dimension
 }
 
+/** Units a read-scale level can be set in: the printed label + spoken name. */
+export interface ScaleUnit {
+  label: string
+  spoken: string
+}
+
+export const SCALE_UNITS: readonly ScaleUnit[] = [
+  { label: 'cm', spoken: 'centimeters' },
+  { label: 'g', spoken: 'grams' },
+  { label: 'ml', spoken: 'milliliters' },
+] as const
+
 export const MEASURE_OBJECTS: readonly MeasureObject[] = [
   { emoji: '✏️', name: 'a pencil', unit: 'cm', foil: 'm' },
   { emoji: '📖', name: 'a book', unit: 'cm', foil: 'm' },

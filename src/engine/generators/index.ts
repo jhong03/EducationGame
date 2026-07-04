@@ -44,6 +44,10 @@ import { generateShapeSort } from './shapeSort'
 import { generateMissing } from './missing'
 import { generateLeftover } from './leftover'
 import { generateWordProblem } from './wordProblem'
+import { generateFractionOp } from './fractionOp'
+import { generateReadScale } from './readScale'
+import { generateBuildGraph } from './buildGraph'
+import { generateColumnOp } from './columnOp'
 
 /**
  * The activity registry: ActivityType → generator. This is the only place the
@@ -97,6 +101,10 @@ export const GENERATORS: Record<ActivityType, QuestionGenerator> = {
   missing: generateMissing,
   leftover: generateLeftover,
   'word-problem': generateWordProblem,
+  'fraction-op': generateFractionOp,
+  'read-scale': generateReadScale,
+  'build-graph': generateBuildGraph,
+  'column-op': generateColumnOp,
 }
 
 /** Generate the next Question for a level by dispatching on its activity. */
@@ -155,4 +163,8 @@ export {
   generateMissing,
   generateLeftover,
   generateWordProblem,
+  generateFractionOp,
+  generateReadScale,
+  generateBuildGraph,
+  generateColumnOp,
 }

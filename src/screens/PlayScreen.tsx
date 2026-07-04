@@ -60,6 +60,8 @@ const INDEX_ANSWER_ACTIVITIES = new Set<Question['activity']>([
   'unit-pick', // unit cards
   'graph-most', // tap a column
   'shape-sort', // tap a shape card
+  'fraction-op', // fraction cards
+  'build-graph', // its stage carries its own ✔️ submit
 ])
 
 /** Narrow to the value-answer activities that use the number-button row. */
@@ -91,6 +93,8 @@ function hasNumberButtons(
       | 'missing'
       | 'leftover'
       | 'word-problem'
+      | 'read-scale'
+      | 'column-op'
   }
 > {
   return !INDEX_ANSWER_ACTIVITIES.has(q.activity)
@@ -445,7 +449,10 @@ export function ActivityStage({
         ) : question.activity === 'place-value' ? (
           <PlaceValueStage value={question.payload.value} />
         ) : question.activity === 'round' ? (
-          <ExprCard text={`${question.payload.value}`} sub="round to the nearest ten" />
+          <ExprCard
+            text={`${question.payload.value}`}
+            sub={`round to the nearest ${question.payload.nearest === 100 ? 'hundred' : 'ten'}`}
+          />
         ) : question.activity === 'multiply' ? (
           question.payload.visual ? (
             <MultiplyStage question={question} />
@@ -519,6 +526,26 @@ export function ActivityStage({
           >
             {question.payload.story}
           </div>
+        ) : question.activity === 'fraction-op' ? (
+          <FractionOpStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'read-scale' ? (
+          <ReadScaleStage question={question} />
+        ) : question.activity === 'build-graph' ? (
+          <BuildGraphStage
+            key={question.id}
+            question={question}
+            disabled={disabled}
+            onSubmit={onAnswer}
+          />
+        ) : question.activity === 'column-op' ? (
+          <ColumnOpStage question={question} />
         ) : (
           <CountStage question={question} counted={counted} onTapObject={onTapObject} />
         )}
@@ -2200,6 +2227,79 @@ function ShareStage({
 }
 
 /** A partitioned bar with `num` of `den` cells shaded + fraction cards. */
+/** One partitioned bar with `num` of `den` pieces shaded. */
+function FractionBar({ num, den, height = 64 }: { num: number; den: number; height?: number }) {
+  return (
+    <div
+      className="flex w-full max-w-sm overflow-hidden rounded-2xl"
+      style={{ height, border: '4px solid var(--ink)' }}
+      role="img"
+      aria-label={`a bar cut into ${den} equal pieces with ${num} shaded`}
+    >
+      {Array.from({ length: den }, (_, i) => (
+        <span
+          key={i}
+          className="h-full flex-1"
+          style={{
+            background: i < num ? 'var(--grape)' : 'var(--cream)',
+            borderRight: i < den - 1 ? '3px solid var(--ink)' : 'none',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** The tappable fraction cards, shared by fraction-of and fraction-op. */
+function FractionCards({
+  labels,
+  answer,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  labels: string[]
+  answer: number
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-center gap-3">
+      {labels.map((label, index) => {
+        const isWrong = wrong === index
+        const isRight = highlightCorrect && answer === index
+        return (
+          <button
+            key={`${index}-${isWrong ? shakeToken : 'base'}`}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(index)}
+            aria-label={label.replace('/', ' over ')}
+            className={`grid place-items-center rounded-3xl font-bold transition-transform active:translate-y-1 ${
+              isWrong ? 'anim-shake' : ''
+            }`}
+            style={{
+              minWidth: 'clamp(80px, 22vw, 104px)',
+              height: 'clamp(72px, 18vw, 92px)',
+              fontSize: 'clamp(26px, 7vw, 36px)',
+              background: isRight ? 'var(--leaf)' : 'var(--cream)',
+              color: 'var(--ink)',
+              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+            }}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function FractionStage({
   question,
   disabled,
@@ -2218,52 +2318,71 @@ function FractionStage({
   const { num, den, optionLabels } = question.payload
   return (
     <div className="flex w-full flex-col items-center gap-5">
-      <div
-        className="flex w-full max-w-sm overflow-hidden rounded-2xl"
-        style={{ height: 64, border: '4px solid var(--ink)' }}
-        role="img"
-        aria-label={`a bar cut into ${den} equal pieces with ${num} shaded`}
-      >
-        {Array.from({ length: den }, (_, i) => (
-          <span
-            key={i}
-            className="h-full flex-1"
-            style={{
-              background: i < num ? 'var(--grape)' : 'var(--cream)',
-              borderRight: i < den - 1 ? '3px solid var(--ink)' : 'none',
-            }}
-          />
-        ))}
-      </div>
+      <FractionBar num={num} den={den} />
+      <FractionCards
+        labels={optionLabels}
+        answer={question.answer}
+        disabled={disabled}
+        wrong={wrong}
+        shakeToken={shakeToken}
+        highlightCorrect={highlightCorrect}
+        onPick={onPick}
+      />
+    </div>
+  )
+}
 
-      <div className="flex items-center justify-center gap-3">
-        {optionLabels.map((label, index) => {
-          const isWrong = wrong === index
-          const isRight = highlightCorrect && question.answer === index
-          return (
-            <button
-              key={`${index}-${isWrong ? shakeToken : 'base'}`}
-              type="button"
-              disabled={disabled}
-              onClick={() => onPick(index)}
-              aria-label={label.replace('/', ' over ')}
-              className={`grid place-items-center rounded-3xl font-bold transition-transform active:translate-y-1 ${
-                isWrong ? 'anim-shake' : ''
-              }`}
-              style={{
-                minWidth: 'clamp(80px, 22vw, 104px)',
-                height: 'clamp(72px, 18vw, 92px)',
-                fontSize: 'clamp(26px, 7vw, 36px)',
-                background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                color: 'var(--ink)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
+/** Equivalence (one labeled bar) or same-denominator add/subtract (two bars). */
+function FractionOpStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'fraction-op' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const { op, aNum, bNum, den, optionLabels } = question.payload
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      {op === 'same' ? (
+        <div className="flex w-full flex-col items-center gap-2">
+          <FractionBar num={aNum} den={den} />
+          <span
+            className="rounded-full bg-cream/85 px-4 py-1 font-bold text-ink"
+            style={{ fontSize: 'clamp(20px, 5.5vw, 26px)' }}
+          >
+            {aNum}/{den}
+          </span>
+        </div>
+      ) : (
+        <div className="flex w-full flex-col items-center gap-1.5">
+          <FractionBar num={aNum} den={den} height={48} />
+          <span
+            className="font-bold text-ink/70"
+            style={{ fontSize: 'clamp(24px, 7vw, 34px)', lineHeight: 1 }}
+            aria-hidden="true"
+          >
+            {op === 'add' ? '+' : '−'}
+          </span>
+          <FractionBar num={bNum} den={den} height={48} />
+        </div>
+      )}
+      <FractionCards
+        labels={optionLabels}
+        answer={question.answer}
+        disabled={disabled}
+        wrong={wrong}
+        shakeToken={shakeToken}
+        highlightCorrect={highlightCorrect}
+        onPick={onPick}
+      />
     </div>
   )
 }
@@ -2531,6 +2650,246 @@ function ShapeSortStage({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/** A partitioned ruler/scale with a pointer — the child reads the tick. */
+function ReadScaleStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'read-scale' }>
+}) {
+  const { max, step, labelEvery, value, unit } = question.payload
+  const W = 340
+  const H = 84
+  const PAD = 22
+  const x = (v: number) => PAD + (v / max) * (W - 2 * PAD)
+  const ticks: number[] = []
+  for (let v = 0; v <= max; v += step) ticks.push(v)
+  return (
+    <div
+      className="flex flex-col items-center gap-1 rounded-3xl bg-cream/85 px-4 pb-3 pt-4 shadow-md"
+      role="img"
+      aria-label={`a ${unit} scale from 0 to ${max} with an arrow pointing at one of the small marks`}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: 'min(88vw, 440px)' }} aria-hidden="true">
+        <polygon
+          points={`${x(value) - 9},14 ${x(value) + 9},14 ${x(value)},30`}
+          fill="var(--coral)"
+        />
+        <line
+          x1={PAD}
+          y1={48}
+          x2={W - PAD}
+          y2={48}
+          stroke="var(--ink)"
+          strokeWidth={4}
+          strokeLinecap="round"
+        />
+        {ticks.map((v) => {
+          const major = v % labelEvery === 0
+          return (
+            <g key={v}>
+              <line
+                x1={x(v)}
+                y1={48}
+                x2={x(v)}
+                y2={major ? 34 : 39}
+                stroke="var(--ink)"
+                strokeWidth={major ? 3 : 2}
+                strokeLinecap="round"
+              />
+              {major && (
+                <text
+                  x={x(v)}
+                  y={68}
+                  textAnchor="middle"
+                  fontSize={15}
+                  fontWeight={700}
+                  fill="var(--ink)"
+                >
+                  {v}
+                </text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+      <span className="rounded-full bg-sun px-3 py-0.5 font-bold text-ink" style={{ fontSize: 14 }}>
+        {unit}
+      </span>
+    </div>
+  )
+}
+
+/** The written method: operands stacked in columns over a rule, ? below. */
+function ColumnOpStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'column-op' }>
+}) {
+  const { a, b, op } = question.payload
+  const width = Math.max(String(a).length, String(b).length)
+  const cell = 'clamp(34px, 9vw, 48px)'
+  const digitRow = (n: number, sign?: string) => (
+    <div className="flex">
+      <span className="text-center text-ink/70" style={{ width: cell }}>
+        {sign ?? ''}
+      </span>
+      {String(n)
+        .padStart(width, ' ')
+        .split('')
+        .map((c, i) => (
+          <span key={i} className="text-center" style={{ width: cell }}>
+            {c === ' ' ? '' : c}
+          </span>
+        ))}
+    </div>
+  )
+  return (
+    <div
+      className="flex flex-col items-center rounded-3xl bg-cream/80 px-8 py-5 shadow-md"
+      role="img"
+      aria-label={`${a} ${op === '+' ? 'plus' : 'minus'} ${b}, written in columns`}
+    >
+      <div
+        className="flex flex-col items-end font-bold text-ink"
+        style={{ fontSize: 'clamp(36px, 9.5vw, 54px)', lineHeight: 1.15 }}
+      >
+        {digitRow(a)}
+        {digitRow(b, op === '+' ? '+' : '−')}
+        <div className="my-1 w-full rounded-full" style={{ height: 5, background: 'var(--ink)' }} />
+        <div className="flex w-full justify-center text-ink/45">?</div>
+      </div>
+    </div>
+  )
+}
+
+/** Tally marks: groups of five — four strokes and the diagonal gate. */
+function TallyMarks({ count }: { count: number }) {
+  const groups: number[] = []
+  for (let left = count; left > 0; left -= 5) groups.push(Math.min(left, 5))
+  return (
+    <span className="flex items-center gap-2" role="img" aria-label={`a tally of ${count}`}>
+      {groups.map((g, gi) => (
+        <span key={gi} className="relative flex items-center px-0.5" style={{ gap: 4 }}>
+          {Array.from({ length: Math.min(g, 4) }, (_, i) => (
+            <span
+              key={i}
+              style={{ width: 3.5, height: 24, background: 'var(--ink)', borderRadius: 2 }}
+            />
+          ))}
+          {g === 5 && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: -3,
+                right: -3,
+                top: '50%',
+                height: 3.5,
+                background: 'var(--ink)',
+                borderRadius: 2,
+                transform: 'rotate(-24deg)',
+              }}
+            />
+          )}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/** Build-graph: tap columns up to match the tally chart, then confirm. */
+function BuildGraphStage({
+  question,
+  disabled,
+  onSubmit,
+}: {
+  question: Extract<Question, { activity: 'build-graph' }>
+  disabled: boolean
+  onSubmit: (encoded: number) => void
+}) {
+  const { items, maxHeight } = question.payload
+  const [built, setBuilt] = useState<number[]>(() => items.map(() => 0))
+
+  function tapColumn(i: number) {
+    const next = [...built]
+    next[i] = (next[i] + 1) % (maxHeight + 1) // past the top wraps to 0 — always correctable
+    setBuilt(next)
+    audio.sfx('pop')
+    audio.sayNumber(next[i])
+  }
+
+  const encoded = built.reduce((acc, h) => acc * 10 + h, 0)
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      {/* The data to match — a tally chart. */}
+      <div className="flex items-end justify-center gap-5 rounded-3xl bg-cream/85 px-5 py-3 shadow-md">
+        {items.map((item, i) => (
+          <span key={i} className="flex flex-col items-center gap-1.5">
+            <TallyMarks count={item.value} />
+            <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1 }}>
+              {item.emoji}
+            </span>
+            <span className="sr-only">{`${item.value} ${item.name}`}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* The board being built. */}
+      <div className="flex items-end justify-center gap-4 rounded-3xl bg-cream/40 p-4">
+        {items.map((item, i) => (
+          <button
+            key={i}
+            type="button"
+            disabled={disabled}
+            onClick={() => tapColumn(i)}
+            aria-label={`the ${item.name} tower — ${built[i]} blocks so far`}
+            className="flex flex-col items-center gap-1.5 rounded-2xl p-1.5 transition-transform active:scale-95"
+          >
+            <span className="flex flex-col-reverse items-center gap-0.5">
+              {Array.from({ length: maxHeight }, (_, r) => (
+                <span
+                  key={r}
+                  className="rounded-sm"
+                  style={{
+                    width: 'clamp(26px, 7vw, 34px)',
+                    height: 'clamp(16px, 4.2vw, 20px)',
+                    background: r < built[i] ? 'var(--grape)' : 'transparent',
+                    border: r < built[i] ? '2px solid var(--cream)' : '2px dashed rgba(74,58,107,0.3)',
+                  }}
+                />
+              ))}
+            </span>
+            <span
+              aria-hidden="true"
+              style={{ fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1 }}
+            >
+              {item.emoji}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onSubmit(encoded)}
+        aria-label="done — check my graph"
+        className="grid place-items-center rounded-full text-cream transition-transform active:translate-y-1"
+        style={{
+          width: 72,
+          height: 72,
+          fontSize: 30,
+          background: 'var(--grape)',
+          boxShadow: '0 6px 0 var(--grape-dp)',
+        }}
+      >
+        <span aria-hidden="true">✔️</span>
+      </button>
     </div>
   )
 }

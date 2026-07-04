@@ -212,7 +212,16 @@ describe('sprint scores', () => {
   })
 
   it('every level carries a sane sprintSeconds (content data)', () => {
-    const HEAVY = new Set(['subitize', 'match', 'who-left', 'make-amount', 'set-clock', 'tap-all'])
+    const HEAVY = new Set([
+      'subitize',
+      'match',
+      'who-left',
+      'make-amount',
+      'set-clock',
+      'tap-all',
+      'build-graph',
+      'column-op',
+    ])
     for (const level of TRAIL) {
       expect(level.sprintSeconds).toBeGreaterThanOrEqual(45)
       expect(level.sprintSeconds).toBeLessThanOrEqual(120)

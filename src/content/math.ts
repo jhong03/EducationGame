@@ -59,6 +59,8 @@ const SPRINT_SECONDS_BY_ACTIVITY: Partial<Record<ActivityType, number>> = {
   'tap-all': 90, // multi-find boards
   'word-problem': 90, // a story to hear/read per question
   'graph-count': 90, // blocks to count per question
+  'build-graph': 90, // build-and-confirm boards
+  'column-op': 90, // multi-digit written method
 }
 
 /** The sprint round length for a level (content data, per-activity default). */
@@ -292,6 +294,29 @@ export const PHASE3B_LEVELS: readonly Level[] = [
   midLevel(38, 'stories', 2, 'Times stories', '📚', 'word-problem', { ops: 2 }),
 ] as const
 
+/**
+ * Phase 4 — the mid band's remaining core (CURRICULUM.md §5 Phase 4):
+ * the written methods (column add/subtract with a forced carry/borrow),
+ * fraction equivalence and same-denominator ops, reading partitioned
+ * scales/rulers, and constructing graphs from tallies.
+ */
+export const PHASE4_LEVELS: readonly Level[] = [
+  // Add & Subtract ➕ — the written method
+  midLevel(39, 'number-crunch', 6, 'Carry the one', '🧮', 'column-op', { op: 0, max: 100 }),
+  midLevel(40, 'number-crunch', 7, 'Borrow ten', '🔄', 'column-op', { op: 1, max: 100 }),
+  midLevel(41, 'number-crunch', 8, 'Tower sums', '🗼', 'column-op', { op: 0, max: 1000 }),
+  // Fractions 🍕 — equivalence, then same-denominator ops
+  midLevel(42, 'fractions', 4, 'Twin fractions', '👯', 'fraction-op', { op: 0 }),
+  midLevel(43, 'fractions', 5, 'Add the slices', '🍽️', 'fraction-op', { op: 1 }),
+  midLevel(44, 'fractions', 6, 'Slices left', '😋', 'fraction-op', { op: 2 }),
+  // Measuring 📐 — read the divisions
+  midLevel(45, 'measuring', 4, 'Read the ruler', '🐛', 'read-scale', { max: 10, step: 1, labelEvery: 2, unit: 0 }),
+  midLevel(46, 'measuring', 5, 'Weigh it!', '⚖️', 'read-scale', { max: 100, step: 10, labelEvery: 20, unit: 1 }),
+  // Data & Graphs 📊 — construct, not just read
+  midLevel(47, 'data', 3, 'Tally it up', '🖐️', 'build-graph', { cols: 3, max: 4 }),
+  midLevel(48, 'data', 4, 'Build the graph', '🧱', 'build-graph', { cols: 4, max: 5 }),
+] as const
+
 /** Every playable level, flat (ParentView totals, tests). */
 export const TRAIL: readonly Level[] = [
   ...PHASE0_LEVELS,
@@ -300,6 +325,7 @@ export const TRAIL: readonly Level[] = [
   ...EXPANSION_LEVELS,
   ...PHASE3_LEVELS,
   ...PHASE3B_LEVELS,
+  ...PHASE4_LEVELS,
 ]
 
 /** Look up a category by id. */
