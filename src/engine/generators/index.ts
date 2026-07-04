@@ -34,6 +34,16 @@ import { generateMultiply } from './multiply'
 import { generateDivide } from './divide'
 import { generateShare } from './share'
 import { generateArith } from './arith'
+import { generateFractionOf } from './fractionOf'
+import { generateUnitPick } from './unitPick'
+import { generateGridRect } from './gridRect'
+import { generateElapsed } from './elapsed'
+import { generateChange } from './change'
+import { generateGraphCount, generateGraphMost } from './graph'
+import { generateShapeSort } from './shapeSort'
+import { generateMissing } from './missing'
+import { generateLeftover } from './leftover'
+import { generateWordProblem } from './wordProblem'
 
 /**
  * The activity registry: ActivityType → generator. This is the only place the
@@ -76,6 +86,17 @@ export const GENERATORS: Record<ActivityType, QuestionGenerator> = {
   divide: generateDivide,
   share: generateShare,
   arith: generateArith,
+  'fraction-of': generateFractionOf,
+  'unit-pick': generateUnitPick,
+  'grid-rect': generateGridRect,
+  elapsed: generateElapsed,
+  change: generateChange,
+  'graph-count': generateGraphCount,
+  'graph-most': generateGraphMost,
+  'shape-sort': generateShapeSort,
+  missing: generateMissing,
+  leftover: generateLeftover,
+  'word-problem': generateWordProblem,
 }
 
 /** Generate the next Question for a level by dispatching on its activity. */
@@ -123,4 +144,15 @@ export {
   generateDivide,
   generateShare,
   generateArith,
+  generateFractionOf,
+  generateUnitPick,
+  generateGridRect,
+  generateElapsed,
+  generateChange,
+  generateGraphCount,
+  generateGraphMost,
+  generateShapeSort,
+  generateMissing,
+  generateLeftover,
+  generateWordProblem,
 }

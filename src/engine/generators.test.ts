@@ -35,6 +35,17 @@ import { generateMultiply, TABLE_SETS } from './generators/multiply'
 import { generateDivide } from './generators/divide'
 import { generateShare } from './generators/share'
 import { generateArith } from './generators/arith'
+import { generateFractionOf } from './generators/fractionOf'
+import { generateUnitPick } from './generators/unitPick'
+import { generateGridRect } from './generators/gridRect'
+import { generateElapsed } from './generators/elapsed'
+import { generateChange } from './generators/change'
+import { generateGraphCount, generateGraphMost } from './generators/graph'
+import { generateShapeSort } from './generators/shapeSort'
+import { generateMissing } from './generators/missing'
+import { generateLeftover } from './generators/leftover'
+import { generateWordProblem } from './generators/wordProblem'
+import { MEASURE_OBJECTS } from '../content/world'
 import { generateQuestion, GENERATORS } from './generators'
 import { TRAIL } from '../content/math'
 import { SHAPES, SHAPE_SIDES } from '../content/shapes'
@@ -823,6 +834,166 @@ describe('mid band (Phase 3) generators', () => {
         for (const o of q.options) expect(o).toBeGreaterThanOrEqual(0)
       }
     }
+  })
+})
+
+describe('mid deepening wave generators', () => {
+  const some = seeds.slice(0, 600)
+
+  it('fraction-of: label matches the shading, exactly one correct card', () => {
+    for (const [dens, unit] of [
+      [1, 1],
+      [2, 1],
+      [2, 0],
+    ] as const) {
+      for (const s of some) {
+        const q = generateFractionOf({ dens, unit }, mulberry32(s))
+        const { num, den, optionLabels } = q.payload
+        expect(num).toBeGreaterThanOrEqual(1)
+        expect(num).toBeLessThan(den)
+        if (unit === 1) expect(num).toBe(1)
+        expect(optionLabels[q.answer]).toBe(`${num}/${den}`)
+        expect(optionLabels.filter((l) => l === `${num}/${den}`)).toHaveLength(1)
+        expect(new Set(optionLabels).size).toBe(optionLabels.length)
+      }
+    }
+  })
+
+  it('unit-pick: the right unit wins; the same-dimension foil is on offer', () => {
+    for (const s of some) {
+      const q = generateUnitPick({}, mulberry32(s))
+      const obj = MEASURE_OBJECTS.find((o) => o.name === q.payload.object.name)!
+      expect(q.payload.unitLabels[q.answer]).toBe(obj.unit)
+      expect(q.payload.unitLabels).toContain(obj.foil) // the real confusion
+      expect(new Set(q.payload.unitLabels).size).toBe(3)
+    }
+  })
+
+  it('grid-rect: area = w·h, perimeter = 2(w+h)', () => {
+    for (const mode of [0, 1]) {
+      for (const s of some) {
+        const q = generateGridRect({ mode }, mulberry32(s))
+        const { w, h } = q.payload
+        expect(q.answer).toBe(mode === 0 ? w * h : 2 * (w + h))
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('elapsed: end − start, clocks stay on the dial', () => {
+    for (const s of some) {
+      const q = generateElapsed({}, mulberry32(s))
+      expect(q.answer).toBe(q.payload.endHour - q.payload.startHour)
+      expect(q.payload.endHour).toBeLessThanOrEqual(12)
+      expect(q.answer).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('change: paid − price, price below payment', () => {
+    for (const s of some) {
+      const q = generateChange({ pay: 10 }, mulberry32(s))
+      expect(q.payload.paid).toBe(10)
+      expect(q.payload.price).toBeLessThan(10)
+      expect(q.answer).toBe(10 - q.payload.price)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('graphs: distinct column values; count reads the target; most is the unique max', () => {
+    for (const s of some) {
+      const gc = generateGraphCount({}, mulberry32(s))
+      expect(new Set(gc.payload.items.map((i) => i.value)).size).toBe(3)
+      expect(gc.answer).toBe(gc.payload.items[gc.payload.targetIndex].value)
+      const gm = generateGraphMost({}, mulberry32(s + 77))
+      const values = gm.payload.items.map((i) => i.value)
+      expect(gm.payload.items[gm.answer].value).toBe(Math.max(...values))
+      expect(values.filter((v) => v === Math.max(...values))).toHaveLength(1)
+    }
+  })
+
+  it('shape-sort: side counts distinct, answer card has the spoken sides', () => {
+    for (const s of some) {
+      const q = generateShapeSort({}, mulberry32(s))
+      const sides = q.payload.shapeIds.map((id) => SHAPE_SIDES[id])
+      expect(new Set(sides).size).toBe(3)
+      expect(sides[q.answer]).toBe(q.payload.targetSides)
+      expect(q.prompt).toContain(String(q.payload.targetSides))
+    }
+  })
+
+  it('missing: the blank really balances the equation (all forms)', () => {
+    for (const op of [0, 1]) {
+      for (const s of some) {
+        const q = generateMissing({ op, max: 20 }, mulberry32(s))
+        const filled = q.payload.text.replace('□', String(q.answer))
+        const [lhs, rhs] = filled.split('=').map((p) => p.trim())
+        const value = lhs.includes('×')
+          ? lhs.split('×').reduce((acc, part) => acc * Number(part.trim()), 1)
+          : lhs.includes('−')
+            ? lhs
+                .split('−')
+                .map((p) => Number(p.trim()))
+                .reduce((a, b) => a - b)
+            : lhs
+                .split('+')
+                .map((p) => Number(p.trim()))
+                .reduce((a, b) => a + b)
+        expect(value).toBe(Number(rhs))
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('leftover: n mod b is the answer, and it is never zero or ≥ b', () => {
+    for (const s of some) {
+      const q = generateLeftover({}, mulberry32(s))
+      expect(q.answer).toBe(q.payload.n % q.payload.b)
+      expect(q.answer).toBeGreaterThanOrEqual(1)
+      expect(q.answer).toBeLessThan(q.payload.b)
+      for (const o of q.options) expect(o).toBeLessThan(q.payload.b)
+    }
+  })
+
+  it('word-problem: the story computes to the answer for its op', () => {
+    for (const ops of [1, 2]) {
+      for (const s of some) {
+        const q = generateWordProblem({ ops }, mulberry32(s))
+        expect(q.payload.story).not.toContain('{') // all placeholders filled
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(q.answer).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('clock step:5 reads minutes — same hour, distinct five-minute choices', () => {
+    let sawOddMinutes = false
+    for (const s of some) {
+      const q = generateClock({ step: 5 }, mulberry32(s))
+      expect(q.payload.minute % 5).toBe(0)
+      for (const c of q.payload.choices) {
+        expect(c.hour).toBe(q.payload.hour) // minutes are the skill here
+        expect(c.minute % 5).toBe(0)
+      }
+      expect(new Set(q.payload.choices.map((c) => c.minute)).size).toBe(3)
+      const chosen = q.payload.choices[q.answer]
+      expect(chosen.minute).toBe(q.payload.minute)
+      if (![0, 30].includes(q.payload.minute)) sawOddMinutes = true
+    }
+    expect(sawOddMinutes).toBe(true)
+  })
+
+  it('round nearest:100 speaks hundreds, lands on them, and rounds BOTH ways', () => {
+    let up = false
+    let down = false
+    for (const s of some.slice(0, 300)) {
+      const q = generateRound({ nearest: 100, max: 1000 }, mulberry32(s))
+      expect(q.prompt).toContain('hundred')
+      expect(q.answer % 100).toBe(0)
+      expect(q.answer).toBe(Math.round(q.payload.value / 100) * 100)
+      if (q.answer > q.payload.value) up = true
+      else down = true
+    }
+    expect(up && down).toBe(true)
   })
 })
 

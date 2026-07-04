@@ -52,6 +52,17 @@ export type ActivityType =
   | 'divide'
   | 'share'
   | 'arith'
+  | 'fraction-of'
+  | 'unit-pick'
+  | 'grid-rect'
+  | 'elapsed'
+  | 'change'
+  | 'graph-count'
+  | 'graph-most'
+  | 'shape-sort'
+  | 'missing'
+  | 'leftover'
+  | 'word-problem'
 
 /**
  * A skill strand a child picks from on the home screen (e.g. "Counting").
@@ -402,6 +413,94 @@ export interface ArithQuestion extends BaseQuestion {
   answer: number
 }
 
+/** "What fraction is shaded?" — a partitioned bar; pick the fraction card. */
+export interface FractionOfQuestion extends BaseQuestion {
+  activity: 'fraction-of'
+  payload: { num: number; den: number; optionLabels: string[] } // e.g. "3/4"
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+/** "Which unit for measuring a pencil?" — pick cm/m/kg/… */
+export interface UnitPickQuestion extends BaseQuestion {
+  activity: 'unit-pick'
+  payload: { object: NamedItem; unitLabels: string[] }
+  options: number[]
+  answer: number
+}
+
+/** Count the squares inside (area) or the steps around (perimeter). */
+export interface GridRectQuestion extends BaseQuestion {
+  activity: 'grid-rect'
+  payload: { w: number; h: number; mode: 'area' | 'perimeter' }
+  options: number[]
+  answer: number
+}
+
+/** "From 3 o'clock to 7 o'clock — how many hours?" (two clock faces). */
+export interface ElapsedQuestion extends BaseQuestion {
+  activity: 'elapsed'
+  payload: { startHour: number; endHour: number }
+  options: number[]
+  answer: number
+}
+
+/** "It costs 7. You pay 10. How much change?" */
+export interface ChangeQuestion extends BaseQuestion {
+  activity: 'change'
+  payload: { price: number; paid: number }
+  options: number[]
+  answer: number
+}
+
+/** A block graph; either count one column… */
+export interface GraphCountQuestion extends BaseQuestion {
+  activity: 'graph-count'
+  payload: { items: Array<NamedItem & { value: number }>; targetIndex: number }
+  options: number[]
+  answer: number // the target column's value
+}
+
+/** …or tap the column with the most. */
+export interface GraphMostQuestion extends BaseQuestion {
+  activity: 'graph-most'
+  payload: { items: Array<NamedItem & { value: number }> }
+  options: number[] // column indices
+  answer: number // index of the (unique) tallest
+}
+
+/** "Tap the shape with 5 sides!" — property sorting. */
+export interface ShapeSortQuestion extends BaseQuestion {
+  activity: 'shape-sort'
+  payload: { shapeIds: string[]; targetSides: number }
+  options: number[]
+  answer: number
+}
+
+/** "□ + 3 = 7" — the missing number (F4, early algebra). */
+export interface MissingQuestion extends BaseQuestion {
+  activity: 'missing'
+  payload: { text: string } // rendered with □ in place
+  options: number[]
+  answer: number
+}
+
+/** "17 shared between 5 — how many left over?" (remainders). */
+export interface LeftoverQuestion extends BaseQuestion {
+  activity: 'leftover'
+  payload: { n: number; b: number }
+  options: number[]
+  answer: number
+}
+
+/** A one-step story problem, spoken and shown. */
+export interface WordProblemQuestion extends BaseQuestion {
+  activity: 'word-problem'
+  payload: { story: string }
+  options: number[]
+  answer: number
+}
+
 /** Discriminated on `activity`. Narrow before rendering/checking. */
 export type Question =
   | CountQuestion
@@ -439,6 +538,17 @@ export type Question =
   | DivideQuestion
   | ShareQuestion
   | ArithQuestion
+  | FractionOfQuestion
+  | UnitPickQuestion
+  | GridRectQuestion
+  | ElapsedQuestion
+  | ChangeQuestion
+  | GraphCountQuestion
+  | GraphMostQuestion
+  | ShapeSortQuestion
+  | MissingQuestion
+  | LeftoverQuestion
+  | WordProblemQuestion
 
 /** What a child answers with — a number (count/add) or a side (compare). */
 export type Answer = number | 'left' | 'right'

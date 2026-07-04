@@ -13,7 +13,9 @@ export function generateRound(
   const nearest = params.nearest ?? 10
   const maxTens = Math.max(2, Math.floor((params.max ?? 100) / nearest) - 1)
   const tensPart = randInt(1, maxTens, rng)
-  const ones = randInt(1, 9, rng) // never .0 — there'd be nothing to round
+  // Anywhere strictly between two multiples (1..nearest−1), so rounding can
+  // go BOTH ways — 304 rounds down but 361 rounds up.
+  const ones = randInt(1, nearest - 1, rng)
   const value = tensPart * nearest + ones
   const answer = Math.round(value / nearest) * nearest
 
@@ -28,7 +30,7 @@ export function generateRound(
   return {
     id: makeId('round', rng),
     activity: 'round',
-    prompt: `Round ${value} to the nearest ten!`,
+    prompt: `Round ${value} to the nearest ${nearest === 100 ? 'hundred' : 'ten'}!`,
     payload: { value, nearest },
     options: shuffle([...options].slice(0, 3), rng),
     answer,

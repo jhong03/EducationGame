@@ -57,6 +57,8 @@ const SPRINT_SECONDS_BY_ACTIVITY: Partial<Record<ActivityType, number>> = {
   'make-amount': 90, // build-and-confirm
   'set-clock': 90, // turn-and-confirm
   'tap-all': 90, // multi-find boards
+  'word-problem': 90, // a story to hear/read per question
+  'graph-count': 90, // blocks to count per question
 }
 
 /** The sprint round length for a level (content data, per-activity default). */
@@ -85,6 +87,14 @@ export const CATEGORIES: readonly Category[] = [
   { id: 'times-tables', name: 'Times Tables', icon: '✖️', order: 2, band: 'mid', subjectId: MATH_SUBJECT_ID },
   { id: 'number-crunch', name: 'Add & Subtract', icon: '➕', order: 3, band: 'mid', subjectId: MATH_SUBJECT_ID },
   { id: 'sharing', name: 'Sharing', icon: '🍰', order: 4, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'fractions', name: 'Fractions', icon: '🍕', order: 5, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'measuring', name: 'Measuring', icon: '📐', order: 6, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'time-mid', name: 'Time Master', icon: '⏰', order: 7, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'money-mid', name: 'Money Math', icon: '💰', order: 8, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'data', name: 'Data & Graphs', icon: '📊', order: 9, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'shape-lab', name: 'Shape Lab', icon: '🔺', order: 10, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'detective', name: 'Number Detective', icon: '🕵️', order: 11, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  { id: 'stories', name: 'Story Problems', icon: '📖', order: 12, band: 'mid', subjectId: MATH_SUBJECT_ID },
 ] as const
 
 /** Small helper so the level tables below stay readable and consistent. */
@@ -239,6 +249,49 @@ export const PHASE3_LEVELS: readonly Level[] = [
   midLevel(13, 'sharing', 2, 'Divide it', '➗', 'divide', { tableSet: 1 }),
 ] as const
 
+/**
+ * Mid-band deepening wave (user-directed 2026-07-04: "7–9 is the most
+ * important phase") — every existing mid chapter grows and eight NEW chapters
+ * open: Fractions, Measuring, Time Master, Money Math, Data & Graphs, Shape
+ * Lab, Number Detective, Story Problems.
+ */
+export const PHASE3B_LEVELS: readonly Level[] = [
+  // deepen the first four chapters
+  midLevel(14, 'place-value', 4, 'Bigger or smaller?', '⚖️', 'num-compare', { max: 999 }),
+  midLevel(15, 'place-value', 5, 'Round to 100', '💯', 'round', { nearest: 100, max: 1000 }),
+  midLevel(16, 'times-tables', 5, 'The tricky tables', '🌶️', 'multiply', { tableSet: 4 }),
+  midLevel(17, 'number-crunch', 5, 'Big sums', '🏔️', 'arith', { op: 0, max: 1000 }),
+  midLevel(18, 'sharing', 3, 'Divide more', '🧁', 'divide', { tableSet: 2 }),
+  midLevel(19, 'sharing', 4, 'Left over!', '🍪', 'leftover', {}),
+  // Fractions 🍕
+  midLevel(20, 'fractions', 1, 'Halves & quarters', '🍕', 'fraction-of', { dens: 1, unit: 1 }),
+  midLevel(21, 'fractions', 2, 'One slice', '🍰', 'fraction-of', { dens: 2, unit: 1 }),
+  midLevel(22, 'fractions', 3, 'More slices', '🥧', 'fraction-of', { dens: 2, unit: 0 }),
+  // Measuring 📐
+  midLevel(23, 'measuring', 1, 'Which unit?', '📏', 'unit-pick', {}),
+  midLevel(24, 'measuring', 2, 'Count the squares', '🟪', 'grid-rect', { mode: 0 }),
+  midLevel(25, 'measuring', 3, 'All the way round', '🚶', 'grid-rect', { mode: 1 }),
+  // Time Master ⏰
+  midLevel(26, 'time-mid', 1, 'Five past, ten past', '🕔', 'clock', { step: 5 }),
+  midLevel(27, 'time-mid', 2, 'How many hours?', '⏳', 'elapsed', {}),
+  // Money Math 💰
+  midLevel(28, 'money-mid', 1, 'Shopping sums', '🛒', 'money', { mixed: 1, max: 20 }),
+  midLevel(29, 'money-mid', 2, 'Give the change', '🧾', 'change', { pay: 10 }),
+  // Data & Graphs 📊
+  midLevel(30, 'data', 1, 'Read the blocks', '📊', 'graph-count', {}),
+  midLevel(31, 'data', 2, 'Most and fewest', '🥇', 'graph-most', {}),
+  // Shape Lab 🔺
+  midLevel(32, 'shape-lab', 1, 'Count the sides', '📐', 'sides', {}),
+  midLevel(33, 'shape-lab', 2, 'Shape detective', '🔍', 'shape-sort', {}),
+  // Number Detective 🕵️
+  midLevel(34, 'detective', 1, 'Missing number', '❓', 'missing', { op: 0, max: 20 }),
+  midLevel(35, 'detective', 2, 'Missing times', '✳️', 'missing', { op: 1 }),
+  midLevel(36, 'detective', 3, 'Pattern trails', '👣', 'sequence', { step: 3, max: 40, align: 1 }),
+  // Story Problems 📖
+  midLevel(37, 'stories', 1, 'Number stories', '📖', 'word-problem', { ops: 1 }),
+  midLevel(38, 'stories', 2, 'Times stories', '📚', 'word-problem', { ops: 2 }),
+] as const
+
 /** Every playable level, flat (ParentView totals, tests). */
 export const TRAIL: readonly Level[] = [
   ...PHASE0_LEVELS,
@@ -246,6 +299,7 @@ export const TRAIL: readonly Level[] = [
   ...PHASE2_LEVELS,
   ...EXPANSION_LEVELS,
   ...PHASE3_LEVELS,
+  ...PHASE3B_LEVELS,
 ]
 
 /** Look up a category by id. */

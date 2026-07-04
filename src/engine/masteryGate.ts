@@ -37,11 +37,22 @@ export function isCorrect(question: Question, answer: Answer): boolean {
     case 'set-clock': // dialled hour
     case 'tap-all': // found-them-all count
     case 'place-value': // the number the blocks show
-    case 'round': // nearest ten
+    case 'round': // nearest ten/hundred
     case 'multiply': // product
     case 'divide': // quotient
     case 'share': // per-plate count
     case 'arith': // sum / difference
+    case 'grid-rect': // area / perimeter
+    case 'elapsed': // hours between
+    case 'change': // paid − price
+    case 'graph-count': // a column's value
+    case 'missing': // the blank
+    case 'leftover': // the remainder
+    case 'word-problem': // the story's answer
+    case 'fraction-of': // fraction card index
+    case 'unit-pick': // unit card index
+    case 'graph-most': // tallest column index
+    case 'shape-sort': // matching shape index
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
     case 'num-compare':

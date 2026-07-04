@@ -24,7 +24,7 @@ polish, or a new subject/level) rather than finishing something half-done.
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **121 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **133 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -312,7 +312,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **121 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **133 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -455,6 +455,21 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   sprints unchanged. Placement: ages 7+ skip the early plan (their band starts fresh).
   **121 tests passing**, build & lint clean. Committed & pushed as the Phase 3
   increment.
+- **2026-07-04 — Mid deepening wave (user-directed: "7–9 is the most important
+  phase").** The mid band **triples: 13 → 38 levels, 4 → 12 chapters.** Existing four
+  deepened (compare/round to 999–1000, the tricky 6/7/8/9 tables, big sums, more
+  division + **remainders** via `leftover`). Eight NEW chapters: **Fractions 🍕**
+  (shaded-bar reading, halves→eighths, non-unit), **Measuring 📐** (`unit-pick` with
+  same-dimension foils, area-by-squares + perimeter via `grid-rect`), **Time Master ⏰**
+  (clock gained a five-minute mode — choices differ by MINUTE; `elapsed` hours between
+  two faces), **Money Math 💰** (bigger coin sums + `change`), **Data & Graphs 📊**
+  (block-graph `graph-count`/`graph-most`), **Shape Lab 🔺** (sides + `shape-sort` by
+  property), **Number Detective 🕵️** (`missing` □-equations incl. ×; aligned
+  skip-count trails), **Story Problems 📖** (`word-problem` from
+  [`content/stories.ts`](src/content/stories.ts) templates). Also fixed in passing:
+  `round` nearest-100 could only round DOWN (offset now spans the full gap,
+  both-ways test added). Ids `math-mid-14..38`; **22 categories / 84 levels** total.
+  **133 tests passing**, build & lint clean.
 - **2026-07-04 — Reset re-asks the age.** User-reported: once an age is persisted, the
   gate never reappears (correct for returning players, but there was NO in-app path
   back to it). `reset()` now clears `age` too (pace/mute survive) → closing the

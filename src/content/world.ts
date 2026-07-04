@@ -20,3 +20,25 @@ export const DAY_SCENES: readonly NamedItem[] = [
   { emoji: '☀️', name: 'daytime' },
   { emoji: '🌙', name: 'night' },
 ] as const
+
+/**
+ * Things to measure, each with its sensible unit and a same-dimension foil
+ * (the REAL confusion: a pencil in metres, not a pencil in litres).
+ */
+export interface MeasureObject extends NamedItem {
+  unit: string
+  foil: string // wrong unit of the SAME dimension
+}
+
+export const MEASURE_OBJECTS: readonly MeasureObject[] = [
+  { emoji: '✏️', name: 'a pencil', unit: 'cm', foil: 'm' },
+  { emoji: '📖', name: 'a book', unit: 'cm', foil: 'm' },
+  { emoji: '🚪', name: 'a door', unit: 'm', foil: 'cm' },
+  { emoji: '🚌', name: 'a bus', unit: 'm', foil: 'cm' },
+  { emoji: '🐕', name: 'a dog', unit: 'kg', foil: 'g' },
+  { emoji: '🍉', name: 'a watermelon', unit: 'kg', foil: 'g' },
+  { emoji: '🪶', name: 'a feather', unit: 'g', foil: 'kg' },
+  { emoji: '🪙', name: 'a coin', unit: 'g', foil: 'kg' },
+  { emoji: '🛁', name: 'a bathtub', unit: 'l', foil: 'ml' },
+  { emoji: '🥄', name: 'a spoonful', unit: 'ml', foil: 'l' },
+] as const

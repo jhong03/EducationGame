@@ -16,6 +16,7 @@ export const TABLE_SETS: Record<number, readonly number[]> = {
   1: [2, 5, 10],
   2: [3, 4, 6],
   3: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  4: [6, 7, 8, 9], // the famously tricky ones
 }
 
 export function generateMultiply(

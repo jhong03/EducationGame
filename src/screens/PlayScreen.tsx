@@ -56,6 +56,10 @@ const INDEX_ANSWER_ACTIVITIES = new Set<Question['activity']>([
   'make-amount', // its stage carries its own ✔️ submit
   'set-clock', // ditto
   'tap-all', // completes itself when the last one is found
+  'fraction-of', // fraction cards
+  'unit-pick', // unit cards
+  'graph-most', // tap a column
+  'shape-sort', // tap a shape card
 ])
 
 /** Narrow to the value-answer activities that use the number-button row. */
@@ -80,6 +84,13 @@ function hasNumberButtons(
       | 'divide'
       | 'share'
       | 'arith'
+      | 'grid-rect'
+      | 'elapsed'
+      | 'change'
+      | 'graph-count'
+      | 'missing'
+      | 'leftover'
+      | 'word-problem'
   }
 > {
   return !INDEX_ANSWER_ACTIVITIES.has(q.activity)
@@ -449,6 +460,65 @@ export function ActivityStage({
           />
         ) : question.activity === 'share' ? (
           <ShareStage question={question} />
+        ) : question.activity === 'fraction-of' ? (
+          <FractionStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'unit-pick' ? (
+          <UnitPickStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'grid-rect' ? (
+          <GridRectStage question={question} />
+        ) : question.activity === 'elapsed' ? (
+          <div className="flex items-center justify-center gap-3">
+            <ClockFace hour={question.payload.startHour} minute={0} />
+            <span aria-hidden="true" className="font-bold text-ink/60" style={{ fontSize: 32 }}>
+              →
+            </span>
+            <ClockFace hour={question.payload.endHour} minute={0} />
+          </div>
+        ) : question.activity === 'change' ? (
+          <ChangeStage question={question} />
+        ) : question.activity === 'graph-count' || question.activity === 'graph-most' ? (
+          <GraphStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'shape-sort' ? (
+          <ShapeSortStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'missing' ? (
+          <ExprCard text={question.payload.text} />
+        ) : question.activity === 'leftover' ? (
+          <ExprCard text={`${question.payload.n} ÷ ${question.payload.b}`} sub="how many are left over?" />
+        ) : question.activity === 'word-problem' ? (
+          <div
+            className="max-w-md rounded-3xl bg-cream/85 px-6 py-5 text-center font-semibold text-ink shadow-md"
+            style={{ fontSize: 'clamp(18px, 4.8vw, 24px)', lineHeight: 1.45 }}
+          >
+            {question.payload.story}
+          </div>
         ) : (
           <CountStage question={question} counted={counted} onTapObject={onTapObject} />
         )}
@@ -1066,7 +1136,7 @@ function ClockStage({
   onPick: (index: number) => void
 }) {
   const { hour, minute, choices } = question.payload
-  const timeLabel = (h: number, m: number) => `${h}:${m === 0 ? '00' : '30'}`
+  const timeLabel = (h: number, m: number) => `${h}:${String(m).padStart(2, '0')}`
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
@@ -2125,6 +2195,342 @@ function ShareStage({
           </span>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** A partitioned bar with `num` of `den` cells shaded + fraction cards. */
+function FractionStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'fraction-of' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const { num, den, optionLabels } = question.payload
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      <div
+        className="flex w-full max-w-sm overflow-hidden rounded-2xl"
+        style={{ height: 64, border: '4px solid var(--ink)' }}
+        role="img"
+        aria-label={`a bar cut into ${den} equal pieces with ${num} shaded`}
+      >
+        {Array.from({ length: den }, (_, i) => (
+          <span
+            key={i}
+            className="h-full flex-1"
+            style={{
+              background: i < num ? 'var(--grape)' : 'var(--cream)',
+              borderRight: i < den - 1 ? '3px solid var(--ink)' : 'none',
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-center gap-3">
+        {optionLabels.map((label, index) => {
+          const isWrong = wrong === index
+          const isRight = highlightCorrect && question.answer === index
+          return (
+            <button
+              key={`${index}-${isWrong ? shakeToken : 'base'}`}
+              type="button"
+              disabled={disabled}
+              onClick={() => onPick(index)}
+              aria-label={label.replace('/', ' over ')}
+              className={`grid place-items-center rounded-3xl font-bold transition-transform active:translate-y-1 ${
+                isWrong ? 'anim-shake' : ''
+              }`}
+              style={{
+                minWidth: 'clamp(80px, 22vw, 104px)',
+                height: 'clamp(72px, 18vw, 92px)',
+                fontSize: 'clamp(26px, 7vw, 36px)',
+                background: isRight ? 'var(--leaf)' : 'var(--cream)',
+                color: 'var(--ink)',
+                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** The thing to measure + unit cards (cm / m / kg / g / l / ml). */
+function UnitPickStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'unit-pick' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const { object, unitLabels } = question.payload
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-1 rounded-3xl bg-cream/70 px-8 py-4">
+        <span aria-hidden="true" style={{ fontSize: 'clamp(48px, 13vw, 64px)', lineHeight: 1 }}>
+          {object.emoji}
+        </span>
+        <span className="font-semibold text-ink/70" style={{ fontSize: 'clamp(14px, 3.8vw, 18px)' }}>
+          {object.name}
+        </span>
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        {unitLabels.map((label, index) => {
+          const isWrong = wrong === index
+          const isRight = highlightCorrect && question.answer === index
+          return (
+            <button
+              key={`${index}-${isWrong ? shakeToken : 'base'}`}
+              type="button"
+              disabled={disabled}
+              onClick={() => onPick(index)}
+              aria-label={label}
+              className={`grid place-items-center rounded-3xl font-bold transition-transform active:translate-y-1 ${
+                isWrong ? 'anim-shake' : ''
+              }`}
+              style={{
+                minWidth: 'clamp(76px, 20vw, 96px)',
+                height: 'clamp(68px, 17vw, 88px)',
+                fontSize: 'clamp(24px, 6.5vw, 32px)',
+                background: isRight ? 'var(--leaf)' : 'var(--cream)',
+                color: 'var(--ink)',
+                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** A w×h rectangle of grid squares (area) or with a dashed walk (perimeter). */
+function GridRectStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'grid-rect' }>
+}) {
+  const { w, h, mode } = question.payload
+  const cell = 'clamp(26px, 7vw, 38px)'
+  return (
+    <div
+      className="rounded-2xl p-2"
+      style={{
+        border: mode === 'perimeter' ? '4px dashed var(--coral)' : '4px solid transparent',
+      }}
+      role="img"
+      aria-label={`a rectangle ${w} squares wide and ${h} squares tall`}
+    >
+      <div
+        className="grid overflow-hidden rounded-lg"
+        style={{
+          gridTemplateColumns: `repeat(${w}, ${cell})`,
+          gridAutoRows: cell,
+          border: '3px solid var(--ink)',
+        }}
+      >
+        {Array.from({ length: w * h }, (_, i) => (
+          <span
+            key={i}
+            className="anim-pop"
+            style={{
+              background: 'var(--grape)',
+              opacity: mode === 'area' ? 0.85 : 0.35,
+              border: '1.5px solid var(--cream)',
+              animationDelay: `${i * 20}ms`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Price tag and payment — the change question, in the family's currency. */
+function ChangeStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'change' }>
+}) {
+  const currencyId = useGameStore((s) => s.currency)
+  const symbol = currencyById(currencyId).symbol
+  const { price, paid } = question.payload
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center gap-1 rounded-3xl bg-cream/85 px-6 py-4 shadow-md">
+        <span aria-hidden="true" style={{ fontSize: 34 }}>
+          🏷️
+        </span>
+        <span className="font-bold text-ink" style={{ fontSize: 'clamp(26px, 7vw, 36px)' }}>
+          {symbol}
+          {price}
+        </span>
+      </div>
+      <span className="font-bold text-ink/50" style={{ fontSize: 30 }} aria-hidden="true">
+        →
+      </span>
+      <div className="flex flex-col items-center gap-1 rounded-3xl bg-cream/85 px-6 py-4 shadow-md">
+        <span aria-hidden="true" style={{ fontSize: 34 }}>
+          💵
+        </span>
+        <span className="font-bold text-ink" style={{ fontSize: 'clamp(26px, 7vw, 36px)' }}>
+          {symbol}
+          {paid}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** Block-graph columns; in "most" mode the columns themselves are the answer. */
+function GraphStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'graph-count' | 'graph-most' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const tappable = question.activity === 'graph-most'
+  const items = question.payload.items
+  const target = question.activity === 'graph-count' ? question.payload.targetIndex : -1
+
+  return (
+    <div className="flex items-end justify-center gap-4 rounded-3xl bg-cream/40 p-4">
+      {items.map((item, index) => {
+        const isWrong = tappable && wrong === index
+        const isRight = tappable && highlightCorrect && question.answer === index
+        const column = (
+          <>
+            <span className="flex flex-col-reverse items-center gap-0.5" aria-hidden="true">
+              {Array.from({ length: item.value }, (_, i) => (
+                <span
+                  key={i}
+                  className="anim-pop rounded-sm"
+                  style={{
+                    width: 'clamp(26px, 7vw, 34px)',
+                    height: 'clamp(16px, 4.2vw, 20px)',
+                    background: isRight ? 'var(--leaf)' : 'var(--grape)',
+                    border: '2px solid var(--cream)',
+                    animationDelay: `${i * 50}ms`,
+                  }}
+                />
+              ))}
+            </span>
+            <span
+              aria-hidden="true"
+              style={{
+                fontSize: 'clamp(24px, 6.5vw, 32px)',
+                lineHeight: 1,
+                outline: index === target ? '3px solid var(--coral)' : 'none',
+                borderRadius: 8,
+              }}
+            >
+              {item.emoji}
+            </span>
+          </>
+        )
+        return tappable ? (
+          <button
+            key={`${index}-${isWrong ? shakeToken : 'base'}`}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(index)}
+            aria-label={`the ${item.name} column`}
+            className={`flex flex-col items-center gap-1.5 rounded-2xl p-1.5 transition-transform active:scale-95 ${
+              isWrong ? 'anim-shake' : ''
+            }`}
+          >
+            {column}
+          </button>
+        ) : (
+          <span
+            key={index}
+            className="flex flex-col items-center gap-1.5 p-1.5"
+            role="img"
+            aria-label={`${item.value} ${item.name} blocks`}
+          >
+            {column}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Shape cards to sort by side count. */
+function ShapeSortStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'shape-sort' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  return (
+    <div className="flex w-full items-stretch justify-center gap-3 sm:gap-5">
+      {question.payload.shapeIds.map((shapeId, index) => {
+        const isWrong = wrong === index
+        const isRight = highlightCorrect && question.answer === index
+        return (
+          <button
+            key={`${index}-${isWrong ? shakeToken : 'base'}`}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(index)}
+            aria-label={shapeById(shapeId)?.name ?? shapeId}
+            className={`grid flex-1 place-items-center rounded-3xl p-3 transition-transform active:scale-95 ${
+              isWrong ? 'anim-shake' : ''
+            }`}
+            style={{
+              minHeight: 'clamp(100px, 26vw, 150px)',
+              maxWidth: 150,
+              background: isRight ? 'var(--leaf)' : 'var(--cream)',
+              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              border: '4px solid var(--cream)',
+            }}
+          >
+            <ShapeGlyph shapeId={shapeId} size={76} fill={isRight ? 'var(--cream)' : 'var(--grape)'} />
+          </button>
+        )
+      })}
     </div>
   )
 }
