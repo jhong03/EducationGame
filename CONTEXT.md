@@ -45,7 +45,9 @@ The last "still growing" fallback is gone.
 - **Systems all live:** category navigation (derived unlock, never re-locks), age gate
   + band filtering, **name profile** (asked after the gate, greets on the meadow,
   rides a live name+⭐ chip during play), placement check (ages 5–6 early, 11–12
-  upper), pace profiler, per-continent + SEA currency,
+  upper), pace profiler, **adaptive difficulty** (mastery-only: hard questions
+  soften the next one, mastered replays ramp by pace), per-continent + SEA
+  currency,
   **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
   countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
   (reset re-asks age → new-sibling handoff).
@@ -57,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **189 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **195 passed** across 9 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -174,6 +176,12 @@ brief's §8 exactly.
   the nearest band, never undefined), `bandLabel`. The persisted `age` (household
   setting; survives reset; validated on migrate) drives which band's categories the
   meadow shows.
+- [`engine/adaptive.ts`](src/engine/adaptive.ts) — **adaptive difficulty** (pure,
+  tested; the calibration seam FILLED): `difficultyScale({lastTries, replay},
+  pace)` → ×0.6/×0.8 easing after hard questions (instant recovery), replay
+  ramps ×1.5 eager / ×1.25 steady / ×1 gentle; `adaptLevel` scales ONLY `max`
+  (rounded, floored at 3; `column-op` excluded — its max is a digit MODE).
+  Mastery play only: sprints and placement never adapt, the goal never changes.
 - [`engine/pace.ts`](src/engine/pace.ts) — **learning-pace profiler** (pure, tested):
   5-question parent preferences quiz (`PACE_QUESTIONS`) → `scorePace` (0–3 gentle /
   4–7 steady / 8–10 eager, inputs clamped) → `PACE_PLANS` (levels per sitting, session
@@ -342,7 +350,10 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (189, all passing)
+### Tests (195, all passing)
+- [`engine/adaptive.test.ts`](src/engine/adaptive.test.ts) — the scale rule
+  table, pass-through identities, and a sweep proving every scale the seam can
+  emit still generates sound questions for every scalable level.
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
@@ -409,10 +420,8 @@ None of these break Phase 0; they're the first things to consider next.
 - **PWA icons are SVG-only.** [`public/icon.svg`](public/icon.svg) +
   [`favicon.svg`](public/favicon.svg) only. Before any store/marketing launch, add
   rasterized PNGs (192/512, maskable) for widest install compatibility. Noted in README §PWA-icons.
-- **Adaptive difficulty has no dedicated seam module** — difficulty is fixed per level
-  via `params`. The clean seam is that generators already take `params`; a Phase-1 nudge
-  would vary `params` (e.g. `max`) within a level based on recent accuracy. `PlayScreen`
-  already tracks the in-attempt streak that such logic would read.
+- ~~**Adaptive difficulty has no dedicated seam module.**~~ ✅ Filled —
+  [`engine/adaptive.ts`](src/engine/adaptive.ts), wired into mastery play only.
 - **`sayNumber` word list covers 0–20**; beyond that it falls back to digits, which
   TTS reads correctly ("30" → "thirty") — fine in practice, extend words.ts if
   recorded VO ever lands.
@@ -436,10 +445,9 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 > **ALL PHASES 0–6 ✅ BUILT** — the full 4–12 spine is playable.
 
 ### Near-term
-1. **Adaptive difficulty (last unfilled seam).** Nudge generator `params` within a
-   level from recent accuracy; can also read the pace profile.
-2. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
-   use-case, richer per-level stats (attempts, accuracy) once tracked.
+1. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
+   use-case, richer per-level stats (attempts, accuracy) once tracked. The
+   Chapter-progress page is the natural home for the export button.
 
 ### Later (seams noted, not built)
 3. **Spaced review** — a scheduler that re-surfaces older cleared skills.
@@ -466,7 +474,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **189 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **195 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -732,5 +740,16 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   on the Play and Sprint top bars — stars tick up as answers land, so the chip
   is the in-play status. **189 tests passing** (store semantics, the full
   age→name→meadow flow, skip path, live star tick, settings save/clear),
-  build & lint clean. Committed & pushed as **`9e7857b`** (+ this docs
-  true-up).
+  build & lint clean. Committed & pushed as **`9e7857b`** (+ docs `5a72377`).
+- **2026-07-05 — Adaptive difficulty: the LAST seam fills.** New
+  [`engine/adaptive.ts`](src/engine/adaptive.ts) (pure): a question that took
+  2 tries makes the next gentler (×0.8), 3+ gentler still (×0.6) — recovery is
+  instant; replaying a mastered level ramps UP by pace (eager ×1.5, steady
+  ×1.25, gentle never). Invisible to the child. Scope: **mastery play only**
+  (sprints stay fair, placement stays canonical, the goal never changes);
+  only `max` scales (floored at 3; `column-op` excluded — its max is a digit
+  mode); `replay` is the at-mount cleared state so mastering mid-attempt
+  can't ramp its own attempt. **195 tests passing** across 9 files (rule
+  table + a sweep proving every emitted scale still generates sound questions
+  for every scalable level), build & lint clean. Committed & pushed as
+  **`9219091`** (+ this docs true-up).
