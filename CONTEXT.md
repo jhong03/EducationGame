@@ -43,7 +43,8 @@ The last "still growing" fallback is gone.
   formula, four-quadrant + translated coordinates, number riddles): age 10 sees 30
   levels, 11 sees 41, 12 sees all 52.
 - **Systems all live:** category navigation (derived unlock, never re-locks), age gate
-  + band filtering, placement check (ages 5–6), pace profiler, per-continent currency,
+  + band filtering, placement check (ages 5–6 early, 11–12 upper), pace profiler,
+  per-continent + SEA currency,
   **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
   countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
   (reset re-asks age → new-sibling handoff).
@@ -55,7 +56,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **180 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **183 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -221,8 +222,12 @@ brief's §8 exactly.
   [`content/stories.ts`](src/content/stories.ts) gained `TWO_STEP_TEMPLATES`.
 - [`content/stories.ts`](src/content/stories.ts) — word-problem templates
   (+/−/× with `{a}` `{b}` `{things}` placeholders).
-- [`content/placement.ts`](src/content/placement.ts) — placement plans (ages 5–6
-  only; 7+ start fresh in their own band), gap-free by test.
+- [`content/placement.ts`](src/content/placement.ts) — placement plans: early
+  **5–6** (skip the counting grind) and upper **11–12** (prove the tiers below
+  your own — age 11 probes the base tier's number-work in 5 checkpoints, age 12
+  extends two probes into the 11+ rungs; each probe is the TOP rung of what it
+  places, novel forms left as quick wins). Age 10 IS the base tier — no plan;
+  mid starts fresh. Gap-free + minAge-visible by test.
 
 ### Audio
 - [`audio/AudioManager.ts`](src/audio/AudioManager.ts) — the **only** place the game
@@ -307,8 +312,11 @@ brief's §8 exactly.
   (`home | placement | category | play | sprint | cleared | parent`, keyed by **ids**
   not order), audio unlock + mute mirroring, and the **age gate**: `age === null`
   renders [`AgeScreen`](src/screens/AgeScreen.tsx) before any child-facing route
-  (parent route sits above the gate); ages 5–6 with no progress route through
-  [`PlacementScreen`](src/screens/PlacementScreen.tsx) after the pick. `PlayScreen`
+  (parent route sits above the gate); fresh profiles whose age has a plan
+  (5–6 early, 11–12 upper) route through
+  [`PlacementScreen`](src/screens/PlacementScreen.tsx) after the pick — probes
+  render through the shared `ActivityStage`, so ANY activity can be a
+  checkpoint and it looks exactly like real play. `PlayScreen`
   and `SprintScreen` are keyed by `level.id` for fresh mounts. Cleared→next stays
   inside the category; finishing a category's last level returns home.
 
@@ -323,7 +331,7 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (180, all passing)
+### Tests (183, all passing)
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
@@ -424,10 +432,10 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ### Later (seams noted, not built)
 3. **Spaced review** — a scheduler that re-surfaces older cleared skills.
-4. **Mid/upper placement plans** — early's placement (ages 5–6) is live; with the
-   upper band now AGE-TIERED, an 11/12-year-old probing past the age-10 rungs is
-   the natural next increment (PlacementScreen needs the generic ActivityStage
-   instead of its count/compare forms).
+4. **Mid placement plans** — early (5–6) and upper (11–12) placement are live and
+   PlacementScreen now renders any activity via ActivityStage; a mid (8–9) plan
+   is a pure content addition in [`content/placement.ts`](src/content/placement.ts)
+   whenever the mid ladder earns a fast lane.
 5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
 6. **Recorded human voice-over** — replace the TTS block at
@@ -447,7 +455,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **180 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **183 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -677,4 +685,20 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   **33 categories / 146 levels / 62 activities · 180 tests passing** (tier
   sweeps, prefix/monotonicity invariants, per-age visibility 30/41/52, App-level
   "rungs appear with age"), build & lint clean. Committed & pushed as
-  **`5c82b7c`** (+ this docs true-up).
+  **`5c82b7c`** (+ docs `befe1d8`).
+- **2026-07-05 — Upper placement: 11/12-year-olds probe past the tiers below
+  them.** [`PlacementScreen`](src/screens/PlacementScreen.tsx) swapped its
+  hand-rolled count/compare forms for the shared **`ActivityStage`** — any of
+  the 62 activities can now be a checkpoint, rendered exactly like real play
+  (early plans render identically through the same path). New plans: **age 11**
+  proves the base tier's grindy number-work in 5 checkpoints (round-to-1000,
+  thousands ladder, hundredths, easy percents, the number line — each probe the
+  TOP rung of what it places); **age 12** extends two probes into the 11+ rungs
+  (the decimal ladder through "longer isn't bigger", the calculation ladder
+  through "giant times"). Novel forms (angles, coordinates, riddles, chance)
+  stay as quick wins. Age 10 has no plan — it IS the base tier. First-miss-ends-
+  warmly, Skip, no-stars, never-downgrade all unchanged; App routing needed
+  zero changes (already generic on `placementPlanFor`). **183 tests passing**
+  (12-deeper-than-11, minAge visibility, gap-free extended to upper, full App
+  flow), build & lint clean. Committed & pushed as **`72447ec`** (+ this
+  docs true-up).
