@@ -1,19 +1,32 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from './engine/store'
 import { audio } from './audio/AudioManager'
-import { MAX_ORDER, levelByOrder } from './content/math'
-import HomeMap from './screens/HomeMap'
+import { categoryById, levelById, nextLevelAfter } from './content/math'
+import { bandForAge } from './engine/band'
+import { placementPlanFor } from './content/placement'
+import AgeScreen from './screens/AgeScreen'
+import PlacementScreen from './screens/PlacementScreen'
+import Home from './screens/Home'
+import CategoryScreen from './screens/CategoryScreen'
 import PlayScreen from './screens/PlayScreen'
+import SprintScreen from './screens/SprintScreen'
 import ClearedScreen from './screens/ClearedScreen'
+import ParentView from './screens/ParentView'
 
 type Route =
-  | { screen: 'map' }
-  | { screen: 'play'; order: number }
-  | { screen: 'cleared'; order: number }
+  | { screen: 'home' }
+  | { screen: 'placement'; age: number }
+  | { screen: 'category'; categoryId: string }
+  | { screen: 'play'; levelId: string }
+  | { screen: 'sprint'; levelId: string }
+  | { screen: 'cleared'; levelId: string }
+  | { screen: 'parent' }
 
 export default function App() {
-  const [route, setRoute] = useState<Route>({ screen: 'map' })
+  const [route, setRoute] = useState<Route>({ screen: 'home' })
   const muted = useGameStore((s) => s.muted)
+  const age = useGameStore((s) => s.age)
+  const setAge = useGameStore((s) => s.setAge)
 
   // Mirror the persisted mute choice into the AudioManager.
   useEffect(() => {
@@ -34,40 +47,116 @@ export default function App() {
     }
   }, [])
 
+  // The grown-ups panel renders even with no age set — resetting clears the
+  // age from inside it, and yanking the adult to the age gate mid-panel would
+  // be hostile. They meet the gate on the way OUT (onClose → home → gate).
+  if (route.screen === 'parent') {
+    return <ParentView onClose={() => setRoute({ screen: 'home' })} />
+  }
+
+  // First-launch gate (also after a full reset): no age chosen → ask before
+  // any child-facing screen. A grown-up can change it later in the
+  // For-grown-ups panel. Ages with a placement plan (5+) and no progress yet
+  // go through the quick "show me what you can do" check so they start at a
+  // fitting rung.
+  if (age === null) {
+    return (
+      <AgeScreen
+        onPick={(picked) => {
+          setAge(picked)
+          const fresh = !Object.values(useGameStore.getState().progress).some(
+            (p) => p.cleared,
+          )
+          if (fresh && placementPlanFor(picked).length > 0) {
+            setRoute({ screen: 'placement', age: picked })
+          }
+        }}
+      />
+    )
+  }
+  const band = bandForAge(age)
+
+  if (route.screen === 'placement') {
+    return (
+      <PlacementScreen age={route.age} onDone={() => setRoute({ screen: 'home' })} />
+    )
+  }
+
+  const home = (
+    <Home
+      band={band}
+      onSelectCategory={(categoryId) => setRoute({ screen: 'category', categoryId })}
+      onOpenParent={() => setRoute({ screen: 'parent' })}
+    />
+  )
+
+  if (route.screen === 'category') {
+    const category = categoryById(route.categoryId)
+    if (!category) return home
+    return (
+      <CategoryScreen
+        category={category}
+        onSelectLevel={(levelId) => setRoute({ screen: 'play', levelId })}
+        onSelectSprint={(levelId) => setRoute({ screen: 'sprint', levelId })}
+        onBack={() => setRoute({ screen: 'home' })}
+      />
+    )
+  }
+
+  if (route.screen === 'sprint') {
+    const level = levelById(route.levelId)
+    if (!level) return home
+    return (
+      <SprintScreen
+        key={level.id}
+        level={level}
+        onExit={() => setRoute({ screen: 'category', categoryId: level.categoryId })}
+      />
+    )
+  }
+
   if (route.screen === 'play') {
-    const level = levelByOrder(route.order)
-    if (!level) return <HomeMap onSelectLevel={(o) => setRoute({ screen: 'play', order: o })} />
+    const level = levelById(route.levelId)
+    if (!level) return home
     return (
       <PlayScreen
         key={level.id} // fresh mount per level
         level={level}
-        onExit={() => setRoute({ screen: 'map' })}
-        onCleared={() => setRoute({ screen: 'cleared', order: level.order })}
+        onExit={() => setRoute({ screen: 'category', categoryId: level.categoryId })}
+        onCleared={() => setRoute({ screen: 'cleared', levelId: level.id })}
       />
     )
   }
 
   if (route.screen === 'cleared') {
-    const level = levelByOrder(route.order)
-    if (!level) return <HomeMap onSelectLevel={(o) => setRoute({ screen: 'play', order: o })} />
-    const isLast = level.order >= MAX_ORDER
+    const level = levelById(route.levelId)
+    if (!level) return home
+    const category = categoryById(level.categoryId)
+    const nextLevel = nextLevelAfter(level)
     return (
       <ClearedScreen
         level={level}
-        isLast={isLast}
-        onBackToMap={() => setRoute({ screen: 'map' })}
+        categoryName={category?.name ?? ''}
+        isLast={!nextLevel}
+        onSprint={() => setRoute({ screen: 'sprint', levelId: level.id })}
+        onBack={() =>
+          setRoute(
+            // Finished the whole category → celebrate back on the meadow.
+            nextLevel
+              ? { screen: 'category', categoryId: level.categoryId }
+              : { screen: 'home' },
+          )
+        }
         onNext={() =>
           setRoute(
-            isLast
-              ? { screen: 'map' }
-              : { screen: 'play', order: level.order + 1 },
+            nextLevel
+              ? { screen: 'play', levelId: nextLevel.id }
+              : { screen: 'home' },
           )
         }
       />
     )
   }
 
-  return (
-    <HomeMap onSelectLevel={(order) => setRoute({ screen: 'play', order })} />
-  )
+  return home
 }

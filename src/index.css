@@ -36,6 +36,14 @@ body {
   overscroll-behavior: none;
 }
 
+/* Decorative corner companions bow out when the viewport is too short to
+   spare the space (they must never cover a tappable control). */
+@media (max-height: 480px) {
+  .corner-buddy {
+    display: none;
+  }
+}
+
 /* Always-visible, chunky focus ring for keyboard play. */
 :focus-visible {
   outline: 4px solid var(--grape);
@@ -43,12 +51,15 @@ body {
   border-radius: 12px;
 }
 
-/* Honor reduced-motion everywhere: near-instant, no bouncing. */
+/* Honor reduced-motion everywhere: near-instant, no bouncing. The delay must
+   be zeroed too — staggered pop-ins use fill-mode:both, so a surviving delay
+   would hold objects invisible (at the 0% keyframe) after durations collapse. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;

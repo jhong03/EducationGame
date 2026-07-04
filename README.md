@@ -42,10 +42,28 @@ each with a generator that turns params into a `Question`.
 
 ```
 Subject (math)
-  └─ Trail (ordered levels for one age band)
+  └─ Category (a skill strand the child picks, e.g. "Counting")
        └─ Level (skill rung: activity + params + mastery goal)
             └─ Question (generated on the fly by the level's activity)
 ```
+
+Navigation follows the content: the home screen is one card per category (all
+always open), and levels gate sequentially *inside* each category. Which levels
+are open is **derived** from cleared progress — there is no stored unlock state
+to migrate when content is re-shaped.
+
+Content is also **age-banded** (`early` 4–6 · `mid` 7–9 · `upper` 10–12). On
+first launch the game asks the child's age (spoken, numeral buttons — no
+reading); the meadow then shows that band's categories. A grown-up can change
+the age any time in the For-grown-ups panel, and changing it never touches
+progress. Bands without content yet fall back to the early meadow with a
+gentle "still growing" note.
+
+Ages differ by **entry point**, not by hiding content: after the age gate,
+ages 5+ get a ~3-question placement check ("Show me what you can do!") that
+places them past rungs they demonstrably know — marked *placed*, not
+*mastered*, worth no stars, and always replayable. The first miss simply
+starts them there; age 4 starts at the very first rung with no check.
 
 ```
 src/
@@ -57,20 +75,22 @@ src/
     store.ts         # Zustand + persist (only earned progress survives refresh)
     *.test.ts        # generator, mastery, store-loop, and full-App tests
   content/           # ALL the math lives here
-    math.ts          # the skill spine + the five Phase 0 levels (as data)
+    math.ts          # categories + the Phase 0 levels (as data)
     themes.ts        # the countable objects (apple, duck, …)
   audio/
     AudioManager.ts  # the ONLY place the game makes sound (TTS + Web Audio)
   components/        # Twinkle, Countable, ProgressDots, Confetti, MuteButton
-  screens/           # HomeMap, PlayScreen, ClearedScreen
+  screens/           # Home, CategoryScreen, PlayScreen, ClearedScreen, ParentView
   theme/             # tokens.css (palette), animations.css (keyframes)
 ```
 
 ### Adding a level
 
-Append a `Level` to `PHASE0_LEVELS` in [`src/content/math.ts`](src/content/math.ts).
+Append a `Level` to `PHASE0_LEVELS` in [`src/content/math.ts`](src/content/math.ts)
+with the `categoryId` it belongs to (or add a new `Category` alongside it).
 If it uses an existing activity (`count`/`compare`/`add`), that's the whole
-change — no engine edits.
+change — no engine edits. Level `id`s are stable forever — persisted progress
+is keyed on them, so never renumber existing ones.
 
 ### Adding an activity
 
@@ -132,7 +152,8 @@ paint us into a corner:
   for professional VO clips.
 - **Engine seams left for later phases:** adaptive difficulty (difficulty is
   fixed per level today), spaced review (re-surfacing older cleared skills), and
-  calibration/placement (a start-of-app assessment that sets `unlockedOrder`).
+  calibration/placement (a start-of-app assessment that seeds `progress` so the
+  right levels derive as unlocked).
 - **PWA icons.** The manifest currently ships a single scalable SVG icon
   (`public/icon.svg`). Before store/marketing launch, add rasterized PNG icons
   (192/512, maskable) for the widest install-surface compatibility.

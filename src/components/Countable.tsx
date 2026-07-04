@@ -19,7 +19,14 @@ interface CountableProps {
   index: number // for the staggered pop-in
   onTap: () => void
   disabled?: boolean
+  /** 'md' = the roomy default; 'sm' = dense stages like match's group piles. */
+  size?: 'md' | 'sm'
 }
+
+const SIZES = {
+  md: { box: 'clamp(56px, 14vw, 84px)', emoji: 'clamp(38px, 10vw, 60px)' },
+  sm: { box: 'clamp(40px, 10vw, 56px)', emoji: 'clamp(26px, 7vw, 38px)' },
+} as const
 
 export default function Countable({
   emoji,
@@ -28,6 +35,7 @@ export default function Countable({
   index,
   onTap,
   disabled = false,
+  size = 'md',
 }: CountableProps) {
   // Bumped on every tap so the wiggle animation restarts each time.
   const [wiggle, setWiggle] = useState(0)
@@ -42,8 +50,8 @@ export default function Countable({
       }}
       className="anim-pop relative grid place-items-center rounded-full transition-transform"
       style={{
-        width: 'clamp(56px, 14vw, 84px)',
-        height: 'clamp(56px, 14vw, 84px)',
+        width: SIZES[size].box,
+        height: SIZES[size].box,
         animationDelay: `${index * 60}ms`,
       }}
       aria-label={counted ? `counted ${ordinal}` : 'tap to count'}
@@ -52,7 +60,7 @@ export default function Countable({
         key={wiggle}
         className={wiggle > 0 ? 'anim-wiggle' : ''}
         style={{
-          fontSize: 'clamp(38px, 10vw, 60px)',
+          fontSize: SIZES[size].emoji,
           lineHeight: 1,
           filter: counted
             ? 'drop-shadow(0 3px 2px rgba(74,58,107,0.25))'

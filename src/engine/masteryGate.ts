@@ -15,8 +15,34 @@ export function isCorrect(question: Question, answer: Answer): boolean {
   switch (question.activity) {
     case 'count':
     case 'add':
+    case 'subitize':
+    case 'sequence':
+    case 'subtract':
+    case 'match': // answer is the tapped group's index
+    case 'shape-id': // tapped card's index
+    case 'pattern': // tapped motif's index
+    case 'clock': // tapped time-choice's index
+    case 'money': // total value
+    case 'odd-one-out': // tapped item's index
+    case 'shadow-match': // tapped choice's index
+    case 'one-more': // value
+    case 'same-or-not': // 1 = same, 0 = not
+    case 'bond': // missing addend
+    case 'sides': // side count
+    case 'who-left': // vanished item's index
+    case 'belongs': // choice index
+    case 'position': // item index
+    case 'day-time': // scene index
+    case 'make-amount': // built total
+    case 'set-clock': // dialled hour
+    case 'tap-all': // found-them-all count
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
+    case 'num-compare':
+    case 'coin-compare':
+    case 'size-compare':
+    case 'height-compare':
+    case 'weight-compare':
       return answer === question.answer
   }
 }

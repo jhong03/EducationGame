@@ -3,8 +3,37 @@ import type { Rng } from './types'
 import { generateCount } from './generators/count'
 import { generateCompare } from './generators/compare'
 import { generateAdd } from './generators/add'
+import { generateSubitize } from './generators/subitize'
+import { generateMatch } from './generators/match'
+import { generateSequence } from './generators/sequence'
+import { generateSubtract } from './generators/subtract'
+import { generateShapeId } from './generators/shapeId'
+import { generatePattern } from './generators/pattern'
+import { generateClock } from './generators/clock'
+import { generateMoney } from './generators/money'
+import { generateOddOneOut } from './generators/oddOneOut'
+import { generateShadowMatch } from './generators/shadowMatch'
+import { generateOneMore } from './generators/oneMore'
+import { generateSameOrNot } from './generators/sameOrNot'
+import { generateNumCompare } from './generators/numCompare'
+import { generateBond } from './generators/bond'
+import { generateSides } from './generators/sides'
+import { generateCoinCompare } from './generators/coinCompare'
+import { generateWhoLeft } from './generators/whoLeft'
+import { generateBelongs } from './generators/belongs'
+import { generatePosition } from './generators/position'
+import { generateDayTime } from './generators/dayTime'
+import { generateSizeCompare } from './generators/sizeCompare'
+import { generateHeightCompare } from './generators/heightCompare'
+import { generateWeightCompare } from './generators/weightCompare'
+import { generateMakeAmount } from './generators/makeAmount'
+import { generateSetClock } from './generators/setClock'
+import { generateTapAll } from './generators/tapAll'
 import { generateQuestion, GENERATORS } from './generators'
-import { PHASE0_LEVELS } from '../content/math'
+import { TRAIL } from '../content/math'
+import { SHAPES, SHAPE_SIDES } from '../content/shapes'
+import { themeKind, THEMES } from '../content/themes'
+import { WEIGHT_PAIRS } from '../content/world'
 import { buildNumberOptions, randInt, randIntExcept, shuffle } from './random'
 
 /**
@@ -142,15 +171,566 @@ describe('add generator', () => {
   })
 })
 
+describe('subitize generator', () => {
+  it('max=5: behaves like count (valid quantity, single correct option) and carries flashMs', () => {
+    for (const s of seeds) {
+      const q = generateSubitize({ max: 5, flashMs: 1800 }, mulberry32(s))
+      const n = q.payload.group.count
+      expect(q.activity).toBe('subitize')
+      expect(q.payload.flashMs).toBe(1800)
+      expect(n).toBeGreaterThanOrEqual(1)
+      expect(n).toBeLessThanOrEqual(5)
+      expect(q.answer).toBe(n)
+      expect(q.options).toHaveLength(3)
+      expect(new Set(q.options).size).toBe(3)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      for (const o of q.options) {
+        expect(o).toBeGreaterThanOrEqual(0)
+        expect(o).toBeLessThanOrEqual(5)
+      }
+    }
+  })
+})
+
+describe('match generator', () => {
+  it('max=10: exactly one group holds the target; counts distinct, in [1,max]; one theme; answer is that group’s index', () => {
+    for (const s of seeds) {
+      const q = generateMatch({ max: 10 }, mulberry32(s))
+      const { target, groups } = q.payload
+      expect(q.activity).toBe('match')
+      expect(target).toBeGreaterThanOrEqual(1)
+      expect(target).toBeLessThanOrEqual(10)
+      expect(groups).toHaveLength(3)
+      // Exactly one group matches the target…
+      expect(groups.filter((g) => g.count === target)).toHaveLength(1)
+      // …all counts distinct, positive, in range, one shared theme.
+      expect(new Set(groups.map((g) => g.count)).size).toBe(3)
+      for (const g of groups) {
+        expect(g.count).toBeGreaterThanOrEqual(1)
+        expect(g.count).toBeLessThanOrEqual(10)
+        expect(g.theme.id).toBe(groups[0].theme.id)
+      }
+      // The answer index really points at the matching group.
+      expect(groups[q.answer].count).toBe(target)
+      // Options are the group indices, exactly one correct.
+      expect(q.options).toEqual([0, 1, 2])
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      // The prompt speaks the number word, not the numeral.
+      expect(q.prompt).toMatch(/Find [a-z]+!/)
+    }
+  })
+
+  it('clamps degenerate max<3 up to 3 — never fewer than three groups', () => {
+    for (const max of [1, 2]) {
+      for (const s of seeds.slice(0, 500)) {
+        const q = generateMatch({ max }, mulberry32(s))
+        expect(q.payload.groups).toHaveLength(3)
+        expect(q.payload.groups.filter((g) => g.count === q.payload.target)).toHaveLength(1)
+        for (const g of q.payload.groups) {
+          expect(g.count).toBeGreaterThanOrEqual(1)
+          expect(g.count).toBeLessThanOrEqual(3) // the clamped range
+        }
+      }
+    }
+  })
+})
+
+describe('sequence generator', () => {
+  for (const [max, step] of [
+    [20, 1],
+    [30, 2],
+    [50, 5],
+  ] as const) {
+    it(`max=${max}, step=${step}: run is arithmetic, answer = last + step, everything within [1, max]`, () => {
+      for (const s of seeds) {
+        const q = generateSequence({ max, step }, mulberry32(s))
+        const { shown } = q.payload
+        expect(q.activity).toBe('sequence')
+        expect(shown).toHaveLength(3)
+        expect(shown[1] - shown[0]).toBe(step)
+        expect(shown[2] - shown[1]).toBe(step)
+        expect(q.answer).toBe(shown[2] + step)
+        expect(shown[0]).toBeGreaterThanOrEqual(1)
+        expect(q.answer).toBeLessThanOrEqual(max)
+        expect(q.options).toHaveLength(3)
+        expect(new Set(q.options).size).toBe(3)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        for (const o of q.options) {
+          expect(o).toBeGreaterThanOrEqual(1)
+          expect(o).toBeLessThanOrEqual(max)
+        }
+      }
+    })
+  }
+
+  it('degenerate params (max too small for the step) stay within max(max, 1+3·step)', () => {
+    for (const [max, step] of [
+      [3, 1], // 1+3·1 = 4 > 3
+      [20, 10], // skip-count config the docstring invites; 1+3·10 = 31 > 20
+      [1, 1],
+    ] as const) {
+      const bound = Math.max(max, 1 + 3 * step)
+      for (const s of seeds.slice(0, 500)) {
+        const q = generateSequence({ max, step }, mulberry32(s))
+        expect(q.payload.shown[0]).toBeGreaterThanOrEqual(1)
+        expect(q.answer).toBe(q.payload.shown[2] + step)
+        expect(q.answer).toBeLessThanOrEqual(bound)
+        for (const o of q.options) {
+          expect(o).toBeGreaterThanOrEqual(1)
+          expect(o).toBeLessThanOrEqual(bound)
+        }
+      }
+    }
+  })
+})
+
+describe('subtract generator', () => {
+  for (const max of [5, 10]) {
+    it(`max=${max}: answer = start − taken, always ≥ 1, options never negative`, () => {
+      for (const s of seeds) {
+        const q = generateSubtract({ max }, mulberry32(s))
+        const { group, taken } = q.payload
+        expect(q.activity).toBe('subtract')
+        expect(group.count).toBeGreaterThanOrEqual(2)
+        expect(group.count).toBeLessThanOrEqual(max)
+        expect(taken).toBeGreaterThanOrEqual(1)
+        expect(taken).toBeLessThan(group.count) // something always remains
+        expect(q.answer).toBe(group.count - taken)
+        expect(q.answer).toBeGreaterThanOrEqual(1)
+        expect(q.options).toHaveLength(3)
+        expect(new Set(q.options).size).toBe(3)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        for (const o of q.options) {
+          expect(o).toBeGreaterThanOrEqual(0) // never below zero
+          expect(o).toBeLessThanOrEqual(max)
+        }
+        // Spoken grammar: "One GOES away", "Two GO away" — this string is read
+        // aloud to a pre-reader, so verb agreement is a correctness matter.
+        expect(q.prompt).toMatch(taken === 1 ? / One goes away\. / : / go away\. /)
+        expect(q.prompt[0]).toBe(q.prompt[0].toUpperCase())
+      }
+    })
+  }
+})
+
+describe('shape-id generator', () => {
+  for (const pool of [4, 6]) {
+    it(`pool=${pool}: three distinct shapes from the pool, answer points at the spoken target`, () => {
+      for (const s of seeds) {
+        const q = generateShapeId({ pool }, mulberry32(s))
+        const { shapeIds, targetId } = q.payload
+        expect(q.activity).toBe('shape-id')
+        expect(shapeIds).toHaveLength(3)
+        expect(new Set(shapeIds).size).toBe(3) // distinct
+        const poolIds = SHAPES.slice(0, pool).map((sh) => sh.id)
+        for (const id of shapeIds) expect(poolIds).toContain(id)
+        // Exactly one card is the target, the answer indexes it, the prompt speaks it.
+        expect(shapeIds.filter((id) => id === targetId)).toHaveLength(1)
+        expect(shapeIds[q.answer]).toBe(targetId)
+        expect(q.options).toEqual([0, 1, 2])
+        expect(q.prompt).toContain(targetId)
+      }
+    })
+  }
+})
+
+describe('pattern generator', () => {
+  for (const kinds of [1, 3]) {
+    it(`kinds=${kinds}: sequence really repeats a unit and the answer continues it`, () => {
+      for (const s of seeds) {
+        const q = generatePattern({ kinds }, mulberry32(s))
+        const { sequence, optionMotifs } = q.payload
+        expect(q.activity).toBe('pattern')
+        expect(sequence.length).toBeGreaterThanOrEqual(5)
+        expect(optionMotifs).toHaveLength(3)
+        expect(new Set(optionMotifs).size).toBe(3)
+        // Reverse-engineer the unit: it must be one of AB / AAB / ABB and the
+        // answer must be the sequence's next element under that unit.
+        const unitLengths = [2, 3]
+        const fits = unitLengths.some((len) => {
+          const unit = sequence.slice(0, len)
+          const repeats = sequence.every((m, i) => m === unit[i % len])
+          const next = unit[sequence.length % len]
+          return repeats && optionMotifs[q.answer] === next
+        })
+        expect(fits).toBe(true)
+        // The two pattern motifs are among the options exactly once each.
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    })
+  }
+})
+
+describe('clock generator', () => {
+  for (const step of [60, 30]) {
+    it(`step=${step}: valid time, three distinct hour choices sharing the minute`, () => {
+      let sawHalfPast = false
+      for (const s of seeds) {
+        const q = generateClock({ step }, mulberry32(s))
+        const { hour, minute, choices } = q.payload
+        expect(q.activity).toBe('clock')
+        expect(hour).toBeGreaterThanOrEqual(1)
+        expect(hour).toBeLessThanOrEqual(12)
+        expect([0, 30]).toContain(minute)
+        if (step === 60) expect(minute).toBe(0)
+        if (minute === 30) sawHalfPast = true
+        expect(choices).toHaveLength(3)
+        expect(new Set(choices.map((c) => c.hour)).size).toBe(3) // distinct hours
+        for (const c of choices) expect(c.minute).toBe(minute) // hour is the skill
+        // Exactly one choice is the shown time, and the answer indexes it.
+        expect(choices.filter((c) => c.hour === hour)).toHaveLength(1)
+        expect(choices[q.answer].hour).toBe(hour)
+      }
+      if (step === 30) expect(sawHalfPast).toBe(true)
+    })
+  }
+})
+
+describe('money generator', () => {
+  it('mixed=0, max=5: 1..max unit coins, answer = coin count, options valid', () => {
+    for (const s of seeds) {
+      const q = generateMoney({ mixed: 0, max: 5 }, mulberry32(s))
+      const { coins } = q.payload
+      expect(q.activity).toBe('money')
+      expect(coins.length).toBeGreaterThanOrEqual(1)
+      expect(coins.length).toBeLessThanOrEqual(5)
+      expect(coins.every((v) => v === 1)).toBe(true)
+      expect(q.answer).toBe(coins.length)
+      expect(q.options).toHaveLength(3)
+      expect(new Set(q.options).size).toBe(3)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      for (const o of q.options) expect(o).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('mixed=1, max=10: two small coins, total ≤ max, answer = sum', () => {
+    for (const s of seeds) {
+      const q = generateMoney({ mixed: 1, max: 10 }, mulberry32(s))
+      const { coins } = q.payload
+      expect(coins).toHaveLength(2)
+      for (const v of coins) expect([1, 2, 5]).toContain(v)
+      const total = coins[0] + coins[1]
+      expect(total).toBeLessThanOrEqual(10)
+      expect(q.answer).toBe(total)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      for (const o of q.options) expect(o).toBeGreaterThanOrEqual(0)
+    }
+  })
+})
+
+describe('odd-one-out generator', () => {
+  it('choices=4: exactly one odd item, answer indexes it, odd position varies', () => {
+    const answerPositions = new Set<number>()
+    for (const s of seeds) {
+      const q = generateOddOneOut({ choices: 4 }, mulberry32(s))
+      const { items } = q.payload
+      expect(q.activity).toBe('odd-one-out')
+      expect(items).toHaveLength(4)
+      // Exactly two distinct emojis: the main one (×3) and the odd one (×1).
+      const byEmoji = new Map<string, number>()
+      for (const it of items) byEmoji.set(it.emoji, (byEmoji.get(it.emoji) ?? 0) + 1)
+      expect(byEmoji.size).toBe(2)
+      expect([...byEmoji.values()].sort((a, b) => a - b)).toEqual([1, 3])
+      // The answer points at the singleton.
+      expect(byEmoji.get(items[q.answer].emoji)).toBe(1)
+      expect(q.options).toEqual([0, 1, 2, 3])
+      answerPositions.add(q.answer)
+    }
+    // The odd one is not stuck in one slot.
+    expect(answerPositions.size).toBe(4)
+  })
+})
+
+describe('shadow-match generator', () => {
+  it('choices=3: distinct choices, answer owns the shadow, silhouette twins never co-occur', () => {
+    for (const s of seeds) {
+      const q = generateShadowMatch({ choices: 3 }, mulberry32(s))
+      const { targetEmoji, choices } = q.payload
+      expect(q.activity).toBe('shadow-match')
+      expect(choices).toHaveLength(3)
+      expect(new Set(choices.map((c) => c.emoji)).size).toBe(3)
+      // The answer's choice really is the shadow's owner, exactly once.
+      expect(choices[q.answer].emoji).toBe(targetEmoji)
+      expect(choices.filter((c) => c.emoji === targetEmoji)).toHaveLength(1)
+      // Apple (🍎) and cookie (🍪) are identical as silhouettes — never both.
+      const names = choices.map((c) => c.name)
+      expect(names.includes('apple') && names.includes('cookie')).toBe(false)
+    }
+  })
+})
+
+describe('expansion: param variants of existing generators', () => {
+  const some = seeds.slice(0, 700)
+
+  it('sequence step:-1 walks down and never leaves [1, max]', () => {
+    for (const s of some) {
+      const q = generateSequence({ step: -1, max: 10 }, mulberry32(s))
+      const [a, b, c] = q.payload.shown
+      expect(a - b).toBe(1)
+      expect(b - c).toBe(1)
+      expect(q.answer).toBe(c - 1)
+      expect(q.answer).toBeGreaterThanOrEqual(1)
+      expect(a).toBeLessThanOrEqual(10)
+    }
+  })
+
+  it('sequence step:10 align:1 runs on decade multiples within 100', () => {
+    let sawHigh = false
+    for (const s of some) {
+      const q = generateSequence({ step: 10, max: 100, align: 1 }, mulberry32(s))
+      for (const n of [...q.payload.shown, q.answer]) {
+        expect(n % 10).toBe(0)
+        expect(n).toBeGreaterThanOrEqual(10)
+        expect(n).toBeLessThanOrEqual(100)
+      }
+      if (q.answer >= 80) sawHigh = true
+    }
+    expect(sawHigh).toBe(true)
+  })
+
+  it('count allowZero:1 really produces zero (and stays correct)', () => {
+    let sawZero = false
+    for (const s of some) {
+      const q = generateCount({ max: 3, allowZero: 1 }, mulberry32(s))
+      expect(q.answer).toBe(q.payload.group.count)
+      expect(q.answer).toBeGreaterThanOrEqual(0)
+      if (q.answer === 0) sawZero = true
+    }
+    expect(sawZero).toBe(true)
+  })
+
+  it('compare fewer:1 points at the smaller side', () => {
+    for (const s of some) {
+      const q = generateCompare({ max: 6, fewer: 1 }, mulberry32(s))
+      const { left, right } = q.payload
+      expect(q.answer).toBe(left.count < right.count ? 'left' : 'right')
+      expect(q.prompt).toContain('fewer')
+    }
+  })
+
+  it('add doubles:1 keeps both sides equal with total ≤ max', () => {
+    for (const s of some) {
+      const q = generateAdd({ max: 10, doubles: 1 }, mulberry32(s))
+      expect(q.payload.left.count).toBe(q.payload.right.count)
+      expect(q.answer).toBe(q.payload.left.count * 2)
+      expect(q.answer).toBeLessThanOrEqual(10)
+    }
+  })
+
+  it('subtract allowZero:1 reaches zero sometimes and never goes negative', () => {
+    let sawZero = false
+    for (const s of some) {
+      const q = generateSubtract({ max: 5, allowZero: 1 }, mulberry32(s))
+      expect(q.answer).toBe(q.payload.group.count - q.payload.taken)
+      expect(q.answer).toBeGreaterThanOrEqual(0)
+      if (q.answer === 0) sawZero = true
+    }
+    expect(sawZero).toBe(true)
+  })
+
+  it('pattern kinds:4 includes three-motif units and always continues correctly', () => {
+    let sawThreeMotifs = false
+    for (const s of some) {
+      const q = generatePattern({ kinds: 4 }, mulberry32(s))
+      const { sequence, optionMotifs } = q.payload
+      const fits = [2, 3].some((len) => {
+        const unit = sequence.slice(0, len)
+        const repeats = sequence.every((m, i) => m === unit[i % len])
+        return repeats && optionMotifs[q.answer] === unit[sequence.length % len]
+      })
+      expect(fits).toBe(true)
+      if (new Set(sequence).size === 3) sawThreeMotifs = true
+    }
+    expect(sawThreeMotifs).toBe(true)
+  })
+
+  it('odd-one-out size:1 keeps one theme and marks exactly one item big', () => {
+    for (const s of some) {
+      const q = generateOddOneOut({ choices: 4, size: 1 }, mulberry32(s))
+      const { items } = q.payload
+      expect(new Set(items.map((i) => i.emoji)).size).toBe(1) // same thing
+      const big = items.filter((i) => (i.scale ?? 1) > 1)
+      expect(big).toHaveLength(1)
+      expect((items[q.answer].scale ?? 1) > 1).toBe(true)
+    }
+  })
+})
+
+describe('expansion: new activity generators', () => {
+  const some = seeds.slice(0, 700)
+
+  it('one-more: answer is exactly n ± 1, options never negative', () => {
+    let sawUp = false
+    let sawDown = false
+    for (const s of some) {
+      const q = generateOneMore({ max: 5 }, mulberry32(s))
+      expect(q.answer).toBe(q.payload.group.count + q.payload.delta)
+      expect(Math.abs(q.payload.delta)).toBe(1)
+      if (q.payload.delta === 1) sawUp = true
+      else sawDown = true
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      for (const o of q.options) expect(o).toBeGreaterThanOrEqual(0)
+    }
+    expect(sawUp && sawDown).toBe(true)
+  })
+
+  it('same-or-not: answer matches equality; both outcomes occur; themes differ', () => {
+    let sawSame = false
+    let sawDiff = false
+    for (const s of some) {
+      const q = generateSameOrNot({ max: 5 }, mulberry32(s))
+      const same = q.payload.left.count === q.payload.right.count
+      expect(q.answer).toBe(same ? 1 : 0)
+      expect(q.payload.left.theme.id).not.toBe(q.payload.right.theme.id)
+      if (same) sawSame = true
+      else sawDiff = true
+    }
+    expect(sawSame && sawDiff).toBe(true)
+  })
+
+  it('num-compare / coin-compare: the answer side holds the bigger value', () => {
+    for (const s of some) {
+      const n = generateNumCompare({ max: 10 }, mulberry32(s))
+      expect(n.payload.left).not.toBe(n.payload.right)
+      expect(n.answer).toBe(n.payload.left > n.payload.right ? 'left' : 'right')
+      const c = generateCoinCompare({}, mulberry32(s + 99991))
+      expect(c.payload.left).not.toBe(c.payload.right)
+      expect(c.answer).toBe(c.payload.left > c.payload.right ? 'left' : 'right')
+    }
+  })
+
+  it('bond: shown + answer === target, answer ≥ 1', () => {
+    for (const target of [5, 10]) {
+      for (const s of some) {
+        const q = generateBond({ target }, mulberry32(s))
+        expect(q.payload.group.count + q.answer).toBe(target)
+        expect(q.answer).toBeGreaterThanOrEqual(1)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('sides: answer always matches the shape-side table', () => {
+    for (const s of some) {
+      const q = generateSides({}, mulberry32(s))
+      expect(q.answer).toBe(SHAPE_SIDES[q.payload.shapeId])
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('who-left: distinct friends, answer is the one who left, position varies', () => {
+    const positions = new Set<number>()
+    for (const s of some) {
+      const q = generateWhoLeft({ count: 3 }, mulberry32(s))
+      expect(new Set(q.payload.items.map((i) => i.emoji)).size).toBe(3)
+      expect(q.answer).toBe(q.payload.missing)
+      positions.add(q.answer)
+    }
+    expect(positions.size).toBe(3)
+  })
+
+  it('belongs: exactly one choice shares the shown pair’s kind', () => {
+    const kindOf = (name: string) => {
+      const theme = THEMES.find((t) => t.singular === name)
+      return theme ? themeKind(theme) : 'unknown'
+    }
+    for (const s of some) {
+      const q = generateBelongs({}, mulberry32(s))
+      const shownKinds = q.payload.shown.map((i) => kindOf(i.name))
+      expect(shownKinds[0]).toBe(shownKinds[1]) // the pair really goes together
+      const matches = q.payload.choices.filter((c) => kindOf(c.name) === shownKinds[0])
+      expect(matches).toHaveLength(1)
+      expect(kindOf(q.payload.choices[q.answer].name)).toBe(shownKinds[0])
+    }
+  })
+
+  it('position: the answer index matches the spoken target', () => {
+    for (const s of some) {
+      const q = generatePosition({}, mulberry32(s))
+      const expected = { first: 0, middle: 1, last: 2 }[q.payload.target]
+      expect(q.answer).toBe(expected)
+      expect(q.prompt).toContain(q.payload.target)
+    }
+  })
+
+  it('day-time: the answer scene carries the spoken name', () => {
+    for (const s of some) {
+      const q = generateDayTime({}, mulberry32(s))
+      expect(q.payload.scenes[q.answer].name).toBe(q.payload.targetName)
+      expect(q.payload.scenes.filter((sc) => sc.name === q.payload.targetName)).toHaveLength(1)
+    }
+  })
+
+  it('size-compare: the answer side matches big/small semantics', () => {
+    for (const s of some) {
+      const q = generateSizeCompare({}, mulberry32(s))
+      const smallSide = q.payload.bigSide === 'left' ? 'right' : 'left'
+      expect(q.answer).toBe(q.payload.target === 'big' ? q.payload.bigSide : smallSide)
+    }
+  })
+
+  it('height-compare: towers differ and the answer side matches tall/short', () => {
+    for (const s of some) {
+      const q = generateHeightCompare({ max: 6 }, mulberry32(s))
+      expect(q.payload.left).not.toBe(q.payload.right)
+      const tallSide = q.payload.left > q.payload.right ? 'left' : 'right'
+      const shortSide = tallSide === 'left' ? 'right' : 'left'
+      expect(q.answer).toBe(q.payload.target === 'tall' ? tallSide : shortSide)
+    }
+  })
+
+  it('weight-compare: the answer really is the heavier (or lighter) of the pair', () => {
+    const heavyNames = new Set(WEIGHT_PAIRS.map(([heavy]) => heavy.name))
+    for (const s of some) {
+      const q = generateWeightCompare({}, mulberry32(s))
+      expect(q.payload.left.name).not.toBe(q.payload.right.name)
+      const answerIsHeavy = heavyNames.has(q.payload[q.answer].name)
+      expect(answerIsHeavy).toBe(q.payload.target === 'heavy')
+    }
+  })
+
+  it('make-amount: 2 ≤ target < coins on the table', () => {
+    for (const s of some) {
+      const q = generateMakeAmount({ max: 8 }, mulberry32(s))
+      expect(q.answer).toBe(q.payload.target)
+      expect(q.payload.target).toBeGreaterThanOrEqual(2)
+      expect(q.payload.target).toBeLessThan(q.payload.coinCount)
+    }
+  })
+
+  it('set-clock: start and target are distinct hours on the dial', () => {
+    for (const s of some) {
+      const q = generateSetClock({}, mulberry32(s))
+      expect(q.payload.startHour).not.toBe(q.payload.targetHour)
+      for (const h of [q.payload.startHour, q.payload.targetHour]) {
+        expect(h).toBeGreaterThanOrEqual(1)
+        expect(h).toBeLessThanOrEqual(12)
+      }
+      expect(q.answer).toBe(q.payload.targetHour)
+    }
+  })
+
+  it('tap-all: the board holds exactly `count` targets and options obey the contract', () => {
+    for (const s of some) {
+      const q = generateTapAll({ board: 6 }, mulberry32(s))
+      const targets = q.payload.shapeIds.filter((id) => id === q.payload.targetId)
+      expect(targets).toHaveLength(q.payload.count)
+      expect(q.payload.count).toBeGreaterThanOrEqual(2)
+      expect(q.payload.shapeIds).toHaveLength(6)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+})
+
 describe('registry / generateQuestion', () => {
-  it('has a generator for every activity used by the Phase 0 trail', () => {
-    for (const level of PHASE0_LEVELS) {
+  it('has a generator for every activity used by any level on the trail', () => {
+    for (const level of TRAIL) {
       expect(GENERATORS[level.activity]).toBeTypeOf('function')
     }
   })
 
   it('dispatches to the matching activity for every level', () => {
-    for (const level of PHASE0_LEVELS) {
+    for (const level of TRAIL) {
       for (const s of seeds.slice(0, 200)) {
         const q = generateQuestion(level, mulberry32(s))
         expect(q.activity).toBe(level.activity)

@@ -13,14 +13,24 @@ export function generateAdd(
   rng: Rng = Math.random,
 ): AddQuestion {
   const max = params.max ?? 5
-  const total = randInt(2, max, rng) // at least 1 + 1
-  const left = randInt(1, total - 1, rng) // 1..total-1  → both sides ≥ 1
-  const right = total - left
+  // doubles: 1 → both sides equal (the EYFS "double facts" goal).
+  const doubles = (params.doubles ?? 0) === 1
+  let left: number
+  let right: number
+  if (doubles) {
+    left = randInt(1, Math.max(1, Math.floor(max / 2)), rng)
+    right = left
+  } else {
+    const total = randInt(2, max, rng) // at least 1 + 1
+    left = randInt(1, total - 1, rng) // 1..total-1  → both sides ≥ 1
+    right = total - left
+  }
+  const total = left + right
   const theme = pickTheme(rng) // like objects combine more naturally
   return {
     id: makeId('add', rng),
     activity: 'add',
-    prompt: 'How many altogether?',
+    prompt: doubles ? 'Double it! How many altogether?' : 'How many altogether?',
     payload: {
       left: { theme, count: left },
       right: { theme, count: right },

@@ -1,0 +1,200 @@
+import { useEffect, useRef, useState } from 'react'
+import type { Answer, Question } from '../engine/types'
+import { generateQuestion } from '../engine/generators'
+import { isCorrect } from '../engine/masteryGate'
+import { useGameStore } from '../engine/store'
+import { placementPlanFor, probeLevel } from '../content/placement'
+import { audio } from '../audio/AudioManager'
+import Twinkle, { type TwinkleMood } from '../components/Twinkle'
+import ProgressDots from '../components/ProgressDots'
+import MuteButton from '../components/MuteButton'
+import { CountStage, CompareStage } from './PlayScreen'
+
+/**
+ * PlacementScreen — "Show me what you can do!" (the calibration seam, v1).
+ * Runs once, straight after the age gate, for ages 5+. One question per
+ * checkpoint: a correct answer places the child past rungs they clearly know
+ * (cleared+placed, no stars); the FIRST miss ends the check warmly and they
+ * simply start there. Nothing here can be lost — it only ever moves the start
+ * forward, and skipping is always fine.
+ *
+ * Speech works here without caveats: this screen always mounts from the age
+ * tap, so user activation is already granted.
+ */
+
+interface PlacementScreenProps {
+  age: number
+  onDone: () => void
+}
+
+const INTRO = 'Show me what you can do!'
+
+export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
+  const placeLevels = useGameStore((s) => s.placeLevels)
+  const plan = placementPlanFor(age)
+
+  const [step, setStep] = useState(0)
+  const [passed, setPassed] = useState(0)
+  const [phase, setPhase] = useState<'answering' | 'transition'>('answering')
+  const [mood, setMood] = useState<TwinkleMood>('happy')
+  const [beat, setBeat] = useState(0)
+  const [question, setQuestion] = useState<Question | null>(() => {
+    const level = plan.length ? probeLevel(plan[0]) : undefined
+    return level ? generateQuestion(level) : null
+  })
+
+  // Tap-to-count bookkeeping, same shape as PlayScreen.
+  const countedRef = useRef<Record<string, number>>({})
+  const [counted, setCounted] = useState<Record<string, number>>({})
+
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const later = (fn: () => void, ms: number) => {
+    timers.current.push(setTimeout(fn, ms))
+  }
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+
+  // Defensive: no plan (or a probe id that no longer resolves) → straight in.
+  useEffect(() => {
+    if (!question) onDone()
+  }, [question, onDone])
+
+  // Speak the intro with the first prompt; later steps speak their prompt.
+  useEffect(() => {
+    if (!question) return
+    const text = step === 0 ? `${INTRO} ${question.prompt}` : question.prompt
+    const id = setTimeout(() => audio.speak(text), 300)
+    return () => clearTimeout(id)
+  }, [question, step])
+
+  if (!question) return null
+
+  function tapObject(key: string) {
+    const existing = countedRef.current[key]
+    if (existing !== undefined) {
+      audio.sayNumber(existing)
+      return
+    }
+    const n = Object.keys(countedRef.current).length + 1
+    countedRef.current = { ...countedRef.current, [key]: n }
+    setCounted(countedRef.current)
+    audio.sfx('pop')
+    audio.sayNumber(n)
+  }
+
+  function finish(spoken: string) {
+    audio.speak(spoken)
+    later(onDone, 1100)
+  }
+
+  function answer(given: Answer) {
+    if (phase !== 'answering' || !question) return
+    setPhase('transition')
+
+    if (isCorrect(question, given)) {
+      audio.sfx('good')
+      setMood('cheer')
+      setBeat((b) => b + 1)
+      placeLevels(plan[step].places)
+      setPassed((p) => p + 1)
+
+      const nextStep = step + 1
+      if (nextStep < plan.length) {
+        audio.speak('Yes!')
+        later(() => {
+          const level = probeLevel(plan[nextStep])
+          if (!level) {
+            onDone()
+            return
+          }
+          countedRef.current = {}
+          setCounted({})
+          setStep(nextStep)
+          setMood('happy')
+          setQuestion(generateQuestion(level))
+          setPhase('answering')
+        }, 900)
+      } else {
+        finish('Wow! Off you go!')
+      }
+    } else {
+      // A miss is only information — start here, cheerfully.
+      audio.sfx('soft')
+      setMood('happy')
+      setBeat((b) => b + 1)
+      finish("That's okay! We'll start here.")
+    }
+  }
+
+  return (
+    <div className="relative flex h-full w-full flex-col bg-gradient-to-b from-sky-1 to-sky-2">
+      {/* Top bar: progress through the checkpoints + mute. */}
+      <header className="safe-pt z-20 flex items-center justify-between gap-2 p-3 sm:p-4">
+        <ProgressDots total={plan.length} filled={passed} />
+        <MuteButton />
+      </header>
+
+      <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-between gap-2 overflow-y-auto px-4">
+        <div className="flex flex-col items-center">
+          <Twinkle mood={mood} beat={beat} size={104} />
+          <p
+            className="mt-1 text-center font-semibold text-ink/80"
+            style={{ fontSize: 'clamp(17px, 4.5vw, 24px)' }}
+          >
+            {step === 0 ? `${INTRO} ` : ''}
+            {question.prompt}
+          </p>
+        </div>
+
+        {/* The probe question, in the game's own visual language. */}
+        <div className="flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4">
+          {question.activity === 'compare' ? (
+            <CompareStage
+              question={question}
+              disabled={phase !== 'answering'}
+              wrong={null}
+              shakeToken={0}
+              highlightCorrect={false}
+              onPick={answer}
+            />
+          ) : (
+            <CountStage question={question} counted={counted} onTapObject={tapObject} />
+          )}
+        </div>
+
+        {question.activity !== 'compare' && 'options' in question && (
+          <div className="flex w-full max-w-xl flex-wrap items-center justify-center gap-3">
+            {question.options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                disabled={phase !== 'answering'}
+                onClick={() => answer(opt)}
+                aria-label={`${opt}`}
+                className="grid place-items-center rounded-3xl font-bold text-cream transition-transform active:translate-y-1"
+                style={{
+                  minWidth: 'clamp(78px, 24vw, 110px)',
+                  height: 'clamp(78px, 20vw, 104px)',
+                  fontSize: 'clamp(34px, 9vw, 46px)',
+                  background: 'var(--grape)',
+                  boxShadow: '0 6px 0 var(--grape-dp)',
+                }}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Adults' escape hatch — starting at the very beginning is always fine. */}
+        <button
+          type="button"
+          onClick={onDone}
+          aria-label="Skip, start from the beginning"
+          className="mb-1 rounded-full bg-cream/60 px-4 py-2 text-sm font-bold text-ink/60 shadow-sm backdrop-blur transition-transform active:scale-95"
+        >
+          Skip
+        </button>
+      </main>
+    </div>
+  )
+}

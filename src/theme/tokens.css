@@ -11,6 +11,7 @@
   --grape-dp: #4b2fb0; /* button drop-shadow   */
   --sun: #ffc24b; /* stars, accents           */
   --coral: #ff7a9a; /* pops, plus sign        */
+  --coral-dp: #d14e71; /* coral button drop-shadow */
   --leaf: #56c36a; /* the hill                 */
   --leaf-dp: #3ea655;
   --ink: #4a3a6b; /* soft aubergine text, never pure black */
@@ -32,6 +33,7 @@
   --color-grape-dp: var(--grape-dp);
   --color-sun: var(--sun);
   --color-coral: var(--coral);
+  --color-coral-dp: var(--coral-dp);
   --color-leaf: var(--leaf);
   --color-leaf-dp: var(--leaf-dp);
   --color-ink: var(--ink);

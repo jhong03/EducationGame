@@ -9,6 +9,8 @@
  * speech or no Web Audio, the game stays silent but never crashes.
  */
 
+import { numberWord } from '../content/words'
+
 export type SfxKind = 'good' | 'soft' | 'pop' | 'win'
 
 export interface AudioManager {
@@ -19,12 +21,6 @@ export interface AudioManager {
   /** Resume the AudioContext / prime TTS on the first user gesture. */
   unlock(): void
 }
-
-const NUMBER_WORDS = [
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
-  'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-  'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
-]
 
 /** Simple gain-enveloped note recipes for each cue (frequencies in Hz). */
 const SFX_NOTES: Record<SfxKind, Array<{ f: number; t: number; d: number }>> = {
@@ -157,8 +153,7 @@ class WebAudioManager implements AudioManager {
   }
 
   sayNumber(n: number): void {
-    const word = NUMBER_WORDS[n] ?? String(n)
-    this.speak(word)
+    this.speak(numberWord(n))
   }
 
   sfx(kind: SfxKind): void {

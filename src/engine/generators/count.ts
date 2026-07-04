@@ -12,7 +12,9 @@ export function generateCount(
   rng: Rng = Math.random,
 ): CountQuestion {
   const max = params.max ?? 5
-  const n = randInt(1, max, rng)
+  // allowZero: 1 → "none at all" is a possible (and teachable) answer.
+  const min = (params.allowZero ?? 0) === 1 ? 0 : 1
+  const n = randInt(min, max, rng)
   const theme = pickTheme(rng)
   return {
     id: makeId('count', rng),
