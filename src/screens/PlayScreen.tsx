@@ -5,8 +5,9 @@ import { shapeById } from '../content/shapes'
 import { currencyById } from '../content/currency'
 import ShapeGlyph from '../components/ShapeGlyph'
 import { generateQuestion } from '../engine/generators'
+import { adaptLevel, difficultyScale } from '../engine/adaptive'
 import { evaluateAnswer } from '../engine/masteryGate'
-import { useGameStore } from '../engine/store'
+import { useGameStore, hasCleared } from '../engine/store'
 import { audio } from '../audio/AudioManager'
 import Twinkle, { type TwinkleMood } from '../components/Twinkle'
 import Countable from '../components/Countable'
@@ -124,8 +125,19 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
   const awardStar = useGameStore((s) => s.awardStar)
   const recordStreak = useGameStore((s) => s.recordStreak)
   const clearLevel = useGameStore((s) => s.clearLevel)
+  const pace = useGameStore((s) => s.pace)
 
-  const [question, setQuestion] = useState<Question>(() => generateQuestion(level))
+  // Adaptive difficulty (mastery play only — see engine/adaptive.ts).
+  // `replay` is the AT-MOUNT cleared state: mastering mid-attempt must not
+  // suddenly ramp the very attempt that earned it.
+  const [replay] = useState(() =>
+    hasCleared(useGameStore.getState().progress, level.id),
+  )
+  const triesRef = useRef(1) // tries on the current question (1 = first try)
+
+  const [question, setQuestion] = useState<Question>(() =>
+    generateQuestion(adaptLevel(level, difficultyScale({ lastTries: 1, replay }, pace))),
+  )
   const [streak, setStreak] = useState(0)
   const [phase, setPhase] = useState<Phase>('answering')
   const [mood, setMood] = useState<TwinkleMood>('happy')
@@ -160,12 +172,16 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
   }, [question])
 
   function loadNextQuestion() {
+    // A hard question makes the next one gentler; a first-try answer on a
+    // replayed level lets it stretch. The child never sees a dial move.
+    const scale = difficultyScale({ lastTries: triesRef.current, replay }, pace)
+    triesRef.current = 1
     countedRef.current = {}
     setCounted({})
     setWrong(null)
     setMood('happy')
     setPhase('answering')
-    setQuestion(generateQuestion(level))
+    setQuestion(generateQuestion(adaptLevel(level, scale)))
   }
 
   function tapObject(key: string) {
@@ -212,7 +228,9 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
         outcome.cleared ? 950 : 1050,
       )
     } else {
-      // Safe failure — nothing lost, just try again.
+      // Safe failure — nothing lost, just try again. The extra try also
+      // tells the adaptive seam to soften the NEXT question.
+      triesRef.current += 1
       audio.sfx('soft')
       audio.speak('Try again!')
       setMood('sad')
