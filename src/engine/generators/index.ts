@@ -62,6 +62,9 @@ import { generateChance } from './chance'
 import { generateConvert } from './convert'
 import { generateVolume } from './volume'
 import { generateCoord } from './coord'
+import { generateAngleSum } from './angleSum'
+import { generateRiddle } from './riddle'
+import { generateChanceFrac } from './chanceFrac'
 
 /**
  * The activity registry: ActivityType → generator. This is the only place the
@@ -133,6 +136,9 @@ export const GENERATORS: Record<ActivityType, QuestionGenerator> = {
   convert: generateConvert,
   volume: generateVolume,
   coord: generateCoord,
+  'angle-sum': generateAngleSum,
+  riddle: generateRiddle,
+  'chance-frac': generateChanceFrac,
 }
 
 /** Generate the next Question for a level by dispatching on its activity. */
@@ -209,4 +215,7 @@ export {
   generateConvert,
   generateVolume,
   generateCoord,
+  generateAngleSum,
+  generateRiddle,
+  generateChanceFrac,
 }

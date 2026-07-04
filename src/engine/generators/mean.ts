@@ -25,6 +25,26 @@ export function generateMean(
   }
   values = shuffle(values, rng)
 
+  // Missing mode (11+): the mean is GIVEN, one score is hidden — work back.
+  // The mean itself is the decoy: "it must be the average" is the guess.
+  if ((params.missing ?? 0) === 1) {
+    const hiddenIndex = randInt(0, values.length - 1, rng)
+    const answer = values[hiddenIndex]
+    const options = new Set<number>([answer])
+    for (const c of [mean, answer + 1, answer - 1, answer + 2]) {
+      if (options.size >= 3) break
+      if (c >= 0 && c !== answer) options.add(c)
+    }
+    return {
+      id: makeId('mean', rng),
+      activity: 'mean',
+      prompt: `The mean of these ${count} scores is ${mean}. What is the hidden score?`,
+      payload: { values, hiddenIndex, mean },
+      options: shuffle([...options], rng),
+      answer,
+    }
+  }
+
   const sum = mean * count
   const options = new Set<number>([mean, sum])
   for (const filler of [mean + 1, mean - 1]) {

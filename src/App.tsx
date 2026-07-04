@@ -132,7 +132,9 @@ export default function App() {
     const level = levelById(route.levelId)
     if (!level) return home
     const category = categoryById(level.categoryId)
-    const nextLevel = nextLevelAfter(level)
+    // Age-aware: an age-gated rung above this child's tier is never "next" —
+    // their ladder genuinely ends where their tier ends.
+    const nextLevel = nextLevelAfter(level, age)
     return (
       <ClearedScreen
         level={level}

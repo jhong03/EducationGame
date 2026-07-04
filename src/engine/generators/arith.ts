@@ -1,17 +1,35 @@
 import type { ArithQuestion, Rng } from '../types'
-import { buildNumberOptions, makeId, randInt } from '../random'
+import { buildNumberOptions, makeId, randInt, shuffle } from '../random'
 
 /**
  * arith — bare-number add/subtract for the mid band (NC-Y2/3, CCSS-2,
  * SG-P2): "17 + 8", "23 − 6". Objects gave way to symbols; the numbers stay
  * within `max`, differences stay ≥ 1.
  *
- * `op: 0` = addition, `op: 1` = subtraction.
+ * `op: 0` = addition, `op: 1` = subtraction. `dec: 1` (upper, E5) adds
+ * TENTHS: 0.4 + 0.3. Every value is one integer division by ten, so float
+ * equality is exact by construction — nothing is ever summed as a float.
  */
 export function generateArith(
   params: Record<string, number>,
   rng: Rng = Math.random,
 ): ArithQuestion {
+  if ((params.dec ?? 0) === 1) {
+    const aTenths = randInt(1, 8, rng)
+    const bTenths = randInt(1, 9 - aTenths, rng) // sum stays a clean tenth ≤ 0.9
+    const sumTenths = aTenths + bTenths
+    const low = sumTenths - 1 // ≥ 1
+    const high = sumTenths + 1 <= 9 ? sumTenths + 1 : sumTenths - 2
+    return {
+      id: makeId('arith', rng),
+      activity: 'arith',
+      prompt: `What is ${aTenths / 10} plus ${bTenths / 10}?`,
+      payload: { a: aTenths / 10, b: bTenths / 10, op: '+' },
+      options: shuffle([sumTenths, low, high], rng).map((t) => t / 10),
+      answer: sumTenths / 10,
+    }
+  }
+
   const max = Math.max(5, params.max ?? 20)
   const subtract = (params.op ?? 0) === 1
 

@@ -26,10 +26,16 @@ export function generateColumnOp(
   let b: number
   if (multiply) {
     const aOnes = randInt(2, 9, rng) // ≥ 2 so a carry is reachable
-    const aTens = threeDigit ? randInt(5, 9, rng) : randInt(1, 4, rng)
     const bMin = Math.max(2, Math.ceil(10 / aOnes)) // ones product ≥ 10 → carry
-    b = randInt(bMin, threeDigit ? 9 : 6, rng)
-    a = aTens * 10 + aOnes
+    if ((params.max ?? 100) >= 10000) {
+      // Giant times (age 12): a full 3-digit operand down the columns.
+      b = randInt(bMin, 6, rng)
+      a = randInt(1, 4, rng) * 100 + randInt(0, 9, rng) * 10 + aOnes
+    } else {
+      const aTens = threeDigit ? randInt(5, 9, rng) : randInt(1, 4, rng)
+      b = randInt(bMin, threeDigit ? 9 : 6, rng)
+      a = aTens * 10 + aOnes
+    }
   } else if (subtract) {
     const bOnes = randInt(1, 9, rng)
     const aOnes = randInt(0, bOnes - 1, rng) // aOnes < bOnes → borrow

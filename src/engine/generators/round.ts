@@ -10,7 +10,10 @@ export function generateRound(
   params: Record<string, number>,
   rng: Rng = Math.random,
 ): RoundQuestion {
-  const nearest = params.nearest ?? 10
+  // mix: 1 — each question picks its own target (the age-11 stretch: you
+  // must HEAR which place you're rounding to, not settle into one habit).
+  const nearest =
+    (params.mix ?? 0) === 1 ? [10, 100, 1000][randInt(0, 2, rng)] : (params.nearest ?? 10)
   const maxTens = Math.max(2, Math.floor((params.max ?? 100) / nearest) - 1)
   const tensPart = randInt(1, maxTens, rng)
   // Anywhere strictly between two multiples (1..nearest−1), so rounding can

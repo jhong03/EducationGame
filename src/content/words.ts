@@ -24,9 +24,10 @@ const TENS_WORDS = [
 ] as const
 
 /**
- * The spoken/written form of any number to 9,999 ("four thousand two hundred
- * and six"). The upper band's find-number levels PRINT the words and hide the
- * numerals in the buttons — reading big numbers is the skill (B5).
+ * The spoken/written form of any number to 999,999 ("thirty-four thousand
+ * five hundred and six"). The upper band's find-number levels PRINT the
+ * words and hide the numerals in the buttons — reading big numbers is the
+ * skill (B5).
  */
 export function numberWordBig(n: number): string {
   if (n < 0) return `minus ${numberWordBig(-n)}`
@@ -43,11 +44,11 @@ export function numberWordBig(n: number): string {
       ? `${numberWord(hundreds)} hundred`
       : `${numberWord(hundreds)} hundred and ${numberWordBig(rest)}`
   }
-  if (n < 10000) {
+  if (n < 1000000) {
     const thousands = Math.floor(n / 1000)
     const rest = n % 1000
-    if (rest === 0) return `${numberWord(thousands)} thousand`
-    return `${numberWord(thousands)} thousand ${rest < 100 ? 'and ' : ''}${numberWordBig(rest)}`
+    if (rest === 0) return `${numberWordBig(thousands)} thousand`
+    return `${numberWordBig(thousands)} thousand ${rest < 100 ? 'and ' : ''}${numberWordBig(rest)}`
   }
   return String(n)
 }

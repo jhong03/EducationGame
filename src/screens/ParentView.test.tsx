@@ -69,7 +69,7 @@ function gateAnswer(): number {
 describe('ParentView', () => {
   it('shows the progress summary grouped by category', () => {
     expect(container.textContent).toContain('7') // stars
-    expect(container.textContent).toContain('1/124') // mastered levels
+    expect(container.textContent).toContain('1/146') // mastered levels
     expect(container.textContent).toContain('0/33') // finished categories
     // Category headers and level statuses.
     expect(container.textContent).toContain('Counting')
@@ -91,12 +91,12 @@ describe('ParentView', () => {
     expect(container.textContent).toContain('Count to 3')
     // Pin the status DERIVATION, not just the vocabulary: with this seed the
     // statuses must be exactly 1× Mastered (counting L1), 33× In progress
-    // (counting L2 + each other category's first level), 90× Locked (all the
-    // rest of the 124). Swapping the mapping breaks these counts.
+    // (counting L2 + each other category's first level), 112× Locked (all the
+    // rest of the 146). Swapping the mapping breaks these counts.
     const text = container.textContent ?? ''
     expect(text.match(/Mastered/g)?.length).toBe(1 + 1) // 1 pill + the "Mastered" stat label
     expect(text.match(/In progress/g)?.length).toBe(33)
-    expect(text.match(/Locked/g)?.length).toBe(90)
+    expect(text.match(/Locked/g)?.length).toBe(112)
   })
 
   it('offers the currency picker and reflects the choice', () => {
@@ -104,6 +104,14 @@ describe('ParentView', () => {
     click(buttonByAria('British Pound'))
     expect(useGameStore.getState().currency).toBe('GBP')
     expect(container.textContent).toContain('£')
+    // The Southeast-Asia core set is on offer too.
+    click(buttonByAria('Thai Baht'))
+    expect(useGameStore.getState().currency).toBe('THB')
+    expect(container.textContent).toContain('฿')
+    expect(buttonByAria('Malaysian Ringgit')).not.toBeNull()
+    expect(buttonByAria('Indonesian Rupiah')).not.toBeNull()
+    expect(buttonByAria('Vietnamese Dong')).not.toBeNull()
+    expect(buttonByAria('Philippine Peso')).not.toBeNull()
   })
 
   it('offers the pace quiz and shows a plan after five answers', () => {
@@ -132,7 +140,7 @@ describe('ParentView', () => {
         .placeLevels(['math-early-4', 'math-early-26', 'math-early-27', 'math-early-28'])
     })
     expect(container.textContent).toContain('Placed')
-    expect(container.textContent).toContain('1/124') // mastered = earned only
+    expect(container.textContent).toContain('1/146') // mastered = earned only
     expect(container.textContent).toContain('1/33') // …but the category counts as finished
   })
 

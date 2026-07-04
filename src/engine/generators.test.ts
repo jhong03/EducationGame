@@ -63,6 +63,9 @@ import { generateChance } from './generators/chance'
 import { generateConvert } from './generators/convert'
 import { generateVolume } from './generators/volume'
 import { generateCoord } from './generators/coord'
+import { generateAngleSum } from './generators/angleSum'
+import { generateRiddle } from './generators/riddle'
+import { generateChanceFrac } from './generators/chanceFrac'
 import { numberWordBig } from '../content/words'
 import { TWO_STEP_TEMPLATES } from '../content/stories'
 import {
@@ -1446,6 +1449,269 @@ describe('upper band (Phases 5–6) generators', () => {
       if (left < 0 || right < 0) sawNegative = true
     }
     expect(sawNegative).toBe(true)
+  })
+})
+
+describe('upper age-tier (11+/12+) generators', () => {
+  const some = seeds.slice(0, 400)
+
+  it('round mix:1 hits all three targets and always rounds to the one it names', () => {
+    const seen = new Set<number>()
+    for (const s of some) {
+      const q = generateRound({ mix: 1, max: 10000 }, mulberry32(s))
+      seen.add(q.payload.nearest)
+      expect([10, 100, 1000]).toContain(q.payload.nearest)
+      expect(q.answer).toBe(Math.round(q.payload.value / q.payload.nearest) * q.payload.nearest)
+      const word =
+        q.payload.nearest === 1000 ? 'thousand' : q.payload.nearest === 100 ? 'hundred' : 'ten'
+      expect(q.prompt).toContain(word)
+    }
+    expect(seen.size).toBe(3)
+  })
+
+  it('find-number digits:5 stretches to the ten-thousands, words only', () => {
+    for (const s of some) {
+      const q = generateFindNumber({ digits: 5 }, mulberry32(s))
+      expect(q.payload.value).toBeGreaterThanOrEqual(10000)
+      expect(q.payload.value).toBeLessThanOrEqual(99999)
+      expect(q.prompt).toContain(numberWordBig(q.payload.value))
+      expect(q.prompt).not.toMatch(/\d/)
+      expect(new Set(q.options).size).toBe(3)
+      expect(q.options).toContain(q.payload.value)
+    }
+  })
+
+  it('num-compare dec:1 pits tenths against hundredths; longer sometimes loses', () => {
+    let longerLost = false
+    for (const s of some) {
+      const q = generateNumCompare({ dec: 1 }, mulberry32(s))
+      const { left, right } = q.payload
+      expect(Number.isInteger(Math.round(left * 10))).toBe(true)
+      expect(left).not.toBe(right)
+      expect(q.answer).toBe(left > right ? 'left' : 'right')
+      if (right < left) longerLost = true // "0.35 < 0.5" really happens
+    }
+    expect(longerLost).toBe(true)
+  })
+
+  it('arith dec:1 adds clean tenths with exact float identity', () => {
+    for (const s of some) {
+      const q = generateArith({ op: 0, dec: 1 }, mulberry32(s))
+      const aTenths = Math.round(q.payload.a * 10)
+      const bTenths = Math.round(q.payload.b * 10)
+      expect(q.answer).toBe((aTenths + bTenths) / 10)
+      expect(q.answer).toBeLessThanOrEqual(0.9)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('negatives mode:2 marks two temperatures and asks the true gap', () => {
+    for (const s of some) {
+      const q = generateNegatives({ mode: 2, max: 10 }, mulberry32(s))
+      expect(q.payload.marks).toBeDefined()
+      const [below, above] = q.payload.marks!
+      expect(below).toBeLessThan(0)
+      expect(above).toBeGreaterThan(0)
+      expect(q.answer).toBe(above - below)
+      const signBlind = Math.abs(above - Math.abs(below))
+      if (signBlind >= 1) expect(q.options).toContain(signBlind)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('negatives mode:3 computes sums that start below zero', () => {
+    for (const s of some) {
+      const q = generateNegatives({ mode: 3, max: 10 }, mulberry32(s))
+      expect(q.payload.expr).toBeDefined()
+      const body = q.payload.expr!.slice(1) // strip the leading −
+      const [aStr, op, bStr] = body.trim().split(' ')
+      const a = Number(aStr)
+      const b = Number(bStr)
+      expect(q.answer).toBe(op === '+' ? b - a : -a - b)
+      expect(q.answer).not.toBe(0)
+      expect(q.answer).toBeGreaterThanOrEqual(-10)
+      expect(q.answer).toBeLessThanOrEqual(10)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('angle-sum: multiples of ten completing 180, one card correct', () => {
+    for (const parts of [1, 2]) {
+      for (const s of some) {
+        const q = generateAngleSum({ parts }, mulberry32(s))
+        expect(q.payload.parts).toHaveLength(parts)
+        for (const p of q.payload.parts) expect(p % 10).toBe(0)
+        const known = q.payload.parts.reduce((x, y) => x + y, 0)
+        expect(q.answer).toBe(180 - known)
+        expect(q.answer).toBeGreaterThanOrEqual(20)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+      }
+    }
+  })
+
+  it('column-op × max:10000 goes 3-digit with the forced ones-carry intact', () => {
+    for (const s of some) {
+      const q = generateColumnOp({ op: 2, max: 10000 }, mulberry32(s))
+      const { a, b } = q.payload
+      expect(String(a)).toHaveLength(3)
+      expect((a % 10) * b).toBeGreaterThanOrEqual(10)
+      expect(q.answer).toBe(a * b)
+      const dropped = q.answer - 10 * Math.floor(((a % 10) * b) / 10)
+      expect(q.options).toContain(dropped)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('order-ops brackets:2 — both brackets first; half-done is the trap', () => {
+    for (const s of some) {
+      const q = generateOrderOps({ brackets: 2 }, mulberry32(s))
+      const m = q.payload.text.match(/^\((\d+) \+ (\d+)\) × \((\d+) − (\d+)\)$/)
+      expect(m, q.payload.text).not.toBeNull()
+      const [a, b, c, d] = [Number(m![1]), Number(m![2]), Number(m![3]), Number(m![4])]
+      expect(c - d).toBeGreaterThanOrEqual(2)
+      expect(q.answer).toBe((a + b) * (c - d))
+      expect(q.options).toContain((a + b) * c - d)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('ratio share:1 splits the whole pile in ratio; the other side is the trap', () => {
+    for (const big of [0, 1]) {
+      for (const s of some) {
+        const q = generateRatio({ share: 1, big }, mulberry32(s))
+        const { a, b, total } = q.payload
+        expect(total).toBeDefined()
+        expect(q.answer % a).toBe(0)
+        const k = q.answer / a
+        expect(k).toBeGreaterThanOrEqual(2)
+        expect(total).toBe((a + b) * k)
+        expect(q.options).toContain(b * k) // the other kind's share
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+      }
+    }
+  })
+
+  it('mean missing:1 hides one score; the stated mean checks out and is the decoy', () => {
+    for (const s of some) {
+      const q = generateMean({ count: 3, missing: 1 }, mulberry32(s))
+      const { values, hiddenIndex, mean } = q.payload
+      expect(hiddenIndex).toBeDefined()
+      expect(mean).toBeDefined()
+      const sum = values.reduce((x, y) => x + y, 0)
+      expect(sum / values.length).toBe(mean)
+      expect(q.answer).toBe(values[hiddenIndex!])
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('chance-frac: f/t correct; complement and odds ride along, never colliding', () => {
+    for (const s of some) {
+      const q = generateChanceFrac({}, mulberry32(s))
+      const { favorable, total, optionLabels } = q.payload
+      expect(total).not.toBe(2 * favorable) // complement can never be right
+      expect(optionLabels[q.answer]).toBe(`${favorable}/${total}`)
+      expect(optionLabels).toContain(`${total - favorable}/${total}`)
+      expect(optionLabels).toContain(`${favorable}/${total - favorable}`)
+      expect(new Set(optionLabels).size).toBe(3)
+    }
+  })
+
+  it('convert reverse:1 divides back to the big unit; wrong powers ride along', () => {
+    for (const s of some) {
+      const q = generateConvert({ reverse: 1 }, mulberry32(s))
+      const pair = CONVERT_PAIRS.find((p) => p.to === q.payload.from && p.from === q.payload.to)
+      expect(pair).toBeDefined()
+      expect(q.payload.amount).toBe(q.answer * pair!.factor)
+      expect(q.options).toContain(q.answer * 10)
+      expect(q.options).toContain(q.answer * 100)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+    }
+  })
+
+  it('volume formula:1 gives only dimensions; forgot-the-depth is always offered', () => {
+    for (const s of some) {
+      const q = generateVolume({ formula: 1 }, mulberry32(s))
+      const { w, h, d, drawn } = q.payload
+      expect(drawn).toBe(false)
+      expect(w).toBeGreaterThanOrEqual(3)
+      expect(q.answer).toBe(w * h * d)
+      expect(q.options).toContain(w * h)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('coord quad:4 goes negative; swap and sign-slip are always cards', () => {
+    for (const s of some) {
+      const q = generateCoord({ quad: 4 }, mulberry32(s))
+      const { x, y, min, optionLabels } = q.payload
+      expect(min).toBe(-4)
+      expect(x).not.toBe(0)
+      expect(y).not.toBe(0)
+      expect(x).not.toBe(y)
+      expect(optionLabels[q.answer]).toBe(`(${x}, ${y})`)
+      expect(optionLabels).toContain(`(${y}, ${x})`)
+      expect(optionLabels).toContain(`(${-x}, ${y})`)
+      expect(new Set(optionLabels).size).toBe(3)
+    }
+  })
+
+  it('coord translate:1 slides within the grid; the landing card is the answer', () => {
+    for (const s of some) {
+      const q = generateCoord({ translate: 1 }, mulberry32(s))
+      const { x, y, size, dx, dy, optionLabels } = q.payload
+      expect(dx).toBeDefined()
+      expect(dy).toBeDefined()
+      expect(dx).not.toBe(0)
+      expect(dy).not.toBe(0)
+      expect(dx).not.toBe(dy)
+      expect(x + dx!).toBeGreaterThanOrEqual(0)
+      expect(x + dx!).toBeLessThanOrEqual(size)
+      expect(y + dy!).toBeGreaterThanOrEqual(0)
+      expect(y + dy!).toBeLessThanOrEqual(size)
+      expect(optionLabels[q.answer]).toBe(`(${x + dx!}, ${y + dy!})`)
+      expect(new Set(optionLabels).size).toBe(3)
+    }
+  })
+
+  it('percent-of sets 3/4 stay whole on their amount grids', () => {
+    for (const set of [3, 4]) {
+      for (const s of some) {
+        const q = generatePercentOf({ set }, mulberry32(s))
+        expect(Number.isInteger(q.answer)).toBe(true)
+        expect(q.answer).toBe((q.payload.pct * q.payload.of) / 100)
+        expect(q.payload.of % (set === 3 ? 10 : 20)).toBe(0)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('riddle: undoing the steps lands on the number; the half-undone value is a card', () => {
+    for (const hard of [0, 1]) {
+      for (const s of some) {
+        const q = generateRiddle({ hard }, mulberry32(s))
+        const t = q.payload.text
+        if (hard === 1) {
+          const m = t.match(/^\(\? \+ (\d+)\) × (\d+) = (\d+)$/)
+          expect(m, t).not.toBeNull()
+          const [add, times, r] = [Number(m![1]), Number(m![2]), Number(m![3])]
+          expect((q.answer + add) * times).toBe(r)
+          expect(q.options).toContain(r / times)
+        } else {
+          const m = t.match(/^\? × (\d+) \+ (\d+) = (\d+)$/)
+          expect(m, t).not.toBeNull()
+          const [times, plus, r] = [Number(m![1]), Number(m![2]), Number(m![3])]
+          expect(q.answer * times + plus).toBe(r)
+          expect(q.options).toContain(r - plus)
+        }
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+        expect(new Set(q.options).size).toBe(3)
+      }
+    }
   })
 })
 

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { Band } from '../engine/types'
 import { useGameStore, hasCleared } from '../engine/store'
-import { categoriesForBand, levelsInCategory } from '../content/math'
+import { categoriesForBand, levelsInCategoryForAge } from '../content/math'
 import { audio } from '../audio/AudioManager'
 import MuteButton from '../components/MuteButton'
 import Twinkle from '../components/Twinkle'
@@ -46,6 +46,7 @@ const CARD_COLORS = [
 export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps) {
   const progress = useGameStore((s) => s.progress)
   const stars = useGameStore((s) => s.stars)
+  const age = useGameStore((s) => s.age) // gates the age-tier rungs off the dots
 
   // The child's band, or the early meadow while their band has no content yet.
   const bandCategories = categoriesForBand(band)
@@ -131,7 +132,7 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
           </p>
         )}
         {categories.map((category, i) => {
-          const levels = levelsInCategory(category.id)
+          const levels = levelsInCategoryForAge(category.id, age)
           const done = levels.filter((l) => hasCleared(progress, l.id)).length
           const color = CARD_COLORS[i % CARD_COLORS.length]
           return (

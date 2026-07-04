@@ -67,6 +67,7 @@ const INDEX_ANSWER_ACTIVITIES = new Set<Question['activity']>([
   'angle', // tap an angle card
   'chance', // tap a scale word
   'coord', // coordinate cards
+  'chance-frac', // fraction cards
 ])
 
 /** Narrow to the value-answer activities that use the number-button row. */
@@ -109,6 +110,8 @@ function hasNumberButtons(
       | 'mean'
       | 'convert'
       | 'volume'
+      | 'angle-sum'
+      | 'riddle'
   }
 > {
   return !INDEX_ANSWER_ACTIVITIES.has(q.activity)
@@ -621,7 +624,43 @@ export function ActivityStage({
             text={`${question.payload.amount} ${question.payload.from} = ? ${question.payload.to}`}
           />
         ) : question.activity === 'volume' ? (
-          <VolumeStage question={question} />
+          question.payload.drawn ? (
+            <VolumeStage question={question} />
+          ) : (
+            <ExprCard
+              text={`${question.payload.w} × ${question.payload.h} × ${question.payload.d}`}
+              sub="cubes long × tall × deep"
+            />
+          )
+        ) : question.activity === 'angle-sum' ? (
+          <ExprCard
+            text={`${question.payload.parts.map((p) => `${p}°`).join(' + ')} + ?° = ${question.payload.total}°`}
+            sub={
+              question.payload.parts.length === 2
+                ? 'the three angles of a triangle'
+                : 'angles on a straight line'
+            }
+          />
+        ) : question.activity === 'riddle' ? (
+          <ExprCard text={question.payload.text} />
+        ) : question.activity === 'chance-frac' ? (
+          <div className="flex w-full flex-col items-center gap-5">
+            <div
+              className="max-w-md rounded-3xl bg-cream/85 px-6 py-5 text-center font-semibold text-ink shadow-md"
+              style={{ fontSize: 'clamp(17px, 4.5vw, 22px)', lineHeight: 1.45 }}
+            >
+              {question.payload.scenario}
+            </div>
+            <FractionCards
+              labels={question.payload.optionLabels}
+              answer={question.answer}
+              disabled={disabled}
+              wrong={wrong}
+              shakeToken={shakeToken}
+              highlightCorrect={highlightCorrect}
+              onPick={onAnswer}
+            />
+          </div>
         ) : question.activity === 'coord' ? (
           <CoordStage
             question={question}
@@ -3035,13 +3074,14 @@ function DecimalStage({
   )
 }
 
-/** The −max..max number line; zero glows coral. Arrow only in read mode. */
+/** The −max..max number line; zero glows coral. Arrow only in read mode;
+ *  gap mode marks its two temperatures as dots instead. */
 function NumberLineStage({
   question,
 }: {
   question: Extract<Question, { activity: 'negatives' }>
 }) {
-  const { min, max, value, expr } = question.payload
+  const { min, max, value, expr, marks } = question.payload
   const W = 360
   const PAD = 16
   const x = (v: number) => PAD + ((v - min) / (max - min)) * (W - 2 * PAD)
@@ -3054,18 +3094,31 @@ function NumberLineStage({
         className="rounded-3xl bg-cream/85 px-3 pb-2 pt-3 shadow-md"
         role="img"
         aria-label={
-          expr
-            ? `a number line from ${min} to ${max} to help you count below zero`
-            : `a number line from ${min} to ${max} with an arrow on one tick`
+          marks
+            ? `a number line from ${min} to ${max} with dots at ${marks[0]} and ${marks[1]}`
+            : expr
+              ? `a number line from ${min} to ${max} to help you count below zero`
+              : `a number line from ${min} to ${max} with an arrow on one tick`
         }
       >
         <svg viewBox={`0 0 ${W} 74`} style={{ width: 'min(90vw, 460px)' }} aria-hidden="true">
-          {!expr && (
+          {!expr && !marks && (
             <polygon
               points={`${x(value) - 8},10 ${x(value) + 8},10 ${x(value)},25`}
               fill="var(--coral)"
             />
           )}
+          {marks?.map((m, i) => (
+            <circle
+              key={i}
+              cx={x(m)}
+              cy={42}
+              r={7}
+              fill={i === 0 ? 'var(--grape)' : 'var(--coral)'}
+              stroke="var(--cream)"
+              strokeWidth={2.5}
+            />
+          ))}
           <line
             x1={PAD}
             y1={42}
@@ -3183,7 +3236,7 @@ function AngleStage({
 
 /** "a for every b", then the scaled row with a ? — count the partner group. */
 function RatioStage({ question }: { question: Extract<Question, { activity: 'ratio' }> }) {
-  const { a, b, scaledA, aEmoji, bEmoji, aName, bName } = question.payload
+  const { a, b, scaledA, aEmoji, bEmoji, aName, bName, total } = question.payload
   const row = (emoji: string, count: number) => (
     <span className="flex flex-wrap items-center justify-center gap-0.5">
       {Array.from({ length: count }, (_, i) => (
@@ -3209,49 +3262,96 @@ function RatioStage({ question }: { question: Extract<Question, { activity: 'rat
       <span aria-hidden="true" className="font-bold text-ink/50" style={{ fontSize: 24 }}>
         ↓
       </span>
-      <div
-        className="flex w-full items-center justify-center gap-3 rounded-3xl bg-cream/85 px-5 py-3 shadow-md"
-        role="img"
-        aria-label={`${scaledA} ${aName} with how many ${bName}?`}
-      >
-        {row(aEmoji, scaledA)}
-        <span className="font-bold text-ink/50" aria-hidden="true">
-          with
-        </span>
-        <span
-          className="grid place-items-center rounded-xl bg-sun font-bold text-ink"
-          style={{ width: 40, height: 40, fontSize: 22 }}
-          aria-hidden="true"
+      {total !== undefined ? (
+        // Share mode: the combined pile is known; how many are a's kind?
+        <div
+          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-cream/85 px-5 py-3 shadow-md"
+          role="img"
+          aria-label={`${total} altogether — how many ${aName}?`}
         >
-          ?
-        </span>
-      </div>
+          <span className="font-bold text-ink" style={{ fontSize: 'clamp(26px, 7vw, 34px)' }}>
+            {total}
+          </span>
+          <span className="font-bold text-ink/50" aria-hidden="true">
+            altogether —
+          </span>
+          <span aria-hidden="true" style={{ fontSize: 'clamp(20px, 5vw, 26px)', lineHeight: 1 }}>
+            {aEmoji}
+          </span>
+          <span
+            className="grid place-items-center rounded-xl bg-sun font-bold text-ink"
+            style={{ width: 40, height: 40, fontSize: 22 }}
+            aria-hidden="true"
+          >
+            ?
+          </span>
+        </div>
+      ) : (
+        <div
+          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-cream/85 px-5 py-3 shadow-md"
+          role="img"
+          aria-label={`${scaledA} ${aName} with how many ${bName}?`}
+        >
+          {row(aEmoji, scaledA)}
+          <span className="font-bold text-ink/50" aria-hidden="true">
+            with
+          </span>
+          <span
+            className="grid place-items-center rounded-xl bg-sun font-bold text-ink"
+            style={{ width: 40, height: 40, fontSize: 22 }}
+            aria-hidden="true"
+          >
+            ?
+          </span>
+        </div>
+      )}
     </div>
   )
 }
 
-/** The score chips whose mean is wanted. */
+/** The score chips whose mean is wanted; missing mode hides one behind ?. */
 function MeanStage({ question }: { question: Extract<Question, { activity: 'mean' }> }) {
+  const { values, hiddenIndex, mean } = question.payload
+  const shown = values.filter((_, i) => i !== hiddenIndex)
   return (
-    <div
-      className="flex items-center justify-center gap-3"
-      role="img"
-      aria-label={`the scores are ${question.payload.values.join(', ')}`}
-    >
-      {question.payload.values.map((v, i) => (
+    <div className="flex flex-col items-center gap-3">
+      {hiddenIndex !== undefined && (
         <span
-          key={i}
-          className="anim-pop grid place-items-center rounded-2xl bg-cream/85 font-bold text-ink shadow-md"
-          style={{
-            width: 'clamp(56px, 14vw, 72px)',
-            height: 'clamp(56px, 14vw, 72px)',
-            fontSize: 'clamp(26px, 7vw, 34px)',
-            animationDelay: `${i * 60}ms`,
-          }}
+          className="rounded-full bg-cream/85 px-4 py-1 font-bold text-ink shadow-sm"
+          style={{ fontSize: 'clamp(15px, 4vw, 19px)' }}
         >
-          {v}
+          mean = {mean}
         </span>
-      ))}
+      )}
+      <div
+        className="flex items-center justify-center gap-3"
+        role="img"
+        aria-label={
+          hiddenIndex === undefined
+            ? `the scores are ${values.join(', ')}`
+            : `the scores are ${shown.join(', ')} and one hidden score`
+        }
+      >
+        {values.map((v, i) => {
+          const hidden = i === hiddenIndex
+          return (
+            <span
+              key={i}
+              className={`anim-pop grid place-items-center rounded-2xl font-bold text-ink shadow-md ${
+                hidden ? 'bg-sun' : 'bg-cream/85'
+              }`}
+              style={{
+                width: 'clamp(56px, 14vw, 72px)',
+                height: 'clamp(56px, 14vw, 72px)',
+                fontSize: 'clamp(26px, 7vw, 34px)',
+                animationDelay: `${i * 60}ms`,
+              }}
+            >
+              {hidden ? '?' : v}
+            </span>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -3370,25 +3470,32 @@ function CoordStage({
   onPick: (index: number) => void
 }) {
   const { x: px, y: py, size, optionLabels } = question.payload
+  const min = question.payload.min ?? 0 // < 0 opens all four quadrants
   const W = 240
   const PAD = 26
-  const step = (W - PAD - 10) / size
-  const gx = (v: number) => PAD + v * step
-  const gy = (v: number) => W - PAD - v * step
+  const step = (W - PAD - 10) / (size - min)
+  const gx = (v: number) => PAD + (v - min) * step
+  const gy = (v: number) => W - PAD - (v - min) * step
+  const fourQuad = min < 0
+  const labelSize = fourQuad ? 10 : 12
   const lines: number[] = []
-  for (let i = 0; i <= size; i++) lines.push(i)
+  for (let i = min; i <= size; i++) lines.push(i)
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <div
         className="rounded-3xl bg-cream/85 p-2 shadow-md"
         role="img"
-        aria-label="a grid with a star at one point — across first, then up"
+        aria-label={
+          fourQuad
+            ? 'a four-quadrant grid with a star — minus means left or down'
+            : 'a grid with a star at one point — across first, then up'
+        }
       >
         <svg viewBox={`0 0 ${W} ${W}`} style={{ width: 'min(62vw, 260px)' }} aria-hidden="true">
           {lines.map((i) => (
             <g key={i}>
               <line
-                x1={gx(0)}
+                x1={gx(min)}
                 y1={gy(i)}
                 x2={gx(size)}
                 y2={gy(i)}
@@ -3397,28 +3504,30 @@ function CoordStage({
               />
               <line
                 x1={gx(i)}
-                y1={gy(0)}
+                y1={gy(min)}
                 x2={gx(i)}
                 y2={gy(size)}
                 stroke={i === 0 ? 'var(--ink)' : 'rgba(74,58,107,0.25)'}
                 strokeWidth={i === 0 ? 3 : 1.5}
               />
-              <text
-                x={gx(i)}
-                y={gy(0) + 18}
-                textAnchor="middle"
-                fontSize={12}
-                fontWeight={700}
-                fill="var(--ink)"
-              >
-                {i}
-              </text>
-              {i > 0 && (
+              {(!fourQuad || i !== 0) && (
                 <text
-                  x={gx(0) - 12}
+                  x={gx(i)}
+                  y={gy(0) + 16}
+                  textAnchor="middle"
+                  fontSize={labelSize}
+                  fontWeight={700}
+                  fill="var(--ink)"
+                >
+                  {i}
+                </text>
+              )}
+              {i !== 0 && (
+                <text
+                  x={gx(0) - 11}
                   y={gy(i) + 4}
                   textAnchor="middle"
-                  fontSize={12}
+                  fontSize={labelSize}
                   fontWeight={700}
                   fill="var(--ink)"
                 >

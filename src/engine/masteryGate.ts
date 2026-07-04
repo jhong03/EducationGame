@@ -71,6 +71,9 @@ export function isCorrect(question: Question, answer: Answer): boolean {
     case 'convert': // the converted amount
     case 'volume': // total cubes
     case 'coord': // coordinate card index
+    case 'angle-sum': // the missing angle
+    case 'riddle': // the thought-of number
+    case 'chance-frac': // fraction card index
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
     case 'num-compare':

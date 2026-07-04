@@ -8,7 +8,14 @@ import {
   migratePersistedState,
   categorySprintScore,
 } from './store'
-import { CATEGORIES, TRAIL, levelsInCategory, nextLevelAfter } from '../content/math'
+import {
+  CATEGORIES,
+  TRAIL,
+  levelById,
+  levelsInCategory,
+  levelsInCategoryForAge,
+  nextLevelAfter,
+} from '../content/math'
 import type { Answer, Question } from './types'
 
 /**
@@ -209,6 +216,50 @@ describe('sprint scores', () => {
     useGameStore.getState().recordSprintScore('math-early-1', 8)
     useGameStore.getState().reset()
     expect(useGameStore.getState().bestScores).toEqual({})
+  })
+
+  it('age tiers: minAge rungs sit only at ladder tops (non-decreasing along order)', () => {
+    for (const cat of CATEGORIES) {
+      let floor = 0
+      for (const level of levelsInCategory(cat.id)) {
+        const m = level.minAge ?? 0
+        expect(m, `${cat.id}/${level.id}`).toBeGreaterThanOrEqual(floor)
+        floor = m
+      }
+    }
+  })
+
+  it('ages 10/11/12 see strictly bigger upper meadows: 30 / 41 / 52 levels', () => {
+    const visible = (age: number) =>
+      CATEGORIES.filter((c) => c.band === 'upper').reduce(
+        (n, c) => n + levelsInCategoryForAge(c.id, age).length,
+        0,
+      )
+    expect(visible(10)).toBe(30)
+    expect(visible(11)).toBe(41)
+    expect(visible(12)).toBe(52)
+  })
+
+  it('every age-visible ladder is a clean prefix of the full ladder', () => {
+    for (const cat of CATEGORIES) {
+      const all = levelsInCategory(cat.id)
+      for (const age of [4, 7, 10, 11, 12]) {
+        const vis = levelsInCategoryForAge(cat.id, age)
+        expect(vis).toEqual(all.slice(0, vis.length))
+      }
+    }
+  })
+
+  it('nextLevelAfter respects the age tier — a 10-year-old’s ladder truly ends', () => {
+    const lastFor10 = levelById('math-upper-8')! // Percent twins — decimals rung 4
+    expect(nextLevelAfter(lastFor10, 10)).toBeUndefined()
+    expect(nextLevelAfter(lastFor10, 11)?.id).toBe('math-upper-33')
+    expect(nextLevelAfter(lastFor10, 12)?.id).toBe('math-upper-33')
+    const tier11 = levelById('math-upper-33')!
+    expect(nextLevelAfter(tier11, 11)).toBeUndefined()
+    expect(nextLevelAfter(tier11, 12)?.id).toBe('math-upper-34')
+    // Untiered bands are untouched.
+    expect(nextLevelAfter(levelById('math-early-1')!, 4)?.id).toBe('math-early-2')
   })
 
   it('every level carries a sane sprintSeconds (content data)', () => {

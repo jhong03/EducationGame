@@ -7,29 +7,36 @@ import { makeId, randInt, randIntExcept, shuffle } from '../random'
  * numbers). The prompt is the WORDS (spoken and printed); the numerals only
  * appear on the buttons, so translating words → digits is the whole task.
  * Decoys are the digit swaps a place-value misread actually produces.
+ * `digits: 5` (age 12) stretches to the ten-thousands.
  */
 export function generateFindNumber(
   params: Record<string, number>,
   rng: Rng = Math.random,
 ): FindNumberQuestion {
-  void params
-  // Digits chosen so BOTH swaps change the number: thousands ≠ hundreds and
-  // tens ≠ ones (and hundreds ≥ 1 so the high swap keeps four digits).
-  const thousands = randInt(1, 9, rng)
-  const hundreds = randIntExcept(1, 9, thousands, rng)
-  const tens = randInt(0, 9, rng)
-  const ones = randIntExcept(0, 9, tens, rng)
+  const len = (params.digits ?? 4) >= 5 ? 5 : 4
 
-  const value = thousands * 1000 + hundreds * 100 + tens * 10 + ones
-  const swapHigh = hundreds * 1000 + thousands * 100 + tens * 10 + ones
-  const swapLow = thousands * 1000 + hundreds * 100 + ones * 10 + tens
+  // Leading pair differs (and both ≥ 1, so the high swap keeps its length);
+  // trailing pair differs (so the low swap changes the number).
+  const digits: number[] = [randInt(1, 9, rng)]
+  digits.push(randIntExcept(1, 9, digits[0], rng))
+  while (digits.length < len - 2) digits.push(randInt(0, 9, rng))
+  const tens = randInt(0, 9, rng)
+  digits.push(tens, randIntExcept(0, 9, tens, rng))
+
+  const valueOf = (ds: readonly number[]) => ds.reduce((acc, d) => acc * 10 + d, 0)
+  const swapped = (i: number) => {
+    const ds = [...digits]
+    ;[ds[i], ds[i + 1]] = [ds[i + 1], ds[i]]
+    return valueOf(ds)
+  }
+  const value = valueOf(digits)
 
   return {
     id: makeId('findnum', rng),
     activity: 'find-number',
     prompt: `Find ${numberWordBig(value)}!`,
     payload: { value },
-    options: shuffle([value, swapHigh, swapLow], rng),
+    options: shuffle([value, swapped(0), swapped(len - 2)], rng),
     answer: value,
   }
 }

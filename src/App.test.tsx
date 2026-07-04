@@ -275,6 +275,29 @@ describe('full play loop', () => {
     expect(container.textContent).not.toContain('still growing')
   })
 
+  it('ages 10, 11 and 12 climb DIFFERENT ladders: the tier rungs appear with age', () => {
+    act(() => {
+      useGameStore.setState({ age: 10 })
+    })
+    click(categoryCard('Grid World'))
+    expect(container.textContent).toContain('Treasure map')
+    expect(container.textContent).not.toContain('All four corners') // 11+
+    expect(container.textContent).not.toContain('Slide the star') // 12+
+
+    act(() => {
+      useGameStore.setState({ age: 11 })
+    })
+    expect(container.textContent).toContain('All four corners')
+    expect(container.textContent).not.toContain('Slide the star')
+
+    act(() => {
+      useGameStore.setState({ age: 12 })
+    })
+    expect(container.textContent).toContain('Treasure map')
+    expect(container.textContent).toContain('All four corners')
+    expect(container.textContent).toContain('Slide the star')
+  })
+
   it('mid sprint is arcade: visible countdown and a 🔥 double-score streak', () => {
     act(() => {
       useGameStore.setState({

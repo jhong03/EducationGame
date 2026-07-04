@@ -123,6 +123,7 @@ function makeLevel(
   activity: ActivityType,
   params: Record<string, number>,
   masteryGoal = DEFAULT_MASTERY_GOAL,
+  minAge?: number, // age-tier rungs sit at the ladder TOP (see Level.minAge)
 ): Level {
   return {
     id: `${MATH_SUBJECT_ID}-${band}-${id}`,
@@ -136,6 +137,7 @@ function makeLevel(
     params,
     masteryGoal,
     sprintSeconds: sprintSecondsFor(activity),
+    ...(minAge !== undefined ? { minAge } : {}),
   }
 }
 
@@ -171,6 +173,27 @@ const upperLevel = (
   params: Record<string, number>,
   masteryGoal?: number,
 ) => makeLevel('upper', id, categoryId, order, name, icon, activity, params, masteryGoal)
+
+/** Age-tier rungs: visible from 11 / from 12 (always a ladder's top rungs). */
+const upper11 = (
+  id: number,
+  categoryId: string,
+  order: number,
+  name: string,
+  icon: string,
+  activity: ActivityType,
+  params: Record<string, number>,
+) => makeLevel('upper', id, categoryId, order, name, icon, activity, params, undefined, 11)
+
+const upper12 = (
+  id: number,
+  categoryId: string,
+  order: number,
+  name: string,
+  icon: string,
+  activity: ActivityType,
+  params: Record<string, number>,
+) => makeLevel('upper', id, categoryId, order, name, icon, activity, params, undefined, 12)
 
 /**
  * Phase 0 levels (spec §4), organised into categories. The ids keep their
@@ -392,6 +415,50 @@ export const PHASE56_LEVELS: readonly Level[] = [
   upperLevel(30, 'puzzle-peak', 2, 'Times-story twists', '🌀', 'word-problem', { ops: 4 }),
 ] as const
 
+/**
+ * Upper age-tier deepening (user-directed: ages 10, 11 and 12 must feel
+ * SIGNIFICANTLY different). Every upper category gains an age-11 rung and an
+ * age-12 rung at the top of its ladder — a 10-year-old's meadow tops out at
+ * 30 levels, an 11-year-old's at 41, a 12-year-old's at 52. minAge rungs are
+ * appended (never inserted), so each age's visible ladder stays a clean
+ * prefix and derived unlock is untouched.
+ */
+export const PHASE56B_LEVELS: readonly Level[] = [
+  // Big Numbers 🔢
+  upper11(31, 'big-numbers', 5, 'Round anywhere', '🌪️', 'round', { mix: 1, max: 10000 }),
+  upper12(32, 'big-numbers', 6, 'Colossal numbers', '🐳', 'find-number', { digits: 5 }),
+  // Decimals 🔟
+  upper11(33, 'decimals-lab', 5, "Longer isn't bigger", '🐍', 'num-compare', { dec: 1 }),
+  upper12(34, 'decimals-lab', 6, 'Decimal sums', '🧪', 'arith', { op: 0, dec: 1 }),
+  // Percentages 💯
+  upper11(35, 'percents', 3, 'Any tens percent', '🎯', 'percent-of', { set: 3 }),
+  upper12(36, 'percents', 4, 'Awkward percents', '🌶️', 'percent-of', { set: 4 }),
+  // Below Zero 🧊
+  upper11(37, 'below-zero', 4, 'How much warmer?', '🌡️', 'negatives', { mode: 2, max: 10 }),
+  upper12(38, 'below-zero', 5, 'Minus sums', '❄️', 'negatives', { mode: 3, max: 10 }),
+  // Angles & Mirrors 📐
+  upper11(39, 'angles', 4, 'Straight-line pairs', '➖', 'angle-sum', { parts: 1 }),
+  upper12(40, 'angles', 5, 'Triangle mystery', '🔺', 'angle-sum', { parts: 2 }),
+  // Big Calculations 🧮
+  upper11(41, 'upper-crunch', 5, 'Giant times', '🦖', 'column-op', { op: 2, max: 10000 }),
+  upper12(42, 'upper-crunch', 6, 'Double brackets', '🎭', 'order-ops', { brackets: 2 }),
+  // Ratios ⚖️
+  upper11(43, 'ratios', 3, 'Share it out', '🍱', 'ratio', { share: 1 }),
+  upper12(44, 'ratios', 4, 'Big splits', '🏗️', 'ratio', { share: 1, big: 1 }),
+  // Averages & Chance 📈
+  upper11(45, 'averages', 4, 'The missing score', '🕵️', 'mean', { count: 3, missing: 1 }),
+  upper12(46, 'averages', 5, 'Chance as a fraction', '🫙', 'chance-frac', {}),
+  // Volume & Units 📦
+  upper11(47, 'volume-units', 3, 'Backwards units', '↩️', 'convert', { reverse: 1 }),
+  upper12(48, 'volume-units', 4, 'Volume by formula', '🧠', 'volume', { formula: 1 }),
+  // Grid World 🗺️
+  upper11(49, 'grid-world', 2, 'All four corners', '🧭', 'coord', { quad: 4 }),
+  upper12(50, 'grid-world', 3, 'Slide the star', '🛝', 'coord', { translate: 1 }),
+  // Puzzle Peak 🧗
+  upper11(51, 'puzzle-peak', 3, 'Number riddles', '🎩', 'riddle', {}),
+  upper12(52, 'puzzle-peak', 4, 'Tricky riddles', '🃏', 'riddle', { hard: 1 }),
+] as const
+
 /** Every playable level, flat (ParentView totals, tests). */
 export const TRAIL: readonly Level[] = [
   ...PHASE0_LEVELS,
@@ -402,6 +469,7 @@ export const TRAIL: readonly Level[] = [
   ...PHASE3B_LEVELS,
   ...PHASE4_LEVELS,
   ...PHASE56_LEVELS,
+  ...PHASE56B_LEVELS,
 ]
 
 /** Look up a category by id. */
@@ -421,6 +489,17 @@ export function levelsInCategory(categoryId: string): Level[] {
   )
 }
 
+/**
+ * The rungs a child of `age` can SEE (minAge-gated). Age-tier rungs always
+ * sit at the ladder's top, so this is a PREFIX of the full ladder and the
+ * derived-unlock rules apply unchanged. `null` (no age yet) sees everything.
+ */
+export function levelsInCategoryForAge(categoryId: string, age: number | null): Level[] {
+  const levels = levelsInCategory(categoryId)
+  if (age === null) return levels
+  return levels.filter((l) => l.minAge === undefined || age >= l.minAge)
+}
+
 /** Look up a level by id. */
 export function levelById(id: string): Level | undefined {
   return TRAIL.find((l) => l.id === id)
@@ -430,7 +509,9 @@ export function levelById(id: string): Level | undefined {
  * The level after this one within the same category, if any. Tolerates gaps in
  * `order` numbering (finds the next-higher order, not exactly order+1), so a
  * future content edit can't make ClearedScreen falsely announce "finished".
+ * Pass the child's `age` so an age-gated rung above their tier never becomes
+ * "next" — for a 10-year-old, the ladder genuinely ends at their tier.
  */
-export function nextLevelAfter(level: Level): Level | undefined {
-  return levelsInCategory(level.categoryId).find((l) => l.order > level.order)
+export function nextLevelAfter(level: Level, age: number | null = null): Level | undefined {
+  return levelsInCategoryForAge(level.categoryId, age).find((l) => l.order > level.order)
 }

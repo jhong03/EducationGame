@@ -83,6 +83,10 @@ export type ActivityType =
   | 'convert'
   | 'volume'
   | 'coord'
+  // upper band — age-tier deepening (11+/12+ rungs)
+  | 'angle-sum'
+  | 'riddle'
+  | 'chance-frac'
 
 /**
  * A skill strand a child picks from on the home screen (e.g. "Counting").
@@ -115,6 +119,15 @@ export interface Level {
    * once the level is MASTERED; it never replaces the mastery gate.
    */
   sprintSeconds: number
+  /**
+   * Minimum age (within the band) that SEES this rung on the map — how one
+   * band serves meaningfully different ladders to each age (10/11/12).
+   * Age-gated rungs always sit at the TOP of their category ladder (minAge
+   * non-decreasing along `order`, test-enforced), so every age's visible
+   * ladder is a prefix and derived unlock works unchanged. Absent = every
+   * age in the band. A cleared rung stays cleared if the age changes.
+   */
+  minAge?: number
 }
 
 /** A drawable, countable, universally-recognizable object type. */
@@ -616,11 +629,19 @@ export interface PercentOfQuestion extends BaseQuestion {
   answer: number
 }
 
-/** The −max..max number line (B7): read the arrow (`mode` read), or work an
- *  expression that lands below zero (`expr` set, no arrow drawn). */
+/** The −max..max number line (B7): read the arrow (mode 0), work an
+ *  expression that lands below zero (`expr` set, mode 1/3), or find the GAP
+ *  between two marked temperatures (`marks` set, mode 2 — `value` is then
+ *  the distance, not a line position). */
 export interface NegativesQuestion extends BaseQuestion {
   activity: 'negatives'
-  payload: { min: number; max: number; value: number; expr?: string }
+  payload: {
+    min: number
+    max: number
+    value: number
+    expr?: string
+    marks?: [number, number] // the two dots for gap mode
+  }
   options: number[]
   answer: number // === value
 }
@@ -649,7 +670,8 @@ export interface OrderOpsQuestion extends BaseQuestion {
   answer: number
 }
 
-/** "2 🍎 for every 3 🐟 — 6 🍎 means how many 🐟?" — scale a ratio (E9). */
+/** "2 🍎 for every 3 🐟 — 6 🍎 means how many 🐟?" — scale a ratio (E9).
+ *  Share mode (`total` set): "{total} altogether — how many 🍎?" */
 export interface RatioQuestion extends BaseQuestion {
   activity: 'ratio'
   payload: {
@@ -660,15 +682,21 @@ export interface RatioQuestion extends BaseQuestion {
     bEmoji: string
     aName: string // plural
     bName: string // plural
+    total?: number // share mode: the combined pile being split
   }
   options: number[]
-  answer: number // b scaled by the same factor
+  answer: number // scaled partner count, or the a-side share in share mode
 }
 
-/** "Scores 3, 5, 7 — what is the mean?" (K5). The sum is always a decoy. */
+/** "Scores 3, 5, 7 — what is the mean?" (K5). The sum is always a decoy.
+ *  Missing mode: the mean is GIVEN and one score is hidden — find it. */
 export interface MeanQuestion extends BaseQuestion {
   activity: 'mean'
-  payload: { values: number[] }
+  payload: {
+    values: number[] // complete; the renderer masks `hiddenIndex`
+    hiddenIndex?: number
+    mean?: number // spoken/shown in missing mode
+  }
   options: number[]
   answer: number
 }
@@ -689,18 +717,54 @@ export interface ConvertQuestion extends BaseQuestion {
   answer: number
 }
 
-/** Count the cubes: `d` layers of w×h (H7). One-layer-only is the decoy. */
+/** Count the cubes: `d` layers of w×h (H7). One-layer-only is the decoy.
+ *  `drawn: false` = formula mode: dimensions shown, nothing to count. */
 export interface VolumeQuestion extends BaseQuestion {
   activity: 'volume'
-  payload: { w: number; h: number; d: number }
+  payload: { w: number; h: number; d: number; drawn: boolean }
   options: number[]
   answer: number
 }
 
-/** "Where is the star?" — first-quadrant coordinates; (y, x) is the trap (F8). */
+/** "Where is the star?" — grid coordinates; (y, x) is the trap (F8/J8).
+ *  `min` < 0 opens all four quadrants; `dx`/`dy` set = translate the star. */
 export interface CoordQuestion extends BaseQuestion {
   activity: 'coord'
-  payload: { x: number; y: number; size: number; optionLabels: string[] }
+  payload: {
+    x: number
+    y: number
+    size: number
+    min?: number // default 0 (first quadrant)
+    dx?: number // translate mode: the slide to apply
+    dy?: number
+    optionLabels: string[]
+  }
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+// ---- Upper band — age-tier deepening (11+/12+) ------------------------------
+
+/** "One angle on the line is 110° — the other?" / triangle's third angle. */
+export interface AngleSumQuestion extends BaseQuestion {
+  activity: 'angle-sum'
+  payload: { parts: number[]; total: number } // 1 part = straight line, 2 = triangle
+  options: number[]
+  answer: number
+}
+
+/** "I times my number by 3 and add 4 to get 19 — what was it?" (F6/F7). */
+export interface RiddleQuestion extends BaseQuestion {
+  activity: 'riddle'
+  payload: { text: string } // the equation card, e.g. "? × 3 + 4 = 19"
+  options: number[]
+  answer: number
+}
+
+/** "2 blue of 5 marbles — the chance of blue?" as a fraction card (K7). */
+export interface ChanceFracQuestion extends BaseQuestion {
+  activity: 'chance-frac'
+  payload: { scenario: string; favorable: number; total: number; optionLabels: string[] }
   options: number[] // indices into optionLabels
   answer: number
 }
@@ -771,6 +835,9 @@ export type Question =
   | ConvertQuestion
   | VolumeQuestion
   | CoordQuestion
+  | AngleSumQuestion
+  | RiddleQuestion
+  | ChanceFracQuestion
 
 /** What a child answers with — a number (count/add) or a side (compare). */
 export type Answer = number | 'left' | 'right'

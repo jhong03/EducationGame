@@ -10,20 +10,32 @@ export function generateVolume(
   params: Record<string, number>,
   rng: Rng = Math.random,
 ): VolumeQuestion {
-  void params
-  const w = randInt(2, 4, rng)
-  const h = randInt(2, 3, rng)
-  const d = randInt(2, 3, rng)
+  // Formula mode (12+): only the dimensions are given — nothing to count,
+  // the child must MULTIPLY. Bigger numbers; "added the sides" decoy joins.
+  const drawn = (params.formula ?? 0) !== 1
+  const w = drawn ? randInt(2, 4, rng) : randInt(3, 6, rng)
+  const h = drawn ? randInt(2, 3, rng) : randInt(2, 5, rng)
+  const d = drawn ? randInt(2, 3, rng) : randInt(2, 5, rng)
   const answer = w * h * d
   const oneLayer = w * h
-  const layersOff = oneLayer * (d === 2 ? 3 : 2) // one layer too many/few
+
+  const options = new Set<number>([answer])
+  const candidates = drawn
+    ? [oneLayer, oneLayer * (d === 2 ? 3 : 2)] // counted one layer / one off
+    : [oneLayer, w + h + d, answer - oneLayer, answer + oneLayer] // forgot depth / added the sides / a layer off
+  for (const c of candidates) {
+    if (options.size >= 3) break
+    if (c >= 1 && c !== answer) options.add(c)
+  }
 
   return {
     id: makeId('vol', rng),
     activity: 'volume',
-    prompt: `Every layer is the same. How many cubes in the whole stack?`,
-    payload: { w, h, d },
-    options: shuffle([answer, oneLayer, layersOff], rng),
+    prompt: drawn
+      ? `Every layer is the same. How many cubes in the whole stack?`
+      : `A box of cubes: ${w} long, ${h} tall, ${d} deep. How many cubes?`,
+    payload: { w, h, d, drawn },
+    options: shuffle([...options], rng),
     answer,
   }
 }

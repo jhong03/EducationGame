@@ -5,7 +5,7 @@ import {
   isLevelUnlocked,
   categorySprintScore,
 } from '../engine/store'
-import { levelsInCategory } from '../content/math'
+import { levelsInCategoryForAge } from '../content/math'
 import { audio } from '../audio/AudioManager'
 import MuteButton from '../components/MuteButton'
 import Twinkle from '../components/Twinkle'
@@ -35,7 +35,9 @@ export default function CategoryScreen({
 }: CategoryScreenProps) {
   const progress = useGameStore((s) => s.progress)
   const bestScores = useGameStore((s) => s.bestScores)
-  const levels = levelsInCategory(category.id)
+  const age = useGameStore((s) => s.age)
+  // Only this child's tier of the ladder — age-gated rungs aren't teased.
+  const levels = levelsInCategoryForAge(category.id, age)
   const trophyTotal = categorySprintScore(levels, bestScores)
 
   return (
