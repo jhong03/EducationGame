@@ -4,22 +4,36 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-04 · Branch: `main` · HEAD: `14bef7a` (pushed to
-[jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — everything in the
-§7 session log through **Sprint mode** is committed and pushed._
+_Last updated: 2026-07-04 · Branch: `main` · HEAD: `6ea2ab2` (pushed to
+[jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — the working tree
+is CLEAN; everything in the §7 session log is committed and pushed._
 
 ---
 
 ## 1. TL;DR — where we are
 
-**Phase 0 is code-complete, committed, and verified green.** The full playable slice
-described in the brief exists: five-level trail, all three activities (count / compare /
-add), tap-to-count with spoken numbers, Twinkle the guide, safe-failure feedback,
-mastery-gated unlock, persisted progress, PWA, TTS+Web-Audio behind an AudioManager.
+**The game serves ages 4–9 for real: 22 categories · 84 levels · 41 activity types.**
+- **Early band (4–6): complete and deep** — 10 categories / 46 levels: counting (incl.
+  zero, ±1, count-down, count-by-tens), compare (more/fewer/equal/numerals), add
+  (doubles, bonds), subtract (to zero), shapes (+sides, tap-all), patterns (AB→ABC),
+  clock (o'clock/half-past, set-the-clock, day scenes), money (coins, make-amount,
+  coin-compare), Puzzle Grove (odd-one-out, shadow match, who-left, belongs, position,
+  size), Big & Small (size/height/weight).
+- **Mid band (7–9): open and rich** — 12 chapters / 38 levels: Place Value (blocks to
+  999, rounding, compare), Times Tables (groups → all-to-12 → tricky 6/7/8/9),
+  Add & Subtract (to 1000), Sharing (+remainders), Fractions (bar-model to eighths),
+  Measuring (units, area, perimeter), Time Master (five-minute clock, elapsed), Money
+  Math (change), Data & Graphs, Shape Lab, Number Detective (□-equations), Story
+  Problems.
+- **Upper band (10–12): not started** — the last "still growing" fallback (Phases 4–6).
+- **Systems all live:** category navigation (derived unlock, never re-locks), age gate
+  + band filtering, placement check (ages 5–6), pace profiler, per-continent currency,
+  **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
+  countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
+  (reset re-asks age → new-sibling handoff).
 
-Working tree is **clean** — everything is in the single commit `593182b`. There is no
-work-in-progress to resume; the next session starts a **new** increment (Phase 1 seams,
-polish, or a new subject/level) rather than finishing something half-done.
+Resume by reading §7's last entries; next work: Phase 4 leftovers (fraction
+equivalence/ops, read-scale, build-graph) or Phases 5–6 (upper band).
 
 ### Verified this session (all green)
 | Gate | Command | Result |
@@ -66,6 +80,22 @@ brief's §8 exactly.
     (o'clock / half-past); choices differ by hour only.
   - [`money.ts`](src/engine/generators/money.ts) — currency-agnostic coin values;
     `mixed: 0` unit-coin counting (tap-countable), `mixed: 1` two small coins to add.
+  - **Early-expansion set** (one file each, same pattern): `oneMore`, `sameOrNot`,
+    `numCompare`, `bond`, `sides`, `coinCompare`, `whoLeft`, `belongs`, `position`,
+    `dayTime`, `sizeCompare`, `heightCompare`, `weightCompare`, `makeAmount`,
+    `setClock`, `tapAll` (+`oddOneOut` size mode, `shadowMatch` silhouette-twin
+    exclusion).
+  - **Mid-band set**: `placeValue` (digit-swap distractor), `round` (nearest 10/100,
+    rounds both ways), `multiply` (`TABLE_SETS` 1–4, adjacent-entry distractors),
+    `divide` (always exact), `share`, `arith` (`op` 0/1), `fractionOf` (bar model),
+    `unitPick` (same-dimension foils), `gridRect` (area/perimeter), `elapsed`,
+    `change`, `graph` (count + most), `shapeSort`, `missing` (□-equations incl. ×),
+    `leftover` (true remainders), `wordProblem` (templates in
+    [`content/stories.ts`](src/content/stories.ts)). `clock` gained a five-minute
+    mode (choices differ by MINUTE).
+  - Every generator is seed-swept in
+    [`generators.test.ts`](src/engine/generators.test.ts) (mulberry32 streams; the
+    exactly-one-correct options contract is enforced throughout).
 - [`engine/masteryGate.ts`](src/engine/masteryGate.ts) — pure `evaluateAnswer(...)`:
   is-correct, streak (climbs on correct, **never resets/penalizes** on wrong), and
   `cleared` when streak hits `masteryGoal`.
@@ -73,7 +103,9 @@ brief's §8 exactly.
   (key `number-meadow/v1`, **version 2**, `migrate: migratePersistedState` — v1 saves
   keep their earned fields; level ids unchanged so cleared levels keep counting).
   Persists earned progress + settings via `partialize` (`stars`, `progress`, `muted`,
-  `pace`). **There is no stored unlock state**: which levels are open is *derived*
+  `pace`, `age`, `currency`, `bestScores`). Sprint bests live in `bestScores`
+  (`recordSprintScore` is forward-only; `categorySprintScore` sums a category).
+  **There is no stored unlock state**: which levels are open is *derived*
   from `progress` by `unlockedUpTo` / `isLevelUnlocked` (consecutive-cleared prefix
   within a category, plus **a cleared level is always open** — it can never re-lock) —
   reshaping content never needs a child-data migration. **Forward-only** invariant: no
@@ -95,35 +127,33 @@ brief's §8 exactly.
 
 ### Content — all the math lives here (data, not code)
 - [`content/math.ts`](src/content/math.ts) — `MATH_SPINE` (full 3-band ladder as
-  reference data) + **`CATEGORIES`** (10: `counting` 🍎 / `comparing` 🎈 / `adding` 🍪 /
-  `taking-away` 🐸 / `shapes` 🔷 / `patterns` 🧩 / `time` 🕐 / `money` 🪙 /
-  `puzzle-grove` 🦉 / `big-small` 📏) + `PHASE0_LEVELS` (ids 1–5) + `PHASE1_LEVELS`
-  (ids 6–11) + `PHASE2_LEVELS` (ids 12–21) + **`EXPANSION_LEVELS`** (ids 22–46: the
-  approved A/B/C/D early-band expansion — count-down/by-tens/zero/±1, fewer/equal/
-  numeral-compare, doubles/bonds, subtract-to-zero, shape sides, ABC patterns, coin
-  compare, Puzzle Grove ×4 more, day scenes, Big & Small ×3, make-amount, set-clock,
-  tap-all). **Ids are stable forever** — persisted progress is keyed on them. Helpers:
-  `categoryById`, `categoriesForBand`, `levelsInCategory`, `levelById`,
-  `nextLevelAfter` (gap-tolerant), `TRAIL` (flat list, **46 levels**).
+  reference data) + **`CATEGORIES`** (**22** — 10 early: `counting` 🍎 / `comparing` 🎈 /
+  `adding` 🍪 / `taking-away` 🐸 / `shapes` 🔷 / `patterns` 🧩 / `time` 🕐 / `money` 🪙 /
+  `puzzle-grove` 🦉 / `big-small` 📏; 12 mid: `place-value` 🧱 / `times-tables` ✖️ /
+  `number-crunch` ➕ / `sharing` 🍰 / `fractions` 🍕 / `measuring` 📐 / `time-mid` ⏰ /
+  `money-mid` 💰 / `data` 📊 / `shape-lab` 🔺 / `detective` 🕵️ / `stories` 📖).
+  Level tables: `PHASE0_LEVELS` (early 1–5) + `PHASE1_LEVELS` (6–11) + `PHASE2_LEVELS`
+  (12–21) + `EXPANSION_LEVELS` (22–46) + `PHASE3_LEVELS` (`math-mid-1..13`) +
+  `PHASE3B_LEVELS` (`math-mid-14..38`). **Ids are stable forever** — persisted
+  progress is keyed on them; `makeLevel` is band-general and stamps `sprintSeconds`
+  per activity. Helpers: `categoryById`, `categoriesForBand`, `levelsInCategory`,
+  `levelById`, `nextLevelAfter` (gap-tolerant), `TRAIL` (flat list, **84 levels**).
 - [`content/shapes.ts`](src/content/shapes.ts) — the 2D shape vocabulary (circle →
   heart), drawn by [`components/ShapeGlyph`](src/components/ShapeGlyph.tsx) in ONE
   color (shape, never color, is the discriminator).
 - [`content/currency.ts`](src/content/currency.ts) — the per-continent currency seam
   (USD/EUR/GBP/SGD/AUD/ZAR). Money content stores plain values; only rendering reads
   the persisted `currency` (device setting, picked in ParentView, survives reset).
-- [`content/words.ts`](src/content/words.ts) — number words 0–20 (`numberWord`),
-  shared by spoken prompts and the AudioManager. Swap to localise.
-- [`content/themes.ts`](src/content/themes.ts) — the countable objects (apple, duck,
-  star, balloon, frog, flower, fish, cookie, butterfly), each with emoji + plural.
-
-**The Phase 0 trail** (exactly per brief §4):
-| # | Name | Activity | Params | Goal |
-|---|---|---|---|---|
-| 1 | Count to 3 | count | `{max:3}` | 3 |
-| 2 | Count to 5 | count | `{max:5}` | 3 |
-| 3 | Count to 10 | count | `{max:10}` | 3 |
-| 4 | Which is more? | compare | `{max:6}` | 3 |
-| 5 | Add it up | add | `{max:5}` | 3 |
+- [`content/words.ts`](src/content/words.ts) — number words 0–20 (`numberWord`,
+  `capitalize`), shared by spoken prompts and the AudioManager. Swap to localise.
+- [`content/themes.ts`](src/content/themes.ts) — 15 countable objects, each with
+  emoji + plural + a `kind` tag (food/animal/nature/toy) powering sorting play.
+- [`content/world.ts`](src/content/world.ts) — weight pairs (heavier-first),
+  day scenes, `MEASURE_OBJECTS` (thing + right unit + same-dimension foil).
+- [`content/stories.ts`](src/content/stories.ts) — word-problem templates
+  (+/−/× with `{a}` `{b}` `{things}` placeholders).
+- [`content/placement.ts`](src/content/placement.ts) — placement plans (ages 5–6
+  only; 7+ start fresh in their own band), gap-free by test.
 
 ### Audio
 - [`audio/AudioManager.ts`](src/audio/AudioManager.ts) — the **only** place the game
@@ -159,31 +189,43 @@ brief's §8 exactly.
 - [`screens/CategoryScreen.tsx`](src/screens/CategoryScreen.tsx) — one category's levels
   as a **grid of chunky tiles** (locked 🔒 / open+glowing / cleared ⭐); tap speaks the
   level name and starts it. Deliberately *not* a path.
-- [`screens/PlayScreen.tsx`](src/screens/PlayScreen.tsx) — the core loop. Holds
-  **transient** play state (current question, in-attempt streak, which objects counted,
-  wrong-shake token); only earned progress goes to the store. Renders count/add
-  (tap-to-count + number buttons) or compare (tap-a-side). Correct → chime, Twinkle
-  cheers, praise, confetti, dot fills, +1 star, next question (or cleared at goal). Wrong
-  → soft tone, Twinkle sad, "Try again!", control shakes, **nothing lost**.
+- [`screens/PlayScreen.tsx`](src/screens/PlayScreen.tsx) — the mastery loop. Holds
+  **transient** play state (current question, in-attempt streak, tap-count map,
+  wrong-shake token); only earned progress goes to the store; `clearLevel` persists
+  **synchronously** on the mastering answer (only navigation waits on the timer).
+  Exports **`ActivityStage`** — the full 41-activity renderer switch + number-button
+  row, shared verbatim by PlacementScreen and SprintScreen — plus `CountStage`/
+  `CompareStage`, `ClockFace`, `CoinFace`, `ExprCard`. Correct → chime, Twinkle
+  cheers, praise, confetti, dot fills, +1 star, next question (or cleared at goal).
+  Wrong → soft tone, "Try again!", control shakes, **nothing lost** (mastery mode
+  only — sprints move on instead).
+- [`screens/SprintScreen.tsx`](src/screens/SprintScreen.tsx) — the high-score layer,
+  unlocked per level by mastery. Early band: ambient sun-track timer, misses advance;
+  end is always a celebration. Mid+ bands ("arcade"): visible m:ss countdown (coral
+  ≤10s) + 🔥 streak bonus (3-in-a-row and beyond score double). Partial runs save;
+  bests are forward-only.
 - [`screens/ClearedScreen.tsx`](src/screens/ClearedScreen.tsx) — confetti + Twinkle
-  cheering, "back to map" vs "next level" (special-cases reaching the top).
+  cheering; "Next level" / "🏆 Sprint!" / back (celebrates the whole category on its
+  last level).
 - [`screens/ParentView.tsx`](src/screens/ParentView.tsx) — **adults-only** panel (the
-  buyer). Summary stats (stars / mastered X/11 / categories finished X/4), **Child's age**
-  section (age chips → band; changing age never touches progress), **Learning pace**
-  section (the 5-question quiz → suggested session plan), per-category level lists with
-  status pills + best streaks, a local-only-storage privacy note, and **Reset all
-  progress** gated behind a one-shot addition challenge (a skill beyond the 4–6 band, so
-  a pre-reader can't wipe their own progress; reset preserves the household settings —
-  age, pace, mute). Reached from a discreet "⚙️ For grown-ups" button on
+  buyer). Summary stats (stars / mastered X/84 / categories finished X/22), **Child's
+  age** section (age chips → band; changing age never touches progress), **Money
+  currency** picker, **Learning pace** section (the 5-question quiz → suggested
+  session plan), per-category level lists with status pills ("Placed" is distinct
+  from "Mastered") + best streaks + 🏆 sprint bests, a local-only-storage privacy
+  note, and **Reset all progress** gated behind a one-shot addition challenge — reset
+  wipes progress **and the age** (gate re-asks; new-sibling handoff) while pace, mute
+  and currency survive. Reached from a discreet "⚙️ For grown-ups" button on
   [`Home`](src/screens/Home.tsx). Deliberately the one screen that breaks the
   no-reading rule — it's for a reading adult.
 - [`App.tsx`](src/App.tsx) — tiny hand-rolled router
-  (`home | category | play | cleared | parent`, keyed by **ids** not order), audio
-  unlock + mute mirroring, and the **age gate**: `age === null` renders
-  [`AgeScreen`](src/screens/AgeScreen.tsx) before any route; otherwise
-  `bandForAge(age)` feeds Home. `PlayScreen` is keyed by `level.id` for a fresh mount
-  per level. Cleared→next stays inside the category; finishing a category's last level
-  returns home.
+  (`home | placement | category | play | sprint | cleared | parent`, keyed by **ids**
+  not order), audio unlock + mute mirroring, and the **age gate**: `age === null`
+  renders [`AgeScreen`](src/screens/AgeScreen.tsx) before any child-facing route
+  (parent route sits above the gate); ages 5–6 with no progress route through
+  [`PlacementScreen`](src/screens/PlacementScreen.tsx) after the pick. `PlayScreen`
+  and `SprintScreen` are keyed by `level.id` for fresh mounts. Cleared→next stays
+  inside the category; finishing a category's last level returns home.
 
 ### Theme / config
 - [`theme/tokens.css`](src/theme/tokens.css) — the §5 palette as CSS custom properties
@@ -196,16 +238,24 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (33, all passing)
+### Tests (133, all passing)
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
 - [`engine/masteryGate.test.ts`](src/engine/masteryGate.test.ts) — streak climbs on
   correct, holds on wrong, clears at goal.
-- [`engine/loop.test.ts`](src/engine/loop.test.ts) — store unlock/persist loop end-to-end.
-- [`App.test.tsx`](src/App.test.tsx) — full play loop + the map→grown-ups→back route.
-- [`screens/ParentView.test.tsx`](src/screens/ParentView.test.tsx) — summary renders; the
-  gated reset wipes progress only on the correct answer; cancel/wrong-answer are no-ops.
+- [`engine/loop.test.ts`](src/engine/loop.test.ts) — the full-meadow loop (every level
+  of every category auto-played to mastery via `generateQuestion` — covers ALL
+  activities generically), derived-unlock rules, reset semantics, sprint scores,
+  sprintSeconds sanity, persisted-state migration.
+- [`engine/band.test.ts`](src/engine/band.test.ts) + [`engine/pace.test.ts`](src/engine/pace.test.ts) +
+  [`content/placement.test.ts`](src/content/placement.test.ts) — the pure systems.
+- [`App.test.tsx`](src/App.test.tsx) — integration: play loop, age gate, placement
+  flows, band homes (age 9 = mid, age 11 = fallback), sprint (early + arcade streak),
+  back-routes, grown-ups reset → age gate.
+- [`screens/ParentView.test.tsx`](src/screens/ParentView.test.tsx) — stats/status
+  counts pinned exactly (1/84, 0/22 …), currency picker, pace quiz, Placed pill,
+  gated reset.
 
 ---
 
@@ -254,8 +304,11 @@ None of these break Phase 0; they're the first things to consider next.
   via `params`. The clean seam is that generators already take `params`; a Phase-1 nudge
   would vary `params` (e.g. `max`) within a level based on recent accuracy. `PlayScreen`
   already tracks the in-attempt streak that such logic would read.
-- **`sayNumber` word list covers 0–20.** Fine for Phase 0 (max is 10); falls back to
-  digits beyond 20. Extend when mid/upper bands land.
+- **`sayNumber` word list covers 0–20**; beyond that it falls back to digits, which
+  TTS reads correctly ("30" → "thirty") — fine in practice, extend words.ts if
+  recorded VO ever lands.
+- **Mid band relaxes the pre-reader rule deliberately** (7–9s read): expression cards,
+  unit labels, story text. Prompts are still always spoken.
 - **Praise selection uses `Math.random()`** in `PlayScreen` (UI-only, fine). Generators
   correctly use the injectable RNG in `random.ts` for determinism under test.
 
@@ -267,36 +320,30 @@ Everything here is **out of scope for Phase 0** per the brief §10/§11 — list
 next session can pick up deliberately. Ship-later legal/product notes are already in the
 [README](README.md) §Ship-later.
 
-> **The full 4–12 math curriculum spine is now drafted in
-> [CURRICULUM.md](CURRICULUM.md)** — 12 strands × 3 bands, grounded in US Common Core,
-> England NC/EYFS, Singapore, Australia, Japan, and Ontario, mapped to the engine's
-> activity model, with a 7-phase rollout. **Awaiting the user's pass** (see its §6 open
-> decisions) before any of it becomes `Level[]` data.
+> **[CURRICULUM.md](CURRICULUM.md) is the master plan** — 12 strands × 3 bands from six
+> national curricula, ALL SEVEN decisions locked (full spine incl. Probability &
+> Financial Literacy · 3 bands · per-continent currency · phase flow · Puzzle Grove ·
+> parent-tuned pacing · Sprint scoring). Its §5 phase table tracks build status:
+> Phases 0–3.5 ✅ built; Phases 4–6 remain.
 
-### Near-term / Phase 1 candidates
-1. **Adaptive difficulty (the first real seam to fill).** Nudge difficulty *within* a
-   level based on recent accuracy. Read the streak/attempt history, adjust generator
-   `params`. Keep it in the engine as a small, testable module; content stays data.
-2. **Extend the `early` band.** The spine lists two more early rungs not yet on the trail:
-   **`numeral ↔ quantity`** and **`add within 10`**. `numeral ↔ quantity` needs a **new
-   activity type** (+ generator + render branch); `add within 10` is just a new `add`
-   level (`{max:10}`) — trivial, data-only.
-3. ~~**Parent/teacher view + reset.**~~ ✅ **Done** ([`ParentView`](src/screens/ParentView.tsx)) —
-   progress summary + gated reset. *Still open here:* progress **export** (CSV/JSON) for
-   the teacher use-case, and richer per-level stats (attempts, accuracy) once tracked.
+### Near-term
+1. **Phase 4 (mid leftovers):** fraction equivalence & same-denominator ops
+   (`fraction-op`), reading scales/rulers (`read-scale`), constructing graphs
+   (`build-graph`), column written methods.
+2. **Phases 5–6: open the upper band (10–12)** — decimals, %, ratio, negatives,
+   angles/protractor, volume, averages, order of operations, multi-step problems —
+   removes the last "still growing" fallback. Upper sprints already have arcade rails.
+3. **Adaptive difficulty (last unfilled seam).** Nudge generator `params` within a
+   level from recent accuracy; can also read the pace profile.
+4. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
+   use-case, richer per-level stats (attempts, accuracy) once tracked.
 
-### Later phases (seams left, not built)
-4. **Spaced review** — a scheduler that re-surfaces older cleared skills. Seam noted; no code yet.
-5. ~~**Calibration/placement**~~ ✅ **v1 built** ([`PlacementScreen`](src/screens/PlacementScreen.tsx)
-   + [`content/placement.ts`](src/content/placement.ts)): after the age gate, ages 5+
-   with no progress get a short "Show me what you can do!" — each correct probe places
-   them past rungs (`cleared` + `placed: true`, no stars); first miss ends gently.
-   *Still open:* placement plans for the mid/upper bands when their content lands.
-6. **Mid & upper bands** — add/subtract within 20→100, place value, times tables,
-   fractions, decimals, percentages, area/perimeter, order of ops, equations, word
-   problems. Each is content + (sometimes) a new activity.
-7. **New subjects** (reading, shapes, …) — the engine is already subject-agnostic; this
-   is more content modules + activities.
+### Later (seams noted, not built)
+5. **Spaced review** — a scheduler that re-surfaces older cleared skills.
+6. **Mid/upper placement plans** — early's placement (ages 5–6) is live; add probe
+   plans for 7+ once the mid ladder is tall enough to be worth skipping.
+7. **New subjects** (reading, shapes-as-subject, …) — the engine is already
+   subject-agnostic; more content modules + activities.
 8. **Recorded human voice-over** — replace the TTS block at
    [AudioManager.ts:148](src/audio/AudioManager.ts#L148) with clip playback.
 
@@ -453,8 +500,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   misread (73↔37). **Mid sprints went arcade** per decision #7: visible m:ss countdown
   (coral under 10s) + 🔥 streak bonus (3-in-a-row and beyond score double); early
   sprints unchanged. Placement: ages 7+ skip the early plan (their band starts fresh).
-  **121 tests passing**, build & lint clean. Committed & pushed as the Phase 3
-  increment.
+  **121 tests passing**, build & lint clean. Committed & pushed as **`60e407f`**.
 - **2026-07-04 — Mid deepening wave (user-directed: "7–9 is the most important
   phase").** The mid band **triples: 13 → 38 levels, 4 → 12 chapters.** Existing four
   deepened (compare/round to 999–1000, the tricky 6/7/8/9 tables, big sums, more
@@ -469,7 +515,12 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   [`content/stories.ts`](src/content/stories.ts) templates). Also fixed in passing:
   `round` nearest-100 could only round DOWN (offset now spans the full gap,
   both-ways test added). Ids `math-mid-14..38`; **22 categories / 84 levels** total.
-  **133 tests passing**, build & lint clean.
+  **133 tests passing**, build & lint clean. Committed & pushed as **`6ea2ab2`**.
+- **2026-07-04 — Handoff true-up before chat compaction.** This file audited
+  end-to-end against the code (§1 TL;DR, §2 module map incl. all generators /
+  SprintScreen / ActivityStage / store fields, §4 gaps, §5 roadmap now pointing at
+  Phase 4 + upper band, §7 hashes). If you are resuming from a compacted chat:
+  **this document + [CURRICULUM.md](CURRICULUM.md) are the source of truth.**
 - **2026-07-04 — Reset re-asks the age.** User-reported: once an age is persisted, the
   gate never reappears (correct for returning players, but there was NO in-app path
   back to it). `reset()` now clears `age` too (pace/mute survive) → closing the
