@@ -68,6 +68,21 @@ export type ActivityType =
   | 'read-scale'
   | 'build-graph'
   | 'column-op'
+  // upper band — Phases 5–6
+  | 'find-number'
+  | 'decimal'
+  | 'equiv-pick'
+  | 'percent-of'
+  | 'negatives'
+  | 'angle'
+  | 'symmetry'
+  | 'order-ops'
+  | 'ratio'
+  | 'mean'
+  | 'chance'
+  | 'convert'
+  | 'volume'
+  | 'coord'
 
 /**
  * A skill strand a child picks from on the home screen (e.g. "Counting").
@@ -555,12 +570,138 @@ export interface BuildGraphQuestion extends BaseQuestion {
   answer: number // digit-encoded target heights
 }
 
-/** Column addition/subtraction (C4/C5) — the written method, with a carry or
- *  borrow always forced (without one it's just `arith` again). */
+/** Column addition/subtraction/multiplication (C4/C5/D7) — the written
+ *  method, with a carry or borrow always forced (without one it's just
+ *  `arith` again). `'×'` is short multiplication: 2-digit × 1-digit. */
 export interface ColumnOpQuestion extends BaseQuestion {
   activity: 'column-op'
-  payload: { a: number; b: number; op: '+' | '-' }
+  payload: { a: number; b: number; op: '+' | '-' | '×' }
   options: number[] // includes the forgot-the-carry / digit-flip classics
+  answer: number
+}
+
+// ---- Upper band — Phases 5–6 -----------------------------------------------
+
+/** "Find four thousand two hundred six!" — the prompt speaks/shows the WORDS,
+ *  the buttons show numerals (B5: read big numbers). Decoys are digit swaps. */
+export interface FindNumberQuestion extends BaseQuestion {
+  activity: 'find-number'
+  payload: { value: number }
+  options: number[]
+  answer: number
+}
+
+/** A shaded tenths bar or hundredths grid → pick the decimal card (E5).
+ *  The classic 0.7-vs-0.07 misread is always among the cards. */
+export interface DecimalQuestion extends BaseQuestion {
+  activity: 'decimal'
+  payload: { num: number; den: 10 | 100; optionLabels: string[] }
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+/** "Which is the same as 1/2?" — fraction ↔ decimal ↔ percent cards (E6). */
+export interface EquivPickQuestion extends BaseQuestion {
+  activity: 'equiv-pick'
+  payload: { shown: string; optionLabels: string[] }
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+/** "What is 50% of 40?" — percentages of amounts, always whole answers (E8). */
+export interface PercentOfQuestion extends BaseQuestion {
+  activity: 'percent-of'
+  payload: { pct: number; of: number }
+  options: number[]
+  answer: number
+}
+
+/** The −max..max number line (B7): read the arrow (`mode` read), or work an
+ *  expression that lands below zero (`expr` set, no arrow drawn). */
+export interface NegativesQuestion extends BaseQuestion {
+  activity: 'negatives'
+  payload: { min: number; max: number; value: number; expr?: string }
+  options: number[]
+  answer: number // === value
+}
+
+/** Tap the right/acute/obtuse angle (J5/J6) — drawn, never labeled. */
+export interface AngleQuestion extends BaseQuestion {
+  activity: 'angle'
+  payload: { degrees: number[]; target: 'right' | 'acute' | 'obtuse' }
+  options: number[] // card indices
+  answer: number
+}
+
+/** "How many mirror lines?" — lines of symmetry for a drawn shape (J4). */
+export interface SymmetryQuestion extends BaseQuestion {
+  activity: 'symmetry'
+  payload: { shapeId: string }
+  options: number[]
+  answer: number
+}
+
+/** "2 + 3 × 4?" — order of operations; the trap is left-to-right (F6). */
+export interface OrderOpsQuestion extends BaseQuestion {
+  activity: 'order-ops'
+  payload: { text: string }
+  options: number[]
+  answer: number
+}
+
+/** "2 🍎 for every 3 🐟 — 6 🍎 means how many 🐟?" — scale a ratio (E9). */
+export interface RatioQuestion extends BaseQuestion {
+  activity: 'ratio'
+  payload: {
+    a: number
+    b: number
+    scaledA: number
+    aEmoji: string
+    bEmoji: string
+    aName: string // plural
+    bName: string // plural
+  }
+  options: number[]
+  answer: number // b scaled by the same factor
+}
+
+/** "Scores 3, 5, 7 — what is the mean?" (K5). The sum is always a decoy. */
+export interface MeanQuestion extends BaseQuestion {
+  activity: 'mean'
+  payload: { values: number[] }
+  options: number[]
+  answer: number
+}
+
+/** "You roll a seven on a normal dice — certain, maybe or impossible?" (K7). */
+export interface ChanceQuestion extends BaseQuestion {
+  activity: 'chance'
+  payload: { scenario: string; optionLabels: string[] } // Certain/Maybe/Impossible
+  options: number[] // indices into optionLabels
+  answer: number
+}
+
+/** "2 m = ? cm" — unit conversion; the wrong-factor decoys ride along (H8). */
+export interface ConvertQuestion extends BaseQuestion {
+  activity: 'convert'
+  payload: { from: string; to: string; amount: number }
+  options: number[]
+  answer: number
+}
+
+/** Count the cubes: `d` layers of w×h (H7). One-layer-only is the decoy. */
+export interface VolumeQuestion extends BaseQuestion {
+  activity: 'volume'
+  payload: { w: number; h: number; d: number }
+  options: number[]
+  answer: number
+}
+
+/** "Where is the star?" — first-quadrant coordinates; (y, x) is the trap (F8). */
+export interface CoordQuestion extends BaseQuestion {
+  activity: 'coord'
+  payload: { x: number; y: number; size: number; optionLabels: string[] }
+  options: number[] // indices into optionLabels
   answer: number
 }
 
@@ -616,6 +757,20 @@ export type Question =
   | ReadScaleQuestion
   | BuildGraphQuestion
   | ColumnOpQuestion
+  | FindNumberQuestion
+  | DecimalQuestion
+  | EquivPickQuestion
+  | PercentOfQuestion
+  | NegativesQuestion
+  | AngleQuestion
+  | SymmetryQuestion
+  | OrderOpsQuestion
+  | RatioQuestion
+  | MeanQuestion
+  | ChanceQuestion
+  | ConvertQuestion
+  | VolumeQuestion
+  | CoordQuestion
 
 /** What a child answers with — a number (count/add) or a side (compare). */
 export type Answer = number | 'left' | 'right'

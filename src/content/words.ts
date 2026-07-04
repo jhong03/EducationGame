@@ -19,6 +19,39 @@ export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1)
 }
 
+const TENS_WORDS = [
+  '', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+] as const
+
+/**
+ * The spoken/written form of any number to 9,999 ("four thousand two hundred
+ * and six"). The upper band's find-number levels PRINT the words and hide the
+ * numerals in the buttons — reading big numbers is the skill (B5).
+ */
+export function numberWordBig(n: number): string {
+  if (n < 0) return `minus ${numberWordBig(-n)}`
+  if (n <= 20) return numberWord(n)
+  if (n < 100) {
+    const tens = Math.floor(n / 10)
+    const ones = n % 10
+    return ones === 0 ? TENS_WORDS[tens] : `${TENS_WORDS[tens]}-${NUMBER_WORDS[ones]}`
+  }
+  if (n < 1000) {
+    const hundreds = Math.floor(n / 100)
+    const rest = n % 100
+    return rest === 0
+      ? `${numberWord(hundreds)} hundred`
+      : `${numberWord(hundreds)} hundred and ${numberWordBig(rest)}`
+  }
+  if (n < 10000) {
+    const thousands = Math.floor(n / 1000)
+    const rest = n % 1000
+    if (rest === 0) return `${numberWord(thousands)} thousand`
+    return `${numberWord(thousands)} thousand ${rest < 100 ? 'and ' : ''}${numberWordBig(rest)}`
+  }
+  return String(n)
+}
+
 /** Fraction part names — singular/plural per denominator the game uses. */
 const FRACTION_PARTS: Record<number, readonly [string, string]> = {
   2: ['half', 'halves'],
@@ -30,6 +63,7 @@ const FRACTION_PARTS: Record<number, readonly [string, string]> = {
   9: ['ninth', 'ninths'],
   10: ['tenth', 'tenths'],
   12: ['twelfth', 'twelfths'],
+  100: ['hundredth', 'hundredths'],
 }
 
 /**

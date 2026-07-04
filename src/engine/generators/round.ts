@@ -30,7 +30,9 @@ export function generateRound(
   return {
     id: makeId('round', rng),
     activity: 'round',
-    prompt: `Round ${value} to the nearest ${nearest === 100 ? 'hundred' : 'ten'}!`,
+    prompt: `Round ${value} to the nearest ${
+      nearest === 1000 ? 'thousand' : nearest === 100 ? 'hundred' : 'ten'
+    }!`,
     payload: { value, nearest },
     options: shuffle([...options].slice(0, 3), rng),
     answer,

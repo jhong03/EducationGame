@@ -56,7 +56,21 @@ export function isCorrect(question: Question, answer: Answer): boolean {
     case 'fraction-op': // fraction card index
     case 'read-scale': // the tick the arrow points at
     case 'build-graph': // digit-encoded column heights
-    case 'column-op': // sum / difference
+    case 'column-op': // sum / difference / product
+    case 'find-number': // the numeral for the spoken words
+    case 'decimal': // decimal card index
+    case 'equiv-pick': // equivalent card index
+    case 'percent-of': // the part
+    case 'negatives': // the (negative) tick
+    case 'angle': // angle card index
+    case 'symmetry': // mirror-line count
+    case 'order-ops': // the properly-ordered result
+    case 'ratio': // the scaled partner quantity
+    case 'mean': // the average
+    case 'chance': // scale-word index
+    case 'convert': // the converted amount
+    case 'volume': // total cubes
+    case 'coord': // coordinate card index
       return typeof answer === 'number' && answer === question.answer
     case 'compare':
     case 'num-compare':

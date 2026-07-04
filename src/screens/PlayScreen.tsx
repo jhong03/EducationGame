@@ -62,6 +62,11 @@ const INDEX_ANSWER_ACTIVITIES = new Set<Question['activity']>([
   'shape-sort', // tap a shape card
   'fraction-op', // fraction cards
   'build-graph', // its stage carries its own ✔️ submit
+  'decimal', // decimal cards
+  'equiv-pick', // equivalence cards
+  'angle', // tap an angle card
+  'chance', // tap a scale word
+  'coord', // coordinate cards
 ])
 
 /** Narrow to the value-answer activities that use the number-button row. */
@@ -95,6 +100,15 @@ function hasNumberButtons(
       | 'word-problem'
       | 'read-scale'
       | 'column-op'
+      | 'find-number'
+      | 'percent-of'
+      | 'negatives'
+      | 'symmetry'
+      | 'order-ops'
+      | 'ratio'
+      | 'mean'
+      | 'convert'
+      | 'volume'
   }
 > {
   return !INDEX_ANSWER_ACTIVITIES.has(q.activity)
@@ -546,6 +560,77 @@ export function ActivityStage({
           />
         ) : question.activity === 'column-op' ? (
           <ColumnOpStage question={question} />
+        ) : question.activity === 'find-number' ? (
+          <ExprCard text="👂" sub="listen for the number, then find it below" />
+        ) : question.activity === 'decimal' ? (
+          <DecimalStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'equiv-pick' ? (
+          <div className="flex w-full flex-col items-center gap-5">
+            <ExprCard text={question.payload.shown} />
+            <FractionCards
+              labels={question.payload.optionLabels}
+              answer={question.answer}
+              disabled={disabled}
+              wrong={wrong}
+              shakeToken={shakeToken}
+              highlightCorrect={highlightCorrect}
+              onPick={onAnswer}
+            />
+          </div>
+        ) : question.activity === 'percent-of' ? (
+          <ExprCard text={`${question.payload.pct}% of ${question.payload.of}`} />
+        ) : question.activity === 'negatives' ? (
+          <NumberLineStage question={question} />
+        ) : question.activity === 'angle' ? (
+          <AngleStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'symmetry' ? (
+          <div className="grid place-items-center rounded-3xl bg-cream/60 p-5">
+            <ShapeGlyph shapeId={question.payload.shapeId} size={120} />
+          </div>
+        ) : question.activity === 'order-ops' ? (
+          <ExprCard text={question.payload.text} />
+        ) : question.activity === 'ratio' ? (
+          <RatioStage question={question} />
+        ) : question.activity === 'mean' ? (
+          <MeanStage question={question} />
+        ) : question.activity === 'chance' ? (
+          <ChanceStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
+        ) : question.activity === 'convert' ? (
+          <ExprCard
+            text={`${question.payload.amount} ${question.payload.from} = ? ${question.payload.to}`}
+          />
+        ) : question.activity === 'volume' ? (
+          <VolumeStage question={question} />
+        ) : question.activity === 'coord' ? (
+          <CoordStage
+            question={question}
+            disabled={disabled}
+            wrong={wrong}
+            shakeToken={shakeToken}
+            highlightCorrect={highlightCorrect}
+            onPick={onAnswer}
+          />
         ) : (
           <CountStage question={question} counted={counted} onTapObject={onTapObject} />
         )}
@@ -2890,6 +2975,472 @@ function BuildGraphStage({
       >
         <span aria-hidden="true">✔️</span>
       </button>
+    </div>
+  )
+}
+
+/** Tenths bar or hundred-square, then decimal cards. */
+function DecimalStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'decimal' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const { num, den, optionLabels } = question.payload
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      {den === 10 ? (
+        <FractionBar num={num} den={10} />
+      ) : (
+        <div
+          className="grid overflow-hidden rounded-xl"
+          style={{
+            gridTemplateColumns: 'repeat(10, clamp(14px, 3.4vw, 22px))',
+            gridAutoRows: 'clamp(14px, 3.4vw, 22px)',
+            border: '3px solid var(--ink)',
+          }}
+          role="img"
+          aria-label={`a hundred-square with ${num} parts shaded`}
+        >
+          {Array.from({ length: 100 }, (_, i) => (
+            <span
+              key={i}
+              style={{
+                background: i < num ? 'var(--grape)' : 'var(--cream)',
+                border: '1px solid rgba(74,58,107,0.25)',
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <FractionCards
+        labels={optionLabels}
+        answer={question.answer}
+        disabled={disabled}
+        wrong={wrong}
+        shakeToken={shakeToken}
+        highlightCorrect={highlightCorrect}
+        onPick={onPick}
+      />
+    </div>
+  )
+}
+
+/** The −max..max number line; zero glows coral. Arrow only in read mode. */
+function NumberLineStage({
+  question,
+}: {
+  question: Extract<Question, { activity: 'negatives' }>
+}) {
+  const { min, max, value, expr } = question.payload
+  const W = 360
+  const PAD = 16
+  const x = (v: number) => PAD + ((v - min) / (max - min)) * (W - 2 * PAD)
+  const ticks: number[] = []
+  for (let v = min; v <= max; v++) ticks.push(v)
+  return (
+    <div className="flex w-full flex-col items-center gap-3">
+      {expr && <ExprCard text={expr} />}
+      <div
+        className="rounded-3xl bg-cream/85 px-3 pb-2 pt-3 shadow-md"
+        role="img"
+        aria-label={
+          expr
+            ? `a number line from ${min} to ${max} to help you count below zero`
+            : `a number line from ${min} to ${max} with an arrow on one tick`
+        }
+      >
+        <svg viewBox={`0 0 ${W} 74`} style={{ width: 'min(90vw, 460px)' }} aria-hidden="true">
+          {!expr && (
+            <polygon
+              points={`${x(value) - 8},10 ${x(value) + 8},10 ${x(value)},25`}
+              fill="var(--coral)"
+            />
+          )}
+          <line
+            x1={PAD}
+            y1={42}
+            x2={W - PAD}
+            y2={42}
+            stroke="var(--ink)"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+          />
+          {ticks.map((v) => {
+            const major = v % 5 === 0
+            return (
+              <g key={v}>
+                <line
+                  x1={x(v)}
+                  y1={42}
+                  x2={x(v)}
+                  y2={major ? 30 : 35}
+                  stroke={v === 0 ? 'var(--coral)' : 'var(--ink)'}
+                  strokeWidth={v === 0 ? 3 : major ? 2.5 : 1.5}
+                />
+                {major && (
+                  <text
+                    x={x(v)}
+                    y={62}
+                    textAnchor="middle"
+                    fontSize={13}
+                    fontWeight={700}
+                    fill={v === 0 ? 'var(--coral)' : 'var(--ink)'}
+                  >
+                    {v}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+/** Two rays and an arc — an angle drawn, never labeled. */
+function AngleGlyph({ degrees }: { degrees: number }) {
+  const cx = 46
+  const cy = 66
+  const r = 40
+  const ar = 16
+  const rad = (degrees * Math.PI) / 180
+  const ex = cx + r * Math.cos(rad)
+  const ey = cy - r * Math.sin(rad)
+  const ax = cx + ar * Math.cos(rad)
+  const ay = cy - ar * Math.sin(rad)
+  return (
+    <svg viewBox="0 0 96 80" style={{ width: '100%', maxWidth: 96 }} aria-hidden="true">
+      <path
+        d={`M ${cx + ar} ${cy} A ${ar} ${ar} 0 0 0 ${ax} ${ay}`}
+        fill="none"
+        stroke="var(--coral)"
+        strokeWidth={3}
+      />
+      <line x1={cx} y1={cy} x2={cx + r} y2={cy} stroke="var(--grape)" strokeWidth={5} strokeLinecap="round" />
+      <line x1={cx} y1={cy} x2={ex} y2={ey} stroke="var(--grape)" strokeWidth={5} strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** Three drawn angles; tap the one the prompt asked for. */
+function AngleStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'angle' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const kindOf = (deg: number) =>
+    deg === 90 ? 'a right angle' : deg < 90 ? 'a sharp angle' : 'a wide angle'
+  return (
+    <div className="flex w-full items-stretch justify-center gap-3 sm:gap-5">
+      {question.payload.degrees.map((deg, index) => {
+        const isWrong = wrong === index
+        const isRight = highlightCorrect && question.answer === index
+        return (
+          <button
+            key={`${index}-${isWrong ? shakeToken : 'base'}`}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(index)}
+            aria-label={kindOf(deg)}
+            className={`grid flex-1 place-items-center rounded-3xl p-3 transition-transform active:scale-95 ${
+              isWrong ? 'anim-shake' : ''
+            }`}
+            style={{
+              minHeight: 'clamp(96px, 25vw, 140px)',
+              maxWidth: 140,
+              background: isRight ? 'var(--leaf)' : 'var(--cream)',
+              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+            }}
+          >
+            <AngleGlyph degrees={deg} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** "a for every b", then the scaled row with a ? — count the partner group. */
+function RatioStage({ question }: { question: Extract<Question, { activity: 'ratio' }> }) {
+  const { a, b, scaledA, aEmoji, bEmoji, aName, bName } = question.payload
+  const row = (emoji: string, count: number) => (
+    <span className="flex flex-wrap items-center justify-center gap-0.5">
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} style={{ fontSize: 'clamp(20px, 5vw, 26px)', lineHeight: 1 }}>
+          {emoji}
+        </span>
+      ))}
+    </span>
+  )
+  return (
+    <div className="flex w-full max-w-md flex-col items-center gap-2">
+      <div
+        className="flex w-full items-center justify-center gap-3 rounded-3xl bg-cream/85 px-5 py-3 shadow-md"
+        role="img"
+        aria-label={`${a} ${aName} for every ${b} ${bName}`}
+      >
+        {row(aEmoji, a)}
+        <span className="font-bold text-ink/50" aria-hidden="true">
+          with
+        </span>
+        {row(bEmoji, b)}
+      </div>
+      <span aria-hidden="true" className="font-bold text-ink/50" style={{ fontSize: 24 }}>
+        ↓
+      </span>
+      <div
+        className="flex w-full items-center justify-center gap-3 rounded-3xl bg-cream/85 px-5 py-3 shadow-md"
+        role="img"
+        aria-label={`${scaledA} ${aName} with how many ${bName}?`}
+      >
+        {row(aEmoji, scaledA)}
+        <span className="font-bold text-ink/50" aria-hidden="true">
+          with
+        </span>
+        <span
+          className="grid place-items-center rounded-xl bg-sun font-bold text-ink"
+          style={{ width: 40, height: 40, fontSize: 22 }}
+          aria-hidden="true"
+        >
+          ?
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** The score chips whose mean is wanted. */
+function MeanStage({ question }: { question: Extract<Question, { activity: 'mean' }> }) {
+  return (
+    <div
+      className="flex items-center justify-center gap-3"
+      role="img"
+      aria-label={`the scores are ${question.payload.values.join(', ')}`}
+    >
+      {question.payload.values.map((v, i) => (
+        <span
+          key={i}
+          className="anim-pop grid place-items-center rounded-2xl bg-cream/85 font-bold text-ink shadow-md"
+          style={{
+            width: 'clamp(56px, 14vw, 72px)',
+            height: 'clamp(56px, 14vw, 72px)',
+            fontSize: 'clamp(26px, 7vw, 34px)',
+            animationDelay: `${i * 60}ms`,
+          }}
+        >
+          {v}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** A scenario and the three scale words — certain, maybe, impossible. */
+function ChanceStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'chance' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      <div
+        className="max-w-md rounded-3xl bg-cream/85 px-6 py-5 text-center font-semibold text-ink shadow-md"
+        style={{ fontSize: 'clamp(17px, 4.5vw, 22px)', lineHeight: 1.45 }}
+      >
+        {question.payload.scenario}
+      </div>
+      <div className="flex w-full max-w-md items-stretch justify-center gap-2.5">
+        {question.payload.optionLabels.map((label, index) => {
+          const isWrong = wrong === index
+          const isRight = highlightCorrect && question.answer === index
+          return (
+            <button
+              key={`${index}-${isWrong ? shakeToken : 'base'}`}
+              type="button"
+              disabled={disabled}
+              onClick={() => onPick(index)}
+              aria-label={label}
+              className={`flex-1 rounded-3xl px-2 py-4 font-bold transition-transform active:translate-y-1 ${
+                isWrong ? 'anim-shake' : ''
+              }`}
+              style={{
+                minHeight: 64,
+                fontSize: 'clamp(15px, 4vw, 20px)',
+                background: isRight ? 'var(--leaf)' : 'var(--cream)',
+                color: 'var(--ink)',
+                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** `d` identical w×h layers, side by side — count all the cubes. */
+function VolumeStage({ question }: { question: Extract<Question, { activity: 'volume' }> }) {
+  const { w, h, d } = question.payload
+  const cell = 'clamp(20px, 5vw, 30px)'
+  return (
+    <div
+      className="flex items-center justify-center gap-3"
+      role="img"
+      aria-label={`${d} identical layers, each ${w} cubes wide and ${h} cubes tall`}
+    >
+      {Array.from({ length: d }, (_, layer) => (
+        <div key={layer} className="flex flex-col items-center gap-1">
+          <div
+            className="grid overflow-hidden rounded-lg"
+            style={{
+              gridTemplateColumns: `repeat(${w}, ${cell})`,
+              gridAutoRows: cell,
+              border: '3px solid var(--ink)',
+            }}
+          >
+            {Array.from({ length: w * h }, (_, i) => (
+              <span
+                key={i}
+                className="anim-pop"
+                style={{
+                  background: 'var(--grape)',
+                  opacity: 0.85,
+                  border: '1.5px solid var(--cream)',
+                  animationDelay: `${(layer * w * h + i) * 15}ms`,
+                }}
+              />
+            ))}
+          </div>
+          <span className="font-semibold text-ink/60" style={{ fontSize: 12 }}>
+            layer {layer + 1}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** A first-quadrant grid with a star; pick its coordinates. */
+function CoordStage({
+  question,
+  disabled,
+  wrong,
+  shakeToken,
+  highlightCorrect,
+  onPick,
+}: {
+  question: Extract<Question, { activity: 'coord' }>
+  disabled: boolean
+  wrong: Answer | null
+  shakeToken: number
+  highlightCorrect: boolean
+  onPick: (index: number) => void
+}) {
+  const { x: px, y: py, size, optionLabels } = question.payload
+  const W = 240
+  const PAD = 26
+  const step = (W - PAD - 10) / size
+  const gx = (v: number) => PAD + v * step
+  const gy = (v: number) => W - PAD - v * step
+  const lines: number[] = []
+  for (let i = 0; i <= size; i++) lines.push(i)
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <div
+        className="rounded-3xl bg-cream/85 p-2 shadow-md"
+        role="img"
+        aria-label="a grid with a star at one point — across first, then up"
+      >
+        <svg viewBox={`0 0 ${W} ${W}`} style={{ width: 'min(62vw, 260px)' }} aria-hidden="true">
+          {lines.map((i) => (
+            <g key={i}>
+              <line
+                x1={gx(0)}
+                y1={gy(i)}
+                x2={gx(size)}
+                y2={gy(i)}
+                stroke={i === 0 ? 'var(--ink)' : 'rgba(74,58,107,0.25)'}
+                strokeWidth={i === 0 ? 3 : 1.5}
+              />
+              <line
+                x1={gx(i)}
+                y1={gy(0)}
+                x2={gx(i)}
+                y2={gy(size)}
+                stroke={i === 0 ? 'var(--ink)' : 'rgba(74,58,107,0.25)'}
+                strokeWidth={i === 0 ? 3 : 1.5}
+              />
+              <text
+                x={gx(i)}
+                y={gy(0) + 18}
+                textAnchor="middle"
+                fontSize={12}
+                fontWeight={700}
+                fill="var(--ink)"
+              >
+                {i}
+              </text>
+              {i > 0 && (
+                <text
+                  x={gx(0) - 12}
+                  y={gy(i) + 4}
+                  textAnchor="middle"
+                  fontSize={12}
+                  fontWeight={700}
+                  fill="var(--ink)"
+                >
+                  {i}
+                </text>
+              )}
+            </g>
+          ))}
+          <text x={gx(px)} y={gy(py) + 7} textAnchor="middle" fontSize={22}>
+            ⭐
+          </text>
+        </svg>
+      </div>
+      <FractionCards
+        labels={optionLabels}
+        answer={question.answer}
+        disabled={disabled}
+        wrong={wrong}
+        shakeToken={shakeToken}
+        highlightCorrect={highlightCorrect}
+        onPick={onPick}
+      />
     </div>
   )
 }

@@ -54,3 +54,41 @@ export const MEASURE_OBJECTS: readonly MeasureObject[] = [
   { emoji: '🛁', name: 'a bathtub', unit: 'l', foil: 'ml' },
   { emoji: '🥄', name: 'a spoonful', unit: 'ml', foil: 'l' },
 ] as const
+
+/** Unit conversions the upper band drills (H8) — printed + spoken forms. */
+export interface ConvertPair {
+  from: string
+  fromName: string
+  to: string
+  toName: string
+  factor: number
+  maxAmount: number // keeps answers head-checkable
+}
+
+export const CONVERT_PAIRS: readonly ConvertPair[] = [
+  { from: 'm', fromName: 'meters', to: 'cm', toName: 'centimeters', factor: 100, maxAmount: 5 },
+  { from: 'cm', fromName: 'centimeters', to: 'mm', toName: 'millimeters', factor: 10, maxAmount: 9 },
+  { from: 'km', fromName: 'kilometers', to: 'm', toName: 'meters', factor: 1000, maxAmount: 3 },
+  { from: 'kg', fromName: 'kilograms', to: 'g', toName: 'grams', factor: 1000, maxAmount: 3 },
+  { from: 'l', fromName: 'liters', to: 'ml', toName: 'milliliters', factor: 1000, maxAmount: 3 },
+] as const
+
+/** The probability-language scale (K7). Order is the scale — never shuffled. */
+export const CHANCE_LABELS = ['Certain', 'Maybe', 'Impossible'] as const
+
+export interface ChanceScenario {
+  text: string
+  verdict: 0 | 1 | 2 // index into CHANCE_LABELS
+}
+
+export const CHANCE_SCENARIOS: readonly ChanceScenario[] = [
+  { text: 'The sun will come up tomorrow morning.', verdict: 0 },
+  { text: 'You pick a red ball from a bag of ONLY red balls.', verdict: 0 },
+  { text: 'Monday will come after Sunday.', verdict: 0 },
+  { text: 'A flipped coin lands on heads.', verdict: 1 },
+  { text: 'You roll a six on your very first try.', verdict: 1 },
+  { text: 'The spinner lands on red, and most parts are red.', verdict: 1 },
+  { text: 'You pick a blue ball from a bag of ONLY red balls.', verdict: 2 },
+  { text: 'A normal dice rolls a seven.', verdict: 2 },
+  { text: 'Tomorrow will have 25 hours.', verdict: 2 },
+] as const

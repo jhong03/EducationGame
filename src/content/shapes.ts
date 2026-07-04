@@ -37,6 +37,22 @@ export const SHAPE_SIDES: Record<string, number> = {
   hexagon: 6,
 }
 
+/**
+ * Lines of symmetry per shape AS DRAWN by ShapeGlyph (triangle is drawn
+ * equilateral, the star five-pointed). No circle — "infinite" is a later
+ * conversation. Rectangle's 2-vs-4 is the classic misconception the
+ * symmetry activity leans on.
+ */
+export const SHAPE_SYMMETRY: Record<string, number> = {
+  square: 4,
+  rectangle: 2,
+  triangle: 3,
+  pentagon: 5,
+  hexagon: 6,
+  star: 5,
+  heart: 1,
+}
+
 export function shapeById(id: string): Shape | undefined {
   return SHAPES.find((s) => s.id === id)
 }

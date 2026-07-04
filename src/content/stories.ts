@@ -16,3 +16,20 @@ export const STORY_TEMPLATES: readonly StoryTemplate[] = [
   { op: '×', text: 'There are {a} baskets with {b} {things} in each. How many altogether?' },
   { op: '×', text: '{a} friends have {b} {things} each. How many in total?' },
 ] as const
+
+/**
+ * Two-step stories for the upper band (L5): answer = (a op1 b) op2 c. The
+ * generator sizes numbers so every intermediate result stays whole and ≥ 0.
+ */
+export interface TwoStepTemplate {
+  ops: readonly ['+' | '-' | '×', '+' | '-']
+  text: string
+}
+
+export const TWO_STEP_TEMPLATES: readonly TwoStepTemplate[] = [
+  { ops: ['+', '-'], text: 'Maya picks {a} {things}, then {b} more, then gives {c} away. How many now?' },
+  { ops: ['-', '-'], text: 'Sam has {a} {things}. He gives {b} to Ali and {c} to Ren. How many are left?' },
+  { ops: ['+', '+'], text: 'Ren finds {a} {things}, {b} more in the morning and {c} more at night. How many in all?' },
+  { ops: ['×', '-'], text: 'There are {a} boxes with {b} {things} in each. Then {c} roll away. How many now?' },
+  { ops: ['×', '+'], text: '{a} friends bring {b} {things} each, and {c} more are already on the table. How many in total?' },
+] as const

@@ -48,6 +48,20 @@ import { generateFractionOp } from './fractionOp'
 import { generateReadScale } from './readScale'
 import { generateBuildGraph } from './buildGraph'
 import { generateColumnOp } from './columnOp'
+import { generateFindNumber } from './findNumber'
+import { generateDecimal } from './decimal'
+import { generateEquivPick } from './equivPick'
+import { generatePercentOf } from './percentOf'
+import { generateNegatives } from './negatives'
+import { generateAngle } from './angle'
+import { generateSymmetry } from './symmetry'
+import { generateOrderOps } from './orderOps'
+import { generateRatio } from './ratio'
+import { generateMean } from './mean'
+import { generateChance } from './chance'
+import { generateConvert } from './convert'
+import { generateVolume } from './volume'
+import { generateCoord } from './coord'
 
 /**
  * The activity registry: ActivityType → generator. This is the only place the
@@ -105,6 +119,20 @@ export const GENERATORS: Record<ActivityType, QuestionGenerator> = {
   'read-scale': generateReadScale,
   'build-graph': generateBuildGraph,
   'column-op': generateColumnOp,
+  'find-number': generateFindNumber,
+  decimal: generateDecimal,
+  'equiv-pick': generateEquivPick,
+  'percent-of': generatePercentOf,
+  negatives: generateNegatives,
+  angle: generateAngle,
+  symmetry: generateSymmetry,
+  'order-ops': generateOrderOps,
+  ratio: generateRatio,
+  mean: generateMean,
+  chance: generateChance,
+  convert: generateConvert,
+  volume: generateVolume,
+  coord: generateCoord,
 }
 
 /** Generate the next Question for a level by dispatching on its activity. */
@@ -167,4 +195,18 @@ export {
   generateReadScale,
   generateBuildGraph,
   generateColumnOp,
+  generateFindNumber,
+  generateDecimal,
+  generateEquivPick,
+  generatePercentOf,
+  generateNegatives,
+  generateAngle,
+  generateSymmetry,
+  generateOrderOps,
+  generateRatio,
+  generateMean,
+  generateChance,
+  generateConvert,
+  generateVolume,
+  generateCoord,
 }

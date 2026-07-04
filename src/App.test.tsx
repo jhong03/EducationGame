@@ -265,13 +265,14 @@ describe('full play loop', () => {
     expect(container.textContent).not.toContain('still growing')
   })
 
-  it('an upper-band child’s empty band still falls back with the growing note', () => {
+  it('an upper-band child (age 11) sees the upper meadow — no growing note anywhere', () => {
     act(() => {
-      useGameStore.setState({ age: 11 }) // upper — no content until Phases 5–6
+      useGameStore.setState({ age: 11 }) // upper — real content since Phases 5–6
     })
-    expect(container.textContent).toContain('still growing')
-    // No dead end: the early categories are playable.
-    expect(categoryCard('Counting')).not.toBeNull()
+    expect(categoryCard('Big Numbers')).not.toBeNull()
+    expect(categoryCard('Puzzle Peak')).not.toBeNull()
+    expect(categoryCard('Counting')).toBeNull() // the early meadow is the early band's
+    expect(container.textContent).not.toContain('still growing')
   })
 
   it('mid sprint is arcade: visible countdown and a 🔥 double-score streak', () => {

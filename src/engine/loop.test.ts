@@ -221,6 +221,7 @@ describe('sprint scores', () => {
       'tap-all',
       'build-graph',
       'column-op',
+      'volume',
     ])
     for (const level of TRAIL) {
       expect(level.sprintSeconds).toBeGreaterThanOrEqual(45)

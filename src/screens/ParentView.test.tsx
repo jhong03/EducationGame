@@ -69,8 +69,8 @@ function gateAnswer(): number {
 describe('ParentView', () => {
   it('shows the progress summary grouped by category', () => {
     expect(container.textContent).toContain('7') // stars
-    expect(container.textContent).toContain('1/94') // mastered levels
-    expect(container.textContent).toContain('0/22') // finished categories
+    expect(container.textContent).toContain('1/124') // mastered levels
+    expect(container.textContent).toContain('0/33') // finished categories
     // Category headers and level statuses.
     expect(container.textContent).toContain('Counting')
     expect(container.textContent).toContain('More or Less')
@@ -86,15 +86,17 @@ describe('ParentView', () => {
     expect(container.textContent).toContain('Times Tables')
     expect(container.textContent).toContain('Fractions')
     expect(container.textContent).toContain('Story Problems')
+    expect(container.textContent).toContain('Big Numbers')
+    expect(container.textContent).toContain('Puzzle Peak')
     expect(container.textContent).toContain('Count to 3')
     // Pin the status DERIVATION, not just the vocabulary: with this seed the
-    // statuses must be exactly 1× Mastered (counting L1), 22× In progress
-    // (counting L2 + each other category's first level), 71× Locked (all the
-    // rest of the 94). Swapping the mapping breaks these counts.
+    // statuses must be exactly 1× Mastered (counting L1), 33× In progress
+    // (counting L2 + each other category's first level), 90× Locked (all the
+    // rest of the 124). Swapping the mapping breaks these counts.
     const text = container.textContent ?? ''
     expect(text.match(/Mastered/g)?.length).toBe(1 + 1) // 1 pill + the "Mastered" stat label
-    expect(text.match(/In progress/g)?.length).toBe(22)
-    expect(text.match(/Locked/g)?.length).toBe(71)
+    expect(text.match(/In progress/g)?.length).toBe(33)
+    expect(text.match(/Locked/g)?.length).toBe(90)
   })
 
   it('offers the currency picker and reflects the choice', () => {
@@ -130,8 +132,8 @@ describe('ParentView', () => {
         .placeLevels(['math-early-4', 'math-early-26', 'math-early-27', 'math-early-28'])
     })
     expect(container.textContent).toContain('Placed')
-    expect(container.textContent).toContain('1/94') // mastered = earned only
-    expect(container.textContent).toContain('1/22') // …but the category counts as finished
+    expect(container.textContent).toContain('1/124') // mastered = earned only
+    expect(container.textContent).toContain('1/33') // …but the category counts as finished
   })
 
   it('resets progress only after the addition gate is passed correctly', () => {

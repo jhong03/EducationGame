@@ -61,6 +61,7 @@ const SPRINT_SECONDS_BY_ACTIVITY: Partial<Record<ActivityType, number>> = {
   'graph-count': 90, // blocks to count per question
   'build-graph': 90, // build-and-confirm boards
   'column-op': 90, // multi-digit written method
+  volume: 90, // layers of cubes to count per question
 }
 
 /** The sprint round length for a level (content data, per-activity default). */
@@ -97,6 +98,18 @@ export const CATEGORIES: readonly Category[] = [
   { id: 'shape-lab', name: 'Shape Lab', icon: '🔺', order: 10, band: 'mid', subjectId: MATH_SUBJECT_ID },
   { id: 'detective', name: 'Number Detective', icon: '🕵️', order: 11, band: 'mid', subjectId: MATH_SUBJECT_ID },
   { id: 'stories', name: 'Story Problems', icon: '📖', order: 12, band: 'mid', subjectId: MATH_SUBJECT_ID },
+  // ---- upper band (10–12) — Phases 5–6 --------------------------------------
+  { id: 'big-numbers', name: 'Big Numbers', icon: '🔢', order: 1, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'decimals-lab', name: 'Decimals', icon: '🔟', order: 2, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'percents', name: 'Percentages', icon: '💯', order: 3, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'below-zero', name: 'Below Zero', icon: '🧊', order: 4, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'angles', name: 'Angles & Mirrors', icon: '📐', order: 5, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'upper-crunch', name: 'Big Calculations', icon: '🧮', order: 6, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'ratios', name: 'Ratios', icon: '⚖️', order: 7, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'averages', name: 'Averages & Chance', icon: '📈', order: 8, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'volume-units', name: 'Volume & Units', icon: '📦', order: 9, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'grid-world', name: 'Grid World', icon: '🗺️', order: 10, band: 'upper', subjectId: MATH_SUBJECT_ID },
+  { id: 'puzzle-peak', name: 'Puzzle Peak', icon: '🧗', order: 11, band: 'upper', subjectId: MATH_SUBJECT_ID },
 ] as const
 
 /** Small helper so the level tables below stay readable and consistent. */
@@ -147,6 +160,17 @@ const midLevel = (
   params: Record<string, number>,
   masteryGoal?: number,
 ) => makeLevel('mid', id, categoryId, order, name, icon, activity, params, masteryGoal)
+
+const upperLevel = (
+  id: number,
+  categoryId: string,
+  order: number,
+  name: string,
+  icon: string,
+  activity: ActivityType,
+  params: Record<string, number>,
+  masteryGoal?: number,
+) => makeLevel('upper', id, categoryId, order, name, icon, activity, params, masteryGoal)
 
 /**
  * Phase 0 levels (spec §4), organised into categories. The ids keep their
@@ -317,6 +341,57 @@ export const PHASE4_LEVELS: readonly Level[] = [
   midLevel(48, 'data', 4, 'Build the graph', '🧱', 'build-graph', { cols: 4, max: 5 }),
 ] as const
 
+/**
+ * Phases 5–6 — the upper band (10–12) opens, removing the last "still
+ * growing" fallback: big numbers, decimals & percentages, negatives, angles
+ * & symmetry, short multiplication & order of operations, ratio, averages &
+ * chance, unit conversion & volume, coordinates, two-step stories.
+ * Ids live in their own `math-upper-*` space.
+ */
+export const PHASE56_LEVELS: readonly Level[] = [
+  // Big Numbers 🔢
+  upperLevel(1, 'big-numbers', 1, 'Find the number', '🔢', 'find-number', {}),
+  upperLevel(2, 'big-numbers', 2, 'Round to 1000', '🎯', 'round', { nearest: 1000, max: 10000 }),
+  upperLevel(3, 'big-numbers', 3, 'Bigger number', '⚖️', 'num-compare', { max: 9999 }),
+  upperLevel(4, 'big-numbers', 4, 'Count in thousands', '🚀', 'sequence', { step: 1000, max: 10000, align: 1 }),
+  // Decimals 🔟
+  upperLevel(5, 'decimals-lab', 1, 'Tenths', '🔟', 'decimal', { den: 10 }),
+  upperLevel(6, 'decimals-lab', 2, 'Hundredths', '💠', 'decimal', { den: 100 }),
+  upperLevel(7, 'decimals-lab', 3, 'Fraction twins', '👯', 'equiv-pick', { mode: 0 }),
+  upperLevel(8, 'decimals-lab', 4, 'Percent twins', '🎭', 'equiv-pick', { mode: 1 }),
+  // Percentages 💯
+  upperLevel(9, 'percents', 1, 'Easy percents', '💯', 'percent-of', { set: 1 }),
+  upperLevel(10, 'percents', 2, 'Trickier percents', '🌶️', 'percent-of', { set: 2 }),
+  // Below Zero 🧊
+  upperLevel(11, 'below-zero', 1, 'The number line', '🧊', 'negatives', { mode: 0, max: 10 }),
+  upperLevel(12, 'below-zero', 2, 'Past zero', '🥶', 'negatives', { mode: 1, max: 10 }),
+  upperLevel(13, 'below-zero', 3, 'Warmer or colder?', '🌡️', 'num-compare', { max: 10, neg: 1 }),
+  // Angles & Mirrors 📐
+  upperLevel(14, 'angles', 1, 'Right angles', '📐', 'angle', { mode: 0 }),
+  upperLevel(15, 'angles', 2, 'Sharp or wide', '✂️', 'angle', { mode: 1 }),
+  upperLevel(16, 'angles', 3, 'Mirror lines', '🪞', 'symmetry', {}),
+  // Big Calculations 🧮
+  upperLevel(17, 'upper-crunch', 1, 'Column times', '✖️', 'column-op', { op: 2, max: 100 }),
+  upperLevel(18, 'upper-crunch', 2, 'Bigger times', '🚂', 'column-op', { op: 2, max: 1000 }),
+  upperLevel(19, 'upper-crunch', 3, 'Times before plus', '🚦', 'order-ops', { brackets: 0 }),
+  upperLevel(20, 'upper-crunch', 4, 'Brackets first', '🎪', 'order-ops', { brackets: 1 }),
+  // Ratios ⚖️
+  upperLevel(21, 'ratios', 1, 'For every…', '⚖️', 'ratio', {}),
+  upperLevel(22, 'ratios', 2, 'Recipe scaling', '🧑‍🍳', 'ratio', { big: 1 }),
+  // Averages & Chance 📈
+  upperLevel(23, 'averages', 1, 'The mean', '📈', 'mean', { count: 3 }),
+  upperLevel(24, 'averages', 2, 'Mean of four', '📊', 'mean', { count: 4 }),
+  upperLevel(25, 'averages', 3, 'What are the chances?', '🎲', 'chance', {}),
+  // Volume & Units 📦
+  upperLevel(26, 'volume-units', 1, 'Unit hops', '🦘', 'convert', {}),
+  upperLevel(27, 'volume-units', 2, 'Stack the cubes', '🧱', 'volume', {}),
+  // Grid World 🗺️
+  upperLevel(28, 'grid-world', 1, 'Treasure map', '🗺️', 'coord', { size: 5 }),
+  // Puzzle Peak 🧗
+  upperLevel(29, 'puzzle-peak', 1, 'Two-step stories', '🪜', 'word-problem', { ops: 3 }),
+  upperLevel(30, 'puzzle-peak', 2, 'Times-story twists', '🌀', 'word-problem', { ops: 4 }),
+] as const
+
 /** Every playable level, flat (ParentView totals, tests). */
 export const TRAIL: readonly Level[] = [
   ...PHASE0_LEVELS,
@@ -326,6 +401,7 @@ export const TRAIL: readonly Level[] = [
   ...PHASE3_LEVELS,
   ...PHASE3B_LEVELS,
   ...PHASE4_LEVELS,
+  ...PHASE56_LEVELS,
 ]
 
 /** Look up a category by id. */

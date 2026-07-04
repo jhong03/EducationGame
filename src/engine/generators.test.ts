@@ -49,10 +49,32 @@ import { generateFractionOp } from './generators/fractionOp'
 import { generateReadScale } from './generators/readScale'
 import { generateBuildGraph, encodeHeights } from './generators/buildGraph'
 import { generateColumnOp, flipDigits } from './generators/columnOp'
-import { MEASURE_OBJECTS, SCALE_UNITS } from '../content/world'
+import { generateFindNumber } from './generators/findNumber'
+import { generateDecimal } from './generators/decimal'
+import { generateEquivPick, EQUIV_TABLE } from './generators/equivPick'
+import { generatePercentOf } from './generators/percentOf'
+import { generateNegatives } from './generators/negatives'
+import { generateAngle } from './generators/angle'
+import { generateSymmetry } from './generators/symmetry'
+import { generateOrderOps } from './generators/orderOps'
+import { generateRatio } from './generators/ratio'
+import { generateMean } from './generators/mean'
+import { generateChance } from './generators/chance'
+import { generateConvert } from './generators/convert'
+import { generateVolume } from './generators/volume'
+import { generateCoord } from './generators/coord'
+import { numberWordBig } from '../content/words'
+import { TWO_STEP_TEMPLATES } from '../content/stories'
+import {
+  CHANCE_LABELS,
+  CHANCE_SCENARIOS,
+  CONVERT_PAIRS,
+  MEASURE_OBJECTS,
+  SCALE_UNITS,
+} from '../content/world'
 import { generateQuestion, GENERATORS } from './generators'
 import { TRAIL } from '../content/math'
-import { SHAPES, SHAPE_SIDES } from '../content/shapes'
+import { SHAPES, SHAPE_SIDES, SHAPE_SYMMETRY } from '../content/shapes'
 import { themeKind, THEMES } from '../content/themes'
 import { WEIGHT_PAIRS } from '../content/world'
 import { buildNumberOptions, randInt, randIntExcept, shuffle } from './random'
@@ -1136,6 +1158,294 @@ describe('Phase 4 generators', () => {
         expect(new Set(q.options).size).toBe(3)
       }
     }
+  })
+})
+
+describe('upper band (Phases 5–6) generators', () => {
+  const some = seeds.slice(0, 400)
+
+  it('find-number: the prompt speaks words only; decoys are digit swaps', () => {
+    for (const s of some) {
+      const q = generateFindNumber({}, mulberry32(s))
+      const v = q.payload.value
+      expect(v).toBeGreaterThanOrEqual(1000)
+      expect(v).toBeLessThanOrEqual(9999)
+      expect(q.prompt).toContain(numberWordBig(v))
+      expect(q.prompt).not.toMatch(/\d/) // numerals never leak into the prompt
+      expect(new Set(q.options).size).toBe(3)
+      expect(q.options).toContain(v)
+      expect(q.answer).toBe(v)
+    }
+  })
+
+  it('decimal: the label matches the shading; every card distinct', () => {
+    for (const den of [10, 100] as const) {
+      for (const s of some) {
+        const q = generateDecimal({ den }, mulberry32(s))
+        const { num, optionLabels } = q.payload
+        expect(q.payload.den).toBe(den)
+        expect(num).toBeGreaterThanOrEqual(1)
+        expect(num).toBeLessThan(den)
+        if (den === 100) expect(num % 10).not.toBe(0)
+        const label = den === 10 ? `0.${num}` : `0.${String(num).padStart(2, '0')}`
+        expect(optionLabels[q.answer]).toBe(label)
+        expect(optionLabels.filter((l) => l === label)).toHaveLength(1)
+        expect(new Set(optionLabels).size).toBe(3)
+      }
+    }
+  })
+
+  it('equiv-pick: the correct card is the true equivalent from the family table', () => {
+    for (const mode of [0, 1]) {
+      for (const s of some) {
+        const q = generateEquivPick({ mode }, mulberry32(s))
+        const row = EQUIV_TABLE.find((r) => r.includes(q.payload.shown))
+        expect(row).toBeDefined()
+        const correct = row![mode === 0 ? 1 : 2]
+        expect(q.payload.optionLabels[q.answer]).toBe(correct)
+        expect(q.payload.optionLabels.filter((l) => l === correct)).toHaveLength(1)
+        expect(new Set(q.payload.optionLabels).size).toBe(3)
+        if (mode === 0) expect(q.payload.shown).toBe(row![0])
+      }
+    }
+  })
+
+  it('percent-of: pct·of/100 is whole and within the amount', () => {
+    for (const set of [1, 2]) {
+      for (const s of some) {
+        const q = generatePercentOf({ set }, mulberry32(s))
+        const { pct, of } = q.payload
+        expect(q.answer).toBe((pct * of) / 100)
+        expect(Number.isInteger(q.answer)).toBe(true)
+        expect(of % 20).toBe(0)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('negatives: read mode sits on a negative tick; crossing mode computes a − b < 0', () => {
+    for (const s of some) {
+      const read = generateNegatives({ mode: 0, max: 10 }, mulberry32(s))
+      expect(read.payload.value).toBeLessThan(0)
+      expect(read.payload.value).toBeGreaterThanOrEqual(-10)
+      expect(read.answer).toBe(read.payload.value)
+      expect(read.payload.expr).toBeUndefined()
+      for (const o of read.options) {
+        expect(o).toBeGreaterThanOrEqual(-10)
+        expect(o).toBeLessThanOrEqual(10)
+      }
+      const cross = generateNegatives({ mode: 1, max: 10 }, mulberry32(s + 31))
+      expect(cross.payload.expr).toBeDefined()
+      const [a, b] = cross.payload.expr!.split('−').map((p) => Number(p.trim()))
+      expect(a - b).toBe(cross.answer)
+      expect(cross.answer).toBeLessThan(0)
+      expect(cross.options.filter((o) => o === cross.answer)).toHaveLength(1)
+    }
+  })
+
+  it('angle: one card per family; the answer card matches the spoken target', () => {
+    for (const mode of [0, 1]) {
+      for (const s of some) {
+        const q = generateAngle({ mode }, mulberry32(s))
+        const { degrees, target } = q.payload
+        expect(degrees).toHaveLength(3)
+        expect(degrees.filter((d) => d === 90)).toHaveLength(1)
+        expect(degrees.filter((d) => d < 90)).toHaveLength(1)
+        expect(degrees.filter((d) => d > 90)).toHaveLength(1)
+        const deg = degrees[q.answer]
+        if (target === 'right') expect(deg).toBe(90)
+        if (target === 'acute') expect(deg).toBeLessThan(90)
+        if (target === 'obtuse') expect(deg).toBeGreaterThan(90)
+        if (mode === 0) expect(target).toBe('right')
+      }
+    }
+  })
+
+  it('symmetry: the table answers; the side-count confusion offered when it differs', () => {
+    for (const s of some) {
+      const q = generateSymmetry({}, mulberry32(s))
+      const { shapeId } = q.payload
+      expect(q.answer).toBe(SHAPE_SYMMETRY[shapeId])
+      const sides = SHAPE_SIDES[shapeId]
+      if (sides !== undefined && sides !== q.answer) expect(q.options).toContain(sides)
+      expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('order-ops: precedence honored and the naive evaluation always on offer', () => {
+    for (const brackets of [0, 1]) {
+      for (const s of some) {
+        const q = generateOrderOps({ brackets }, mulberry32(s))
+        const t = q.payload.text
+        let expected: number
+        let trap: number
+        let m: RegExpMatchArray | null
+        if ((m = t.match(/^\((\d+) \+ (\d+)\) × (\d+)$/))) {
+          const [a, b, c] = [Number(m[1]), Number(m[2]), Number(m[3])]
+          expected = (a + b) * c
+          trap = a + b * c
+        } else if ((m = t.match(/^(\d+) \+ (\d+) × (\d+)$/))) {
+          const [a, b, c] = [Number(m[1]), Number(m[2]), Number(m[3])]
+          expected = a + b * c
+          trap = (a + b) * c
+        } else {
+          m = t.match(/^(\d+) × (\d+) \+ (\d+)$/)
+          expect(m, t).not.toBeNull()
+          const [a, b, c] = [Number(m![1]), Number(m![2]), Number(m![3])]
+          expected = a * b + c
+          trap = a * (b + c)
+        }
+        if (brackets === 1) expect(t.startsWith('(')).toBe(true)
+        expect(q.answer).toBe(expected)
+        expect(q.options).toContain(trap)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('ratio: both sides scale by the same factor; one-group-off decoys ride along', () => {
+    for (const big of [0, 1]) {
+      for (const s of some) {
+        const q = generateRatio({ big }, mulberry32(s))
+        const { a, b, scaledA } = q.payload
+        expect(scaledA % a).toBe(0)
+        const k = scaledA / a
+        expect(k).toBeGreaterThanOrEqual(2)
+        expect(q.answer).toBe(b * k)
+        expect(q.options).toContain(b * k - b)
+        expect(q.options).toContain(b * k + b)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('mean: whole by construction; the raw sum is always the trap', () => {
+    for (const count of [3, 4]) {
+      for (const s of some) {
+        const q = generateMean({ count }, mulberry32(s))
+        const vals = q.payload.values
+        expect(vals).toHaveLength(count)
+        const sum = vals.reduce((x, y) => x + y, 0)
+        expect(sum / count).toBe(q.answer)
+        expect(q.options).toContain(sum)
+        for (const v of vals) expect(v).toBeGreaterThanOrEqual(1)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('chance: verdicts come from the scenario table; the scale keeps its order', () => {
+    for (const s of some) {
+      const q = generateChance({}, mulberry32(s))
+      const scenario = CHANCE_SCENARIOS.find((c) => c.text === q.payload.scenario)
+      expect(scenario).toBeDefined()
+      expect(q.answer).toBe(scenario!.verdict)
+      expect(q.payload.optionLabels).toEqual([...CHANCE_LABELS])
+    }
+  })
+
+  it('convert: amount × factor, with both wrong powers of ten on offer', () => {
+    for (const s of some) {
+      const q = generateConvert({}, mulberry32(s))
+      const pair = CONVERT_PAIRS.find((p) => p.from === q.payload.from && p.to === q.payload.to)
+      expect(pair).toBeDefined()
+      expect(q.answer).toBe(q.payload.amount * pair!.factor)
+      expect(q.options).toContain(q.answer / 10)
+      expect(q.options).toContain(q.answer * 10)
+    }
+  })
+
+  it('volume: w·h·d, with the single-layer miscount always offered', () => {
+    for (const s of some) {
+      const q = generateVolume({}, mulberry32(s))
+      const { w, h, d } = q.payload
+      expect(q.answer).toBe(w * h * d)
+      expect(q.options).toContain(w * h)
+      expect(new Set(q.options).size).toBe(3)
+    }
+  })
+
+  it('coord: x ≠ y, the swap trap always a card, the answer reads (x, y)', () => {
+    for (const s of some) {
+      const q = generateCoord({ size: 5 }, mulberry32(s))
+      const { x, y, optionLabels } = q.payload
+      expect(x).not.toBe(y)
+      expect(optionLabels[q.answer]).toBe(`(${x}, ${y})`)
+      expect(optionLabels).toContain(`(${y}, ${x})`)
+      expect(new Set(optionLabels).size).toBe(3)
+    }
+  })
+
+  it('column-op ×: 2-digit × 1-digit with a forced ones-carry; dropped-carry decoy', () => {
+    for (const max of [100, 1000]) {
+      for (const s of some) {
+        const q = generateColumnOp({ op: 2, max }, mulberry32(s))
+        const { a, b, op } = q.payload
+        expect(op).toBe('×')
+        expect(String(a)).toHaveLength(2)
+        expect(b).toBeGreaterThanOrEqual(2)
+        expect(b).toBeLessThanOrEqual(9)
+        expect((a % 10) * b).toBeGreaterThanOrEqual(10) // the carry is the lesson
+        expect(q.answer).toBe(a * b)
+        const dropped = q.answer - 10 * Math.floor(((a % 10) * b) / 10)
+        expect(q.options).toContain(dropped)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('two-step stories: the answer really is (a op1 b) op2 c, never below zero', () => {
+    const apply = (x: number, op: '+' | '-' | '×', y: number) =>
+      op === '+' ? x + y : op === '-' ? x - y : x * y
+    const matchers = TWO_STEP_TEMPLATES.map((t) => ({
+      t,
+      re: new RegExp(
+        '^' +
+          t.text
+            .replace(/[.?]/g, (ch) => '\\' + ch)
+            .replace('{a}', '(\\d+)')
+            .replace('{b}', '(\\d+)')
+            .replace('{c}', '(\\d+)')
+            .replace('{things}', '.+?') +
+          '$',
+      ),
+    }))
+    for (const ops of [3, 4]) {
+      for (const s of some) {
+        const q = generateWordProblem({ ops }, mulberry32(s))
+        const hit = matchers
+          .map(({ t, re }) => ({ t, m: q.payload.story.match(re) }))
+          .find((h) => h.m !== null)
+        expect(hit, q.payload.story).toBeDefined()
+        const [a, b, c] = [Number(hit!.m![1]), Number(hit!.m![2]), Number(hit!.m![3])]
+        const expected = apply(apply(a, hit!.t.ops[0], b), hit!.t.ops[1], c)
+        expect(q.answer).toBe(expected)
+        expect(expected).toBeGreaterThanOrEqual(0)
+        expect(q.options.filter((o) => o === q.answer)).toHaveLength(1)
+      }
+    }
+  })
+
+  it('round nearest:1000 speaks thousands and lands on them', () => {
+    for (const s of some.slice(0, 200)) {
+      const q = generateRound({ nearest: 1000, max: 10000 }, mulberry32(s))
+      expect(q.prompt).toContain('thousand')
+      expect(q.answer % 1000).toBe(0)
+      expect(q.answer).toBe(Math.round(q.payload.value / 1000) * 1000)
+    }
+  })
+
+  it('num-compare neg:1 ranges below zero and still picks the truly bigger side', () => {
+    let sawNegative = false
+    for (const s of some) {
+      const q = generateNumCompare({ max: 10, neg: 1 }, mulberry32(s))
+      const { left, right } = q.payload
+      expect(left).not.toBe(right)
+      expect(q.answer).toBe(left > right ? 'left' : 'right')
+      if (left < 0 || right < 0) sawNegative = true
+    }
+    expect(sawNegative).toBe(true)
   })
 })
 
