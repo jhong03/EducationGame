@@ -43,8 +43,9 @@ The last "still growing" fallback is gone.
   formula, four-quadrant + translated coordinates, number riddles): age 10 sees 30
   levels, 11 sees 41, 12 sees all 52.
 - **Systems all live:** category navigation (derived unlock, never re-locks), age gate
-  + band filtering, placement check (ages 5–6 early, 11–12 upper), pace profiler,
-  per-continent + SEA currency,
+  + band filtering, **name profile** (asked after the gate, greets on the meadow,
+  rides a live name+⭐ chip during play), placement check (ages 5–6 early, 11–12
+  upper), pace profiler, per-continent + SEA currency,
   **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
   countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
   (reset re-asks age → new-sibling handoff).
@@ -56,7 +57,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **184 passed** across 8 files |
+| Unit + loop + app tests | `npm test` | **189 passed** across 8 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -155,7 +156,9 @@ brief's §8 exactly.
   (key `number-meadow/v1`, **version 2**, `migrate: migratePersistedState` — v1 saves
   keep their earned fields; level ids unchanged so cleared levels keep counting).
   Persists earned progress + settings via `partialize` (`stars`, `progress`, `muted`,
-  `pace`, `age`, `currency`, `bestScores`). Sprint bests live in `bestScores`
+  `pace`, `age`, `name`, `currency`, `bestScores`). Names go through ONE write
+  path (`sanitizeName`: trim, 20-char cap, empty → null) from every entry point;
+  reset clears `name` with `age` (the child profile). Sprint bests live in `bestScores`
   (`recordSprintScore` is forward-only; `categorySprintScore` sums a category).
   **There is no stored unlock state**: which levels are open is *derived*
   from `progress` by `unlockedUpTo` / `isLevelUnlocked` (consecutive-cleared prefix
@@ -255,6 +258,11 @@ brief's §8 exactly.
   ("How old are you?", spoken; big numeral buttons 4–12; one tap, no confirm — a
   grown-up can correct it later). Shows whenever `age === null` (fresh installs and
   pre-age saves).
+- [`screens/NameScreen.tsx`](src/screens/NameScreen.tsx) — "What's your name?",
+  right after the age gate (spoken; typed by a grown-up or reading child,
+  ALWAYS skippable). Purely cosmetic; placement (if any) follows from here.
+  [`components/PlayerChip.tsx`](src/components/PlayerChip.tsx) — the name +
+  LIVE star count pill on the Play/Sprint top bars (renders nothing unnamed).
 - [`screens/Home.tsx`](src/screens/Home.tsx) — **category cards** on the meadow (one per
   strand of the child's **band**, always open, mini progress dots, tap speaks the
   category name); star counter; discreet "⚙️ For grown-ups" entry. The 🌱 "still
@@ -334,7 +342,7 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (184, all passing)
+### Tests (189, all passing)
 - [`engine/generators.test.ts`](src/engine/generators.test.ts) — the brief's required
   coverage: exactly one correct option, options never < 0, compare never equal, add
   totals never exceed max.
@@ -458,7 +466,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **184 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **189 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -711,5 +719,18 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   reached via a "Chapter progress" card. Settings is now a short scroll:
   stats · age · currency · pace · progress card · privacy · reset. Unchanged
   content, new home. **184 tests passing** (settings-stays-short + navigation
-  round-trip), build & lint clean. Committed & pushed as **`d402e58`** (+ this
-  docs true-up).
+  round-trip), build & lint clean. Committed & pushed as **`d402e58`** (+ docs
+  `4f8d7d5`).
+- **2026-07-05 — Player names (user-requested).** New
+  [`NameScreen`](src/screens/NameScreen.tsx) after the age gate ("What's your
+  name?", spoken with an echo-respecting delay; typed by a grown-up, ALWAYS
+  skippable — pre-readers add it later via the new **Child's name** section in
+  settings). `name` joins the persisted child profile (one `sanitizeName`
+  write path: trim/20-cap/empty→null; migrated; reset clears it with the age).
+  Shown: **"Hi {name}!" on the meadow** (+ spoken once per session, same latch
+  pattern as the growing note) and a **`PlayerChip`** (name + LIVE star count)
+  on the Play and Sprint top bars — stars tick up as answers land, so the chip
+  is the in-play status. **189 tests passing** (store semantics, the full
+  age→name→meadow flow, skip path, live star tick, settings save/clear),
+  build & lint clean. Committed & pushed as **`9e7857b`** (+ this docs
+  true-up).
