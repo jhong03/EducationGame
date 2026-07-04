@@ -4,8 +4,9 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-03 · Branch: `main` · HEAD: `593182b` "Number Meadow — Phase 0 build"_
-_Working tree (uncommitted): **Parent view + reset** and **category navigation** increments — see §7._
+_Last updated: 2026-07-04 · Branch: `main` · HEAD: `14bef7a` (pushed to
+[jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — everything in the
+§7 session log through **Sprint mode** is committed and pushed._
 
 ---
 
@@ -433,7 +434,14 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   in both modes); `bestScores` in the store (forward-only, migrated, reset-wiped);
   entry points on ClearedScreen + CategoryScreen chips w/ per-level bests + category
   trophy total; ParentView "Sprint best" lines. Partial (backed-out) runs still save.
-  **112 tests passing**, build & lint clean. **Uncommitted.**
+  Sprint misses advance to the next question (retry-until-correct is mastery-only).
+  **112 tests passing**, build & lint clean.
+- **2026-07-04 — Committed & pushed.** Everything above (ten increments since Phase 0)
+  landed as **`14bef7a`** on `main` →
+  [github.com/jhong03/EducationGame](https://github.com/jhong03/EducationGame). The
+  per-increment "Uncommitted" notes above are historical. *Lesson recorded: commit per
+  increment from now on — these overlapped too much in the same files to slice
+  retroactively.*
 - **2026-07-04 — Reset re-asks the age.** User-reported: once an age is persisted, the
   gate never reappears (correct for returning players, but there was NO in-app path
   back to it). `reset()` now clears `age` too (pace/mute survive) → closing the
