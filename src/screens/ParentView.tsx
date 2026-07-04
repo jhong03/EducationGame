@@ -56,12 +56,14 @@ type Mode = 'view' | 'confirm' | 'done'
 export default function ParentView({ onClose }: ParentViewProps) {
   const stars = useGameStore((s) => s.stars)
   const progress = useGameStore((s) => s.progress)
-  const bestScores = useGameStore((s) => s.bestScores)
   const reset = useGameStore((s) => s.reset)
 
   const [mode, setMode] = useState<Mode>('view')
   const [gate, setGate] = useState<Gate>(makeGate)
   const [wrongToken, setWrongToken] = useState(0) // re-key the shaken button
+  // The chapter-by-chapter breakdown lives on its own page — 33 categories ×
+  // 146 levels would bury the settings below a scroll of pills.
+  const [showProgress, setShowProgress] = useState(false)
 
   // A wrong gate tap re-keys (remounts) the option buttons, which would dump
   // keyboard focus onto <body>; put it back on the first fresh option.
@@ -86,6 +88,10 @@ export default function ParentView({ onClose }: ParentViewProps) {
       setGate(makeGate())
       setWrongToken((t) => t + 1)
     }
+  }
+
+  if (showProgress) {
+    return <ProgressPage onBack={() => setShowProgress(false)} />
   }
 
   return (
@@ -127,64 +133,28 @@ export default function ParentView({ onClose }: ParentViewProps) {
         {/* Learning pace: quiz → suggested session plan */}
         <PaceSection />
 
-        {/* Per-category level lists */}
-        {CATEGORIES.map((category) => {
-          const levels = levelsInCategory(category.id)
-          return (
-            <section
-              key={category.id}
-              className="flex flex-col gap-2 rounded-3xl bg-cream/70 p-3"
-              aria-label={`${category.name} progress`}
-            >
-              <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
-                <span aria-hidden="true" style={{ fontSize: 20 }}>
-                  {category.icon}
-                </span>
-                {category.name}
-              </h2>
-              {levels.map((level) => {
-                const cleared = hasCleared(progress, level.id)
-                const unlocked = isLevelUnlocked(level, levels, progress)
-                const best = progress[level.id]?.bestStreak ?? 0
-                const status = cleared
-                  ? progress[level.id]?.placed
-                    ? 'Placed'
-                    : 'Mastered'
-                  : unlocked
-                    ? 'In progress'
-                    : 'Locked'
-                return (
-                  <div
-                    key={level.id}
-                    className="flex items-center gap-3 rounded-2xl bg-cream px-3 py-2"
-                  >
-                    <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
-                      style={{ background: unlocked ? 'var(--sky-2)' : 'var(--locked)', fontSize: 24 }}
-                      aria-hidden="true"
-                    >
-                      {unlocked ? level.icon : '🔒'}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold text-ink">{level.name}</p>
-                      {best > 0 && (
-                        <p className="text-sm font-semibold text-ink/60">
-                          Best: {best} in a row
-                        </p>
-                      )}
-                      {(bestScores[level.id] ?? 0) > 0 && (
-                        <p className="text-sm font-semibold text-ink/60">
-                          🏆 Sprint best: {bestScores[level.id]}
-                        </p>
-                      )}
-                    </div>
-                    <StatusPill status={status} />
-                  </div>
-                )
-              })}
-            </section>
-          )
-        })}
+        {/* The full chapter-by-chapter breakdown lives on its own page. */}
+        <section aria-label="Chapter progress">
+          <button
+            type="button"
+            onClick={() => setShowProgress(true)}
+            aria-label="Chapter progress"
+            className="flex w-full items-center gap-3 rounded-3xl bg-cream/70 p-4 text-left shadow-sm transition-transform active:scale-[0.99]"
+          >
+            <span aria-hidden="true" style={{ fontSize: 24 }}>
+              📚
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold text-ink">Chapter progress</span>
+              <span className="block text-sm font-semibold text-ink/70">
+                Every chapter and level — status, best streaks and sprint scores
+              </span>
+            </span>
+            <span aria-hidden="true" className="font-bold text-ink/50" style={{ fontSize: 22 }}>
+              →
+            </span>
+          </button>
+        </section>
 
         {/* Privacy note — reassurance for the buying adult (spec §11). */}
         <p className="px-2 text-center text-sm font-semibold text-ink/60">
@@ -264,6 +234,114 @@ export default function ParentView({ onClose }: ParentViewProps) {
             </div>
           )}
         </section>
+      </main>
+    </div>
+  )
+}
+
+/**
+ * Chapter progress — the full per-category, per-level breakdown (status
+ * pills, best streaks, sprint bests). Its own page so the settings screen
+ * stays a short scroll; reached via the "Chapter progress" card.
+ */
+function ProgressPage({ onBack }: { onBack: () => void }) {
+  const stars = useGameStore((s) => s.stars)
+  const progress = useGameStore((s) => s.progress)
+  const bestScores = useGameStore((s) => s.bestScores)
+
+  // "Mastered" counts only EARNED clears; placement grants position, not credit.
+  const masteredCount = TRAIL.filter(
+    (l) => hasCleared(progress, l.id) && !progress[l.id]?.placed,
+  ).length
+  const finishedCategories = CATEGORIES.filter((c) =>
+    levelsInCategory(c.id).every((l) => hasCleared(progress, l.id)),
+  ).length
+
+  return (
+    <div className="relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
+      <header className="safe-pt sticky top-0 z-10 flex items-center justify-between gap-2 bg-sky-1/70 p-4 backdrop-blur">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to settings"
+          className="flex items-center gap-2 rounded-full bg-cream px-5 py-2 font-bold text-ink shadow-md transition-transform active:scale-95"
+        >
+          <span aria-hidden="true">⬅️</span>
+          <span>Settings</span>
+        </button>
+        <h1 className="font-bold text-ink" style={{ fontSize: 'clamp(20px, 5vw, 28px)' }}>
+          Chapter progress
+        </h1>
+      </header>
+
+      <main className="safe-pb mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+        <section className="grid grid-cols-3 gap-3" aria-label="Progress summary">
+          <Stat value={String(stars)} label="Stars" icon="⭐" />
+          <Stat value={`${masteredCount}/${TRAIL.length}`} label="Mastered" icon="🏅" />
+          <Stat
+            value={`${finishedCategories}/${CATEGORIES.length}`}
+            label="Categories"
+            icon="🌈"
+          />
+        </section>
+
+        {CATEGORIES.map((category) => {
+          const levels = levelsInCategory(category.id)
+          return (
+            <section
+              key={category.id}
+              className="flex flex-col gap-2 rounded-3xl bg-cream/70 p-3"
+              aria-label={`${category.name} progress`}
+            >
+              <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
+                <span aria-hidden="true" style={{ fontSize: 20 }}>
+                  {category.icon}
+                </span>
+                {category.name}
+              </h2>
+              {levels.map((level) => {
+                const cleared = hasCleared(progress, level.id)
+                const unlocked = isLevelUnlocked(level, levels, progress)
+                const best = progress[level.id]?.bestStreak ?? 0
+                const status = cleared
+                  ? progress[level.id]?.placed
+                    ? 'Placed'
+                    : 'Mastered'
+                  : unlocked
+                    ? 'In progress'
+                    : 'Locked'
+                return (
+                  <div
+                    key={level.id}
+                    className="flex items-center gap-3 rounded-2xl bg-cream px-3 py-2"
+                  >
+                    <span
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+                      style={{ background: unlocked ? 'var(--sky-2)' : 'var(--locked)', fontSize: 24 }}
+                      aria-hidden="true"
+                    >
+                      {unlocked ? level.icon : '🔒'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-ink">{level.name}</p>
+                      {best > 0 && (
+                        <p className="text-sm font-semibold text-ink/60">
+                          Best: {best} in a row
+                        </p>
+                      )}
+                      {(bestScores[level.id] ?? 0) > 0 && (
+                        <p className="text-sm font-semibold text-ink/60">
+                          🏆 Sprint best: {bestScores[level.id]}
+                        </p>
+                      )}
+                    </div>
+                    <StatusPill status={status} />
+                  </div>
+                )
+              })}
+            </section>
+          )
+        })}
       </main>
     </div>
   )

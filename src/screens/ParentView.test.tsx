@@ -67,7 +67,29 @@ function gateAnswer(): number {
 }
 
 describe('ParentView', () => {
-  it('shows the progress summary grouped by category', () => {
+  it('keeps settings short: the chapter breakdown sits behind its own page', () => {
+    // The settings page shows the summary numbers and controls…
+    expect(container.textContent).toContain('7') // stars
+    expect(container.textContent).toContain('1/146') // mastered levels
+    expect(container.textContent).toContain('0/33') // finished categories
+    expect(container.textContent).toContain('Money currency')
+    expect(container.textContent).toContain('Reset all progress')
+    // …but NOT the 33-category pill list.
+    expect(container.textContent).not.toContain('Counting')
+    expect(container.textContent).not.toContain('Locked')
+    expect(buttonByAria('Chapter progress')).not.toBeNull()
+
+    // The progress page carries the breakdown; Settings brings you back.
+    click(buttonByAria('Chapter progress'))
+    expect(container.textContent).toContain('Counting')
+    expect(container.textContent).not.toContain('Reset all progress')
+    click(buttonByAria('Back to settings'))
+    expect(container.textContent).toContain('Money currency')
+    expect(container.textContent).not.toContain('Counting')
+  })
+
+  it('shows the progress summary grouped by category on the progress page', () => {
+    click(buttonByAria('Chapter progress'))
     expect(container.textContent).toContain('7') // stars
     expect(container.textContent).toContain('1/146') // mastered levels
     expect(container.textContent).toContain('0/33') // finished categories
@@ -139,6 +161,7 @@ describe('ParentView', () => {
         .getState()
         .placeLevels(['math-early-4', 'math-early-26', 'math-early-27', 'math-early-28'])
     })
+    click(buttonByAria('Chapter progress'))
     expect(container.textContent).toContain('Placed')
     expect(container.textContent).toContain('1/146') // mastered = earned only
     expect(container.textContent).toContain('1/33') // …but the category counts as finished
