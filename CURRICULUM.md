@@ -3,7 +3,8 @@
 **Status: APPROVED 2026-07-04** (user pass on all six §6 decisions — see the locked
 answers there). This is the map we build from; approved slices become data in
 [`content/math.ts`](src/content/math.ts) (see [CONTEXT.md](CONTEXT.md) for how
-content-as-data works). **Phase 1 is built.**
+content-as-data works). **Phases 0–4 are built — the early and mid bands are
+complete; Phases 5–6 (upper band) remain.**
 
 > **How to read this doc.** §1 sets up bands and sources. §2 is the 12 strands at a
 > glance. §3 is the meat — each strand's rung-by-rung progression with the countries
@@ -280,7 +281,7 @@ own and reuses as much prior UI as possible.
 | **2.5 ✅** | early | **Expansion wave (A+B+C+D)** — every category deepened (zero, ±1, count-down/by-tens, fewer/equal/numeral compare, doubles, bonds 5/10, shape sides, ABC patterns, coin compare), Puzzle Grove ×4 more, day scenes, **Big & Small 📏** chapter, make-amount / set-clock / tap-all interactions — 25 levels, ids 22–46 → **46 total** | 16 new activity types | *Built 2026-07-04 — the early band is content-rich* |
 | **3 ✅** | mid | Mid band opened: Place Value ×3 (blocks to 999 + rounding), Times Tables ×4 (equal groups → all-to-12, adjacent-entry distractors), Add & Subtract ×4 (numeric within 20/100), Sharing ×2 (fair share + exact division) — 13 levels (`math-mid-1..13`) + **arcade sprints** (m:ss countdown, 🔥 3-streak doubles) | `place-value`, `round`, `multiply`, `divide`, `share`, `arith` | *Built 2026-07-04 — column written-method + arrays deferred to the mid deepening wave* |
 | **3.5 ✅** | mid | **Deepening wave** — mid triples to 12 chapters / 38 levels: Fractions (bar-model reading to eighths), Measuring (units + area/perimeter), Time Master (five-minute clock, elapsed hours), Money Math (change), Data & Graphs (block graphs), Shape Lab, Number Detective (□-equations, skip-trails), Story Problems, + remainders/tricky-tables/round-to-100 in the original four | `fraction-of`, `unit-pick`, `grid-rect`, `elapsed`, `change`, `graph-count/most`, `shape-sort`, `missing`, `leftover`, `word-problem` | *Built 2026-07-04* |
-| **4** | mid | Fraction EQUIVALENCE & operations, read scales/rulers, richer data (tally→bar construction) | `fraction-op`, `read-scale`, `build-graph` | Remaining core mid-band |
+| **4 ✅** | mid | Written methods (column +/− with a forced carry/borrow), fraction equivalence & same-denominator ops, read partitioned scales/rulers, tally→bar construction — 10 levels (`math-mid-39..48`) → mid band **48 levels** | `column-op`, `fraction-op`, `read-scale`, `build-graph` | *Built 2026-07-04 — the mid band is complete* |
 | **5** | mid→upper | Decimals, percentages, angles, symmetry, coordinates, word problems | `percent-of`, `angle`, `symmetry`, `grid`, `word-problem` | Bridges into upper |
 | **6** | upper | Long ×/÷, ratio, negative numbers, volume, averages, multi-step problems, logic/IQ | `ratio`, `number-line`, `compute`, `mixed`, `logic`, `spatial` | Completes 10–12 |
 
