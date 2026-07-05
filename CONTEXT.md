@@ -814,4 +814,14 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   play recorded audio, dynamic sentences stay on ranked styled TTS. Model
   (~63MB) gitignored with its download URL in the script. PWA precache 25→38
   entries (clips offline). **202 tests passing**, build & lint clean.
-  Committed & pushed as **`a691f55`** (+ this docs true-up).
+  Committed & pushed as **`a691f55`** (+ docs `bbf6c07`).
+- **2026-07-05 — VO pack energized (user: first pass "way too robotic").**
+  Regenerated with expressive prosody (noise_scale 0.8–0.85, noise_w 0.9–0.95,
+  cheer pacing 0.82) + a character chain: **formant-lifting pitch-up** via
+  asetrate (cheer ≈+2.7 semitones — deliberately young/cartoon-guide; not
+  rubberband, which keeps the voice adult), +6% cheer tempo, treble sparkle,
+  punchy compression, −16 LUFS. Cheers now 0.26–0.55s bursts. Spoken text may
+  deviate where it reads better ("Woo-hoo!") — app keys/files unchanged.
+  Tuning knobs live in `preset()` in
+  [`tools/vo/generate-vo.sh`](tools/vo/generate-vo.sh). Committed & pushed as
+  **`0b3c502`** (+ this docs true-up).
