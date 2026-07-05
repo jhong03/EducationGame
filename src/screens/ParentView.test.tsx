@@ -179,6 +179,16 @@ describe('ParentView', () => {
     expect(buttonByText('Retake the quiz')).not.toBeNull()
   })
 
+  it('shows lifetime accuracy per level once answers are recorded', () => {
+    act(() => {
+      useGameStore.getState().recordAnswer('math-early-1', true)
+      useGameStore.getState().recordAnswer('math-early-1', true)
+      useGameStore.getState().recordAnswer('math-early-1', false)
+    })
+    click(buttonByAria('Chapter progress'))
+    expect(container.textContent).toContain('3 answers · 67% right')
+  })
+
   it('placed levels show as “Placed”, not “Mastered”, and don’t inflate the mastered stat', () => {
     act(() => {
       // Place all four More-or-Less rungs — a whole category via placement.

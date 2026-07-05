@@ -306,6 +306,11 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
                 const cleared = hasCleared(progress, level.id)
                 const unlocked = isLevelUnlocked(level, levels, progress)
                 const best = progress[level.id]?.bestStreak ?? 0
+                const attempts = progress[level.id]?.attempts ?? 0
+                const accuracy =
+                  attempts > 0
+                    ? Math.round(((progress[level.id]?.correct ?? 0) / attempts) * 100)
+                    : null
                 const status = cleared
                   ? progress[level.id]?.placed
                     ? 'Placed'
@@ -330,6 +335,11 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
                       {best > 0 && (
                         <p className="text-sm font-semibold text-ink/60">
                           Best: {best} in a row
+                        </p>
+                      )}
+                      {accuracy !== null && (
+                        <p className="text-sm font-semibold text-ink/60">
+                          {attempts} answer{attempts === 1 ? '' : 's'} · {accuracy}% right
                         </p>
                       )}
                       {(bestScores[level.id] ?? 0) > 0 && (

@@ -866,6 +866,14 @@ export interface LevelProgress {
    * the level later clears the flag.
    */
   placed?: boolean
+  /**
+   * Lifetime MASTERY-mode answer counters (sprints don't count — they're
+   * performance, not practice). Power the accuracy readout in the grown-ups
+   * panel, the progress export, and the warm-up picker. Forward-only like
+   * everything else; absent on levels never answered (old saves included).
+   */
+  attempts?: number
+  correct?: number
 }
 
 /**

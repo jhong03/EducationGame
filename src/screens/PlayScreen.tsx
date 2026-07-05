@@ -123,6 +123,7 @@ type Phase = 'answering' | 'celebrating'
 export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps) {
   const awardStar = useGameStore((s) => s.awardStar)
   const recordStreak = useGameStore((s) => s.recordStreak)
+  const recordAnswer = useGameStore((s) => s.recordAnswer)
   const clearLevel = useGameStore((s) => s.clearLevel)
   const pace = useGameStore((s) => s.pace)
 
@@ -193,6 +194,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
   function answer(given: Answer) {
     if (phase !== 'answering') return
     const outcome = evaluateAnswer(question, given, streak, level.masteryGoal)
+    recordAnswer(level.id, outcome.correct) // lifetime accuracy, mastery only
 
     if (outcome.correct) {
       setPhase('celebrating')

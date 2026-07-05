@@ -310,6 +310,43 @@ describe('player name', () => {
   })
 })
 
+describe('lifetime answer counters (attempts / correct)', () => {
+  it('recordAnswer accumulates and never disturbs cleared/placed/bestStreak', () => {
+    const s = useGameStore.getState()
+    s.placeLevels(['math-early-1'])
+    s.recordAnswer('math-early-1', true)
+    s.recordAnswer('math-early-1', false)
+    s.recordAnswer('math-early-1', true)
+    const p = useGameStore.getState().progress['math-early-1']
+    expect(p.attempts).toBe(3)
+    expect(p.correct).toBe(2)
+    expect(p.cleared).toBe(true)
+    expect(p.placed).toBe(true) // provenance survives counting
+  })
+
+  it('clearLevel and recordStreak carry the counters through', () => {
+    const s = useGameStore.getState()
+    s.recordAnswer('math-early-2', true)
+    s.recordStreak('math-early-2', 1)
+    s.clearLevel('math-early-2', 3)
+    const p = useGameStore.getState().progress['math-early-2']
+    expect(p.cleared).toBe(true)
+    expect(p.bestStreak).toBe(3)
+    expect(p.attempts).toBe(1)
+    expect(p.correct).toBe(1)
+  })
+
+  it('placement never wipes counters earned before it', () => {
+    const s = useGameStore.getState()
+    s.recordAnswer('math-early-3', false)
+    s.placeLevels(['math-early-1', 'math-early-2', 'math-early-3'])
+    const p = useGameStore.getState().progress['math-early-3']
+    expect(p.placed).toBe(true)
+    expect(p.attempts).toBe(1)
+    expect(p.correct).toBe(0)
+  })
+})
+
 describe('persisted-state migration (v1 → v2)', () => {
   it('keeps earned fields and drops the old unlockedOrder', () => {
     const v1 = {

@@ -26,6 +26,8 @@ interface GameActions {
   awardStar: () => void
   /** Record a level attempt's streak, keeping the best ever seen. */
   recordStreak: (levelId: string, streak: number) => void
+  /** Count one mastery-mode answer toward the level's lifetime accuracy. */
+  recordAnswer: (levelId: string, correct: boolean) => void
   /** Mark a level cleared (the next level in its category derives as open). */
   clearLevel: (levelId: string, streak: number) => void
   /** Mute toggle (persisted so the choice survives a refresh). */
@@ -115,6 +117,9 @@ function bumpBest(
   }
   // Real mastery erases "placed" provenance; short of that, keep it.
   if (!cleared && prev?.placed) next.placed = true
+  // The lifetime answer counters always ride along.
+  if (prev?.attempts !== undefined) next.attempts = prev.attempts
+  if (prev?.correct !== undefined) next.correct = prev.correct
   return { ...progress, [levelId]: next }
 }
 
@@ -127,6 +132,19 @@ export const useGameStore = create<GameStore>()(
 
       recordStreak: (levelId, streak) =>
         set((s) => ({ progress: bumpBest(s.progress, levelId, streak, false) })),
+
+      recordAnswer: (levelId, correct) =>
+        set((s) => {
+          const prev = s.progress[levelId]
+          const next: LevelProgress = {
+            cleared: prev?.cleared ?? false,
+            bestStreak: prev?.bestStreak ?? 0,
+            ...(prev?.placed ? { placed: true } : {}),
+            attempts: (prev?.attempts ?? 0) + 1,
+            correct: (prev?.correct ?? 0) + (correct ? 1 : 0),
+          }
+          return { progress: { ...s.progress, [levelId]: next } }
+        }),
 
       clearLevel: (levelId, streak) =>
         set((s) => ({ progress: bumpBest(s.progress, levelId, streak, true) })),
@@ -159,6 +177,8 @@ export const useGameStore = create<GameStore>()(
               cleared: true,
               bestStreak: prev?.bestStreak ?? 0,
               placed: true,
+              ...(prev?.attempts !== undefined ? { attempts: prev.attempts } : {}),
+              ...(prev?.correct !== undefined ? { correct: prev.correct } : {}),
             }
           }
           return { progress }
