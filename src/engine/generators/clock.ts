@@ -48,7 +48,7 @@ export function generateClock(
   return {
     id: makeId('clock', rng),
     activity: 'clock',
-    // Deliberately does NOT speak the time — reading the clock IS the skill.
+    // Deliberately never states the time — reading the clock IS the skill.
     prompt: 'What time is it?',
     payload: { hour, minute, choices },
     options: choices.map((_, i) => i),

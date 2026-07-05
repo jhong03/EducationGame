@@ -3,10 +3,10 @@ import { numberWord } from '../../content/words'
 import { buildNumberOptions, makeId, randInt } from '../random'
 
 /**
- * make-amount — "make 6!": a pile of unit coins; the child taps coins to
- * build the spoken target (each tap speaks the running total), then presses
- * ✔️. There are always more coins than needed, so restraint — stopping at
- * the target — is part of the skill (G2: make an amount).
+ * make-amount — "make 6!": a pile of unit coins; the child taps coins up to
+ * the target (each picked coin wears a ✓, the pile shows the running total),
+ * then presses ✔️. There are always more coins than needed, so restraint —
+ * stopping at the target — is part of the skill (G2: make an amount).
  */
 export function generateMakeAmount(
   params: Record<string, number>,

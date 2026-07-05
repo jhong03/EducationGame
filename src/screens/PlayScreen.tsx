@@ -168,12 +168,6 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
 
   const bumpBeat = () => setBeat((b) => b + 1)
 
-  // Speak the prompt whenever a new question appears.
-  useEffect(() => {
-    const id = setTimeout(() => audio.speak(question.prompt), 250)
-    return () => clearTimeout(id)
-  }, [question])
-
   function loadNextQuestion() {
     // A hard question makes the next one gentler; a first-try answer on a
     // replayed level lets it stretch. The child never sees a dial move.
@@ -189,16 +183,11 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
   }
 
   function tapObject(key: string) {
-    const existing = countedRef.current[key]
-    if (existing !== undefined) {
-      audio.sayNumber(existing) // re-tap: say its number again
-      return
-    }
+    if (countedRef.current[key] !== undefined) return // already counted
     const n = Object.keys(countedRef.current).length + 1
     countedRef.current = { ...countedRef.current, [key]: n }
     setCounted(countedRef.current)
-    audio.sfx('pop')
-    audio.sayNumber(n)
+    audio.sfx('pop') // the ordinal badge on the object shows the number
   }
 
   function answer(given: Answer) {
@@ -274,18 +263,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
 
         <ProgressDots total={level.masteryGoal} filled={streak} />
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => audio.speak(question.prompt)}
-            aria-label="Hear the question again"
-            className="grid place-items-center rounded-full bg-grape text-cream shadow-md transition-transform active:scale-90"
-            style={{ width: 64, height: 64, fontSize: 26 }}
-          >
-            <span aria-hidden="true">🔊</span>
-          </button>
-          <MuteButton />
-        </div>
+        <MuteButton />
       </header>
 
       {/* Center stage */}
@@ -1019,11 +997,7 @@ function MatchStage({
 
   function tapObject(groupIndex: number, i: number) {
     const key = `${groupIndex}-${i}`
-    const existing = countedRef.current[key]
-    if (existing !== undefined) {
-      audio.sayNumber(existing)
-      return
-    }
+    if (countedRef.current[key] !== undefined) return // already counted
     // Ordinal within THIS group only — each pile is counted from one.
     const n =
       Object.keys(countedRef.current).filter((k) => k.startsWith(`${groupIndex}-`))
@@ -1031,7 +1005,6 @@ function MatchStage({
     countedRef.current = { ...countedRef.current, [key]: n }
     setCounted(countedRef.current)
     audio.sfx('pop')
-    audio.sayNumber(n)
   }
 
   return (
@@ -2052,8 +2025,7 @@ function MakeAmountStage({
     if (next.has(i)) next.delete(i)
     else next.add(i)
     setSelected(next)
-    audio.sfx('pop')
-    audio.sayNumber(next.size) // the running total IS the learning moment
+    audio.sfx('pop') // the ✓ badges show the running total
   }
 
   return (
@@ -2132,8 +2104,7 @@ function SetClockStage({
   function turn() {
     const next = (hour % 12) + 1
     setHour(next)
-    audio.sfx('pop')
-    audio.sayNumber(next)
+    audio.sfx('pop') // the clock face shows where the hand points
   }
 
   return (
@@ -2198,8 +2169,7 @@ function TapAllStage({
       const next = new Set(found)
       next.add(i)
       setFound(next)
-      audio.sfx('pop')
-      audio.sayNumber(next.size)
+      audio.sfx('pop') // each found shape wears its ✓ badge
       if (next.size >= count) onComplete(count)
     } else {
       onWrongTap()
@@ -2983,8 +2953,7 @@ function BuildGraphStage({
     const next = [...built]
     next[i] = (next[i] + 1) % (maxHeight + 1) // past the top wraps to 0 — always correctable
     setBuilt(next)
-    audio.sfx('pop')
-    audio.sayNumber(next[i])
+    audio.sfx('pop') // the tower itself shows its height
   }
 
   const encoded = built.reduce((acc, h) => acc * 10 + h, 0)

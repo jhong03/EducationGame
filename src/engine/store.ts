@@ -39,8 +39,6 @@ interface GameActions {
   setName: (name: string | null) => void
   /** Set the family's currency (grown-ups panel). */
   setCurrency: (currency: string) => void
-  /** Set the TTS voice (grown-ups panel); null = auto best. */
-  setVoiceId: (voiceId: string | null) => void
   /** Record a sprint result — kept only if it beats the level's best. */
   recordSprintScore: (levelId: string, score: number) => void
   /**
@@ -63,7 +61,6 @@ const initialState: GameState = {
   age: null,
   name: null,
   currency: DEFAULT_CURRENCY,
-  voiceId: null,
   bestScores: {},
 }
 
@@ -93,10 +90,9 @@ export function migratePersistedState(persisted: unknown): GameState {
         ? s.age
         : null,
     name: typeof s.name === 'string' ? sanitizeName(s.name) : null,
-    // Opaque id; unknown values fall back at render time.
+    // Opaque id; unknown values fall back at render time. (A retired
+    // `voiceId` field from the voiced era is simply not carried forward.)
     currency: typeof s.currency === 'string' && s.currency ? s.currency : DEFAULT_CURRENCY,
-    // Opaque voiceURI; the AudioManager falls back to auto for unknown ids.
-    voiceId: typeof s.voiceId === 'string' && s.voiceId ? s.voiceId : null,
     // Keep only well-formed numeric bests.
     bestScores: Object.fromEntries(
       Object.entries(s.bestScores ?? {}).filter(
@@ -146,8 +142,6 @@ export const useGameStore = create<GameStore>()(
 
       setCurrency: (currency) => set({ currency }),
 
-      setVoiceId: (voiceId) => set({ voiceId }),
-
       recordSprintScore: (levelId, score) =>
         set((s) => {
           const best = s.bestScores[levelId] ?? 0
@@ -179,7 +173,6 @@ export const useGameStore = create<GameStore>()(
           pace: s.pace,
           muted: s.muted,
           currency: s.currency,
-          voiceId: s.voiceId,
         })),
     }),
     {
@@ -195,7 +188,6 @@ export const useGameStore = create<GameStore>()(
         age: s.age,
         name: s.name,
         currency: s.currency,
-        voiceId: s.voiceId,
         bestScores: s.bestScores,
       }),
     },

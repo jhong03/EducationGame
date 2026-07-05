@@ -79,8 +79,8 @@ const FRACTION_PARTS: Record<number, readonly [string, string]> = {
 }
 
 /**
- * The spoken form of a fraction ("3/4" → "three quarters"). TTS reads "3/4"
- * as "three slash four", so prompts must never speak the raw label.
+ * The word form of a fraction ("3/4" → "three quarters") — prompts print
+ * the words rather than the raw label.
  */
 export function fractionWord(num: number, den: number): string {
   const part = FRACTION_PARTS[den]

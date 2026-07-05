@@ -48,6 +48,8 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
   // Tap-to-count bookkeeping, same shape as PlayScreen.
   const countedRef = useRef<Record<string, number>>({})
   const [counted, setCounted] = useState<Record<string, number>>({})
+  // The warm sign-off ("Wow! Off you go!") shows as TEXT while we linger.
+  const [closing, setClosing] = useState<string | null>(null)
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const later = (fn: () => void, ms: number) => {
@@ -60,31 +62,18 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
     if (!question) onDone()
   }, [question, onDone])
 
-  // Speak the intro with the first prompt; later steps speak their prompt.
-  useEffect(() => {
-    if (!question) return
-    const text = step === 0 ? `${INTRO} ${question.prompt}` : question.prompt
-    const id = setTimeout(() => audio.speak(text), 300)
-    return () => clearTimeout(id)
-  }, [question, step])
-
   if (!question) return null
 
   function tapObject(key: string) {
-    const existing = countedRef.current[key]
-    if (existing !== undefined) {
-      audio.sayNumber(existing)
-      return
-    }
+    if (countedRef.current[key] !== undefined) return // already counted
     const n = Object.keys(countedRef.current).length + 1
     countedRef.current = { ...countedRef.current, [key]: n }
     setCounted(countedRef.current)
-    audio.sfx('pop')
-    audio.sayNumber(n)
+    audio.sfx('pop') // the ordinal badge on the object shows the number
   }
 
-  function finish(spoken: string, style: 'praise' | 'soft') {
-    audio.speak(spoken, style)
+  function finish(message: string) {
+    setClosing(message) // shown in the prompt slot while we linger
     later(onDone, 1100)
   }
 
@@ -116,14 +105,14 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
           setPhase('answering')
         }, 900)
       } else {
-        finish('Wow! Off you go!', 'praise')
+        finish('Wow! Off you go!')
       }
     } else {
       // A miss is only information — start here, cheerfully.
       audio.sfx('soft')
       setMood('happy')
       setBeat((b) => b + 1)
-      finish("That's okay! We'll start here.", 'soft')
+      finish("That's okay! We'll start here.")
     }
   }
 
@@ -142,8 +131,7 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
             className="mt-1 text-center font-semibold text-ink/80"
             style={{ fontSize: 'clamp(17px, 4.5vw, 24px)' }}
           >
-            {step === 0 ? `${INTRO} ` : ''}
-            {question.prompt}
+            {closing ?? `${step === 0 ? `${INTRO} ` : ''}${question.prompt}`}
           </p>
         </div>
 

@@ -79,13 +79,6 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level.id, level.sprintSeconds, round])
 
-  // Speak each prompt as it appears.
-  useEffect(() => {
-    if (phase === 'done') return
-    const id = setTimeout(() => audio.speak(question.prompt), 250)
-    return () => clearTimeout(id)
-  }, [question, phase])
-
   function finishRound() {
     if (doneRef.current) return
     doneRef.current = true
@@ -108,16 +101,11 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
   }
 
   function tapObject(key: string) {
-    const existing = countedRef.current[key]
-    if (existing !== undefined) {
-      audio.sayNumber(existing)
-      return
-    }
+    if (countedRef.current[key] !== undefined) return // already counted
     const n = Object.keys(countedRef.current).length + 1
     countedRef.current = { ...countedRef.current, [key]: n }
     setCounted(countedRef.current)
-    audio.sfx('pop')
-    audio.sayNumber(n)
+    audio.sfx('pop') // the ordinal badge on the object shows the number
   }
 
   function answer(given: Answer) {
@@ -133,8 +121,7 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
       setPhase('between')
       setMood('cheer')
       setBeat((b) => b + 1)
-      audio.sfx('good')
-      audio.sayNumber(next) // the climbing score IS the celebration
+      audio.sfx('good') // the score chip ticks up — that IS the celebration
       later(() => {
         if (!doneRef.current) {
           setMood('happy')

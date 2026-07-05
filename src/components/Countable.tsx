@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 /**
  * Countable — one tappable object (spec §5, the core learning moment). Tapping
- * it wiggles the object; the parent speaks the running count. Once counted it
- * wears a small number badge so the child sees quantity become numeral.
+ * it wiggles the object and pops; once counted it wears a small number badge,
+ * so the child sees quantity become numeral tap by tap.
  *
  * This component only reports taps and animates; the running-count bookkeeping
  * and audio live in the PlayScreen so a single count can flow across two groups

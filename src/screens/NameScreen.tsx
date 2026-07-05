@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { audio } from '../audio/AudioManager'
+import { useState } from 'react'
 import Twinkle from '../components/Twinkle'
 import MuteButton from '../components/MuteButton'
 
@@ -8,8 +7,6 @@ import MuteButton from '../components/MuteButton'
  * cosmetic and always skippable: a grown-up types it (or a reading child),
  * a pre-reader skips and adds it later in the For-grown-ups panel. The name
  * greets on the meadow and rides the status chip during play.
- *
- * Mounted straight from the age tap, so speech has user activation.
  */
 
 interface NameScreenProps {
@@ -20,13 +17,6 @@ const PROMPT = "What's your name?"
 
 export default function NameScreen({ onDone }: NameScreenProps) {
   const [value, setValue] = useState('')
-
-  // The age-pick echo ("ten!") is still speaking when this mounts; the delay
-  // lets it finish before the question lands (speak() cancels in-flight).
-  useEffect(() => {
-    const id = setTimeout(() => audio.speak(PROMPT), 1100)
-    return () => clearTimeout(id)
-  }, [])
 
   const trimmed = value.trim()
 

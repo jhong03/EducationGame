@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Category } from '../engine/types'
 import {
   useGameStore,
@@ -14,10 +15,9 @@ import Twinkle from '../components/Twinkle'
  * CategoryScreen — the levels of one category as a grid of big chunky tiles
  * (deliberately NOT a winding path). Tile states mirror the old trail nodes:
  * locked (grey 🔒), open (its icon, glowing to invite a tap), cleared (star
- * badge). Tapping an open tile starts it (PlayScreen speaks the prompt right
- * away — that is the audio affordance). Locked tiles stay focusable and answer
- * a tap with a gentle spoken "not yet", so a pre-reader is never met with
- * silence.
+ * badge). Tapping an open tile starts it. Locked tiles stay focusable and
+ * answer a tap with a soft boop and a padlock shake — "not yet" without a
+ * voice, never dead silence.
  */
 
 interface CategoryScreenProps {
@@ -39,6 +39,10 @@ export default function CategoryScreen({
   // Only this child's tier of the ladder — age-gated rungs aren't teased.
   const levels = levelsInCategoryForAge(category.id, age)
   const trophyTotal = categorySprintScore(levels, bestScores)
+  // A tap on a locked tile shakes its padlock (visual "not yet") — the
+  // token re-triggers the animation on repeat taps without remounting the
+  // button (keyboard focus stays put).
+  const [shake, setShake] = useState<{ id: string; token: number } | null>(null)
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-gradient-to-b from-sky-1 to-sky-2">
@@ -98,15 +102,13 @@ export default function CategoryScreen({
                 onClick={() => {
                   audio.unlock()
                   if (!unlocked) {
-                    // Focusable + audible even when locked: a pre-reader taps
-                    // and hears WHY nothing opens, instead of dead silence.
+                    // Focusable + responsive even when locked: the soft boop
+                    // and a padlock shake say "not yet" without a voice.
                     audio.sfx('soft')
-                    audio.speak('Not yet! Finish the level before it.', 'soft')
+                    setShake((s) => ({ id: level.id, token: (s?.token ?? 0) + 1 }))
                     return
                   }
                   audio.sfx('pop')
-                  // (No name speech here — PlayScreen speaks the real prompt
-                  // ~250ms after mount, which would cancel it mid-word.)
                   onSelectLevel(level.id)
                 }}
                 aria-label={unlocked ? level.name : `${level.name}, locked`}
@@ -122,7 +124,12 @@ export default function CategoryScreen({
                   border: '4px solid var(--cream)',
                 }}
               >
-                <span aria-hidden="true" style={{ fontSize: 'clamp(34px, 9vw, 46px)', lineHeight: 1 }}>
+                <span
+                  key={shake?.id === level.id ? shake.token : 'base'}
+                  aria-hidden="true"
+                  className={shake?.id === level.id ? 'anim-shake' : ''}
+                  style={{ fontSize: 'clamp(34px, 9vw, 46px)', lineHeight: 1 }}
+                >
                   {unlocked ? level.icon : '🔒'}
                 </span>
                 {/* Ink-on-cream pill: readable on grape AND locked-grey tiles

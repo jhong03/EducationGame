@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { Band } from '../engine/types'
 import { useGameStore, hasCleared } from '../engine/store'
 import { categoriesForBand, levelsInCategoryForAge } from '../content/math'
@@ -13,11 +12,11 @@ import Twinkle from '../components/Twinkle'
  * so a child chooses WHAT to practise, never WHERE on a path they're stuck.
  *
  * Only the child's age band's categories show. A band with no content yet
- * (mid/upper until Phases 3+) falls back to the early meadow with a gentle,
- * spoken "still growing" note — never an empty dead-end screen.
+ * falls back to the early meadow with a gentle "still growing" banner —
+ * never an empty dead-end screen.
  *
- * Audio-first: tapping a card speaks the category name, so a pre-reader
- * navigates by icon + voice alone.
+ * Voiceless by design (2026-07-05): a pre-reader navigates by icon and the
+ * pop chime; every word on screen is there for readers and grown-ups.
  */
 
 interface HomeProps {
@@ -27,14 +26,6 @@ interface HomeProps {
 }
 
 const GROWING_NOTE = 'This part of the meadow is still growing! Play here for now.'
-
-// Session latch: the growing note is spoken once per app session, not on
-// every return to Home (the banner itself stays visible throughout).
-let growingNoteSpoken = false
-
-// Same latch pattern for the name greeting — "Hi Maya!" once per session,
-// not on every trip back to the meadow.
-let greetingSpoken = false
 
 /**
  * Card colors cycle through the theme's chunky-button pairs. Text color is
@@ -57,30 +48,6 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
   const bandCategories = categoriesForBand(band)
   const growing = bandCategories.length === 0
   const categories = growing ? categoriesForBand('early') : bandCategories
-
-  // Say the "still growing" note aloud once per session — the child can't
-  // read it. The generous delay lets the age-pick echo ("ten!") finish first:
-  // speak() cancels any in-flight utterance, and this screen mounts right
-  // after that echo starts on an older child's first launch.
-  useEffect(() => {
-    if (!growing || growingNoteSpoken) return
-    const id = setTimeout(() => {
-      growingNoteSpoken = true
-      audio.speak(GROWING_NOTE)
-    }, 1800)
-    return () => clearTimeout(id)
-  }, [growing])
-
-  // Greet the child by name once per session. The delay clears any in-flight
-  // speech from the name/age flow this screen can mount right after.
-  useEffect(() => {
-    if (!name || greetingSpoken) return
-    const id = setTimeout(() => {
-      greetingSpoken = true
-      audio.speak(`Hi ${name}!`, 'praise')
-    }, 1200)
-    return () => clearTimeout(id)
-  }, [name])
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-gradient-to-b from-sky-1 to-sky-2">
@@ -166,7 +133,6 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
               onClick={() => {
                 audio.unlock()
                 audio.sfx('pop')
-                audio.speak(category.name)
                 onSelectCategory(category.id)
               }}
               aria-label={`${category.name}, ${done} of ${levels.length} finished`}

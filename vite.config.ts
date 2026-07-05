@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       workbox: {
-        // Recorded VO clips (public/vo/*.mp3) must work offline too.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,mp3}'],
+        // Fonts precache too, so the meadow looks right offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
       },
       manifest: {
         name: 'Number Meadow',
