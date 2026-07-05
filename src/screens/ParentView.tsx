@@ -101,19 +101,19 @@ export default function ParentView({ onClose }: ParentViewProps) {
   }
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
+    <div className="font-text relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
       {/* Header */}
-      <header className="safe-pt sticky top-0 z-10 flex items-center justify-between gap-2 bg-sky-1/70 p-4 backdrop-blur">
+      <header className="safe-pt sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[color:var(--line)] bg-sky-1/85 p-4 backdrop-blur-lg">
         <button
           type="button"
           onClick={onClose}
           aria-label="Done, back to the meadow"
-          className="flex items-center gap-2 rounded-full bg-cream px-5 py-2 font-bold text-ink shadow-md transition-transform active:scale-95"
+          className="u-glass flex items-center gap-1.5 rounded-full px-4 py-2 font-semibold text-ink-soft transition-transform active:scale-95"
         >
-          <span aria-hidden="true">⬅️</span>
+          <span aria-hidden="true" style={{ fontSize: 18 }}>‹</span>
           <span>Done</span>
         </button>
-        <h1 className="font-bold text-ink" style={{ fontSize: 'clamp(20px, 5vw, 28px)' }}>
+        <h1 className="font-bold text-ink" style={{ fontSize: 'clamp(19px, 4.6vw, 25px)', letterSpacing: '-0.01em' }}>
           For grown-ups
         </h1>
       </header>
@@ -148,31 +148,31 @@ export default function ParentView({ onClose }: ParentViewProps) {
             type="button"
             onClick={() => setShowProgress(true)}
             aria-label="Chapter progress"
-            className="flex w-full items-center gap-3 rounded-3xl bg-cream/70 p-4 text-left shadow-sm transition-transform active:scale-[0.99]"
+            className="flex w-full items-center gap-3 u-card p-4 text-left shadow-sm transition-transform active:scale-[0.99]"
           >
             <span aria-hidden="true" style={{ fontSize: 24 }}>
               📚
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-bold text-ink">Chapter progress</span>
-              <span className="block text-sm font-semibold text-ink/70">
+              <span className="block text-sm font-semibold text-ink-soft">
                 Every chapter and level — status, best streaks and sprint scores
               </span>
             </span>
-            <span aria-hidden="true" className="font-bold text-ink/50" style={{ fontSize: 22 }}>
+            <span aria-hidden="true" className="font-bold text-ink-faint" style={{ fontSize: 22 }}>
               →
             </span>
           </button>
         </section>
 
         {/* Privacy note — reassurance for the buying adult (spec §11). */}
-        <p className="px-2 text-center text-sm font-semibold text-ink/60">
+        <p className="px-2 text-center text-sm font-semibold text-ink-soft">
           Progress is saved on this device only. No account, no sign-in, and
           nothing is collected or sent anywhere.
         </p>
 
         {/* Reset */}
-        <section className="flex flex-col items-center gap-3 rounded-3xl bg-cream/70 p-4">
+        <section className="flex flex-col items-center gap-3 u-card p-4">
           {mode === 'view' && (
             <button
               type="button"
@@ -180,8 +180,12 @@ export default function ParentView({ onClose }: ParentViewProps) {
                 setGate(makeGate())
                 setMode('confirm')
               }}
-              className="rounded-2xl bg-cream px-6 py-3 font-bold text-coral shadow-md transition-transform active:scale-95"
-              style={{ border: '2px solid var(--coral)' }}
+              className="rounded-xl px-6 py-3 font-semibold transition-transform active:scale-95"
+              style={{
+                background: 'color-mix(in srgb, var(--coral) 12%, var(--cream))',
+                color: 'var(--coral-dp)',
+                border: '1px solid color-mix(in srgb, var(--coral) 40%, transparent)',
+              }}
             >
               Reset all progress
             </button>
@@ -189,7 +193,7 @@ export default function ParentView({ onClose }: ParentViewProps) {
 
           {mode === 'confirm' && (
             <div className="flex flex-col items-center gap-3">
-              <p className="text-center font-semibold text-ink/80">
+              <p className="text-center font-semibold text-ink">
                 This erases every star and unlocked level, and the game will
                 ask the child’s age again — perfect for handing over to a new
                 player. To confirm, tap the answer:
@@ -210,7 +214,7 @@ export default function ParentView({ onClose }: ParentViewProps) {
                       minWidth: 72,
                       height: 68,
                       fontSize: 30,
-                      boxShadow: '0 5px 0 var(--grape-dp)',
+                      boxShadow: '0 4px 12px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)',
                     }}
                   >
                     {opt}
@@ -236,7 +240,7 @@ export default function ParentView({ onClose }: ParentViewProps) {
                 type="button"
                 onClick={onClose}
                 className="rounded-2xl bg-grape px-6 py-3 font-bold text-cream shadow-md transition-transform active:scale-95"
-                style={{ boxShadow: '0 5px 0 var(--grape-dp)' }}
+                style={{ boxShadow: '0 4px 12px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)' }}
               >
                 Back to the start
               </button>
@@ -295,18 +299,18 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
-      <header className="safe-pt sticky top-0 z-10 flex items-center justify-between gap-2 bg-sky-1/70 p-4 backdrop-blur">
+    <div className="font-text relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
+      <header className="safe-pt sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[color:var(--line)] bg-sky-1/85 p-4 backdrop-blur-lg">
         <button
           type="button"
           onClick={onBack}
           aria-label="Back to settings"
-          className="flex items-center gap-2 rounded-full bg-cream px-5 py-2 font-bold text-ink shadow-md transition-transform active:scale-95"
+          className="u-glass flex items-center gap-1.5 rounded-full px-4 py-2 font-semibold text-ink-soft transition-transform active:scale-95"
         >
-          <span aria-hidden="true">⬅️</span>
+          <span aria-hidden="true" style={{ fontSize: 18 }}>‹</span>
           <span>Settings</span>
         </button>
-        <h1 className="font-bold text-ink" style={{ fontSize: 'clamp(20px, 5vw, 28px)' }}>
+        <h1 className="font-bold text-ink" style={{ fontSize: 'clamp(19px, 4.6vw, 25px)', letterSpacing: '-0.01em' }}>
           Chapter progress
         </h1>
       </header>
@@ -324,12 +328,12 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
 
         {/* Export — the teacher/parent take-away copy. */}
         <section
-          className="flex flex-wrap items-center gap-2 rounded-3xl bg-cream/70 p-4"
+          className="flex flex-wrap items-center gap-2 u-card p-4"
           aria-label="Save a copy"
         >
           <span className="min-w-0 flex-1">
             <span className="block font-bold text-ink">Save a copy</span>
-            <span className="block text-sm font-semibold text-ink/70">
+            <span className="block text-sm font-semibold text-ink-soft">
               Every level with status, streaks and accuracy — straight from this
               device.
             </span>
@@ -339,18 +343,18 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
             onClick={() => exportAs('csv')}
             aria-label="Download CSV"
             className="rounded-2xl bg-grape px-4 font-bold text-cream shadow-sm transition-transform active:scale-95"
-            style={{ height: 48, boxShadow: '0 4px 0 var(--grape-dp)' }}
+            style={{ height: 48, background: 'var(--grape-grad)', boxShadow: '0 4px 12px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)' }}
           >
-            ⬇️ CSV
+            CSV
           </button>
           <button
             type="button"
             onClick={() => exportAs('json')}
             aria-label="Download JSON"
-            className="rounded-2xl bg-cream px-4 font-bold text-ink shadow-sm transition-transform active:scale-95"
-            style={{ height: 48 }}
+            className="rounded-xl bg-cream px-4 font-semibold text-ink transition-transform active:scale-95"
+            style={{ height: 48, border: '1px solid var(--line)', boxShadow: 'var(--e1)' }}
           >
-            ⬇️ JSON
+            JSON
           </button>
         </section>
 
@@ -359,7 +363,7 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
           return (
             <section
               key={category.id}
-              className="flex flex-col gap-2 rounded-3xl bg-cream/70 p-3"
+              className="flex flex-col gap-2 u-card p-3"
               aria-label={`${category.name} progress`}
             >
               <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
@@ -387,11 +391,17 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
                 return (
                   <div
                     key={level.id}
-                    className="flex items-center gap-3 rounded-2xl bg-cream px-3 py-2"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2"
+                    style={{ background: 'var(--cream-2)', border: '1px solid var(--line)' }}
                   >
                     <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
-                      style={{ background: unlocked ? 'var(--sky-2)' : 'var(--locked)', fontSize: 24 }}
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                      style={{
+                        background: unlocked
+                          ? 'color-mix(in srgb, var(--grape) 13%, var(--cream))'
+                          : 'var(--locked)',
+                        fontSize: 22,
+                      }}
                       aria-hidden="true"
                     >
                       {unlocked ? level.icon : '🔒'}
@@ -399,17 +409,17 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold text-ink">{level.name}</p>
                       {best > 0 && (
-                        <p className="text-sm font-semibold text-ink/60">
+                        <p className="text-sm font-semibold text-ink-soft">
                           Best: {best} in a row
                         </p>
                       )}
                       {accuracy !== null && (
-                        <p className="text-sm font-semibold text-ink/60">
+                        <p className="text-sm font-semibold text-ink-soft">
                           {attempts} answer{attempts === 1 ? '' : 's'} · {accuracy}% right
                         </p>
                       )}
                       {(bestScores[level.id] ?? 0) > 0 && (
-                        <p className="text-sm font-semibold text-ink/60">
+                        <p className="text-sm font-semibold text-ink-soft">
                           🏆 Sprint best: {bestScores[level.id]}
                         </p>
                       )}
@@ -438,7 +448,7 @@ function NameSection() {
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      className="flex flex-col gap-3 u-card p-4"
       aria-label="Child's name"
     >
       <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
@@ -462,19 +472,19 @@ function NameSection() {
           autoCapitalize="words"
           aria-label="Child's name input"
           placeholder="Add a name"
-          className="min-w-0 flex-1 rounded-2xl bg-cream px-4 font-bold text-ink shadow-sm outline-none"
-          style={{ height: 48, fontSize: 17 }}
+          className="min-w-0 flex-1 rounded-xl bg-cream px-4 font-semibold text-ink outline-none"
+          style={{ height: 48, fontSize: 16, border: '1px solid var(--line)', boxShadow: 'var(--e1)' }}
         />
         <button
           type="submit"
           aria-label="Save name"
           className="rounded-2xl bg-grape px-5 font-bold text-cream shadow-sm transition-transform active:scale-95"
-          style={{ height: 48, boxShadow: '0 4px 0 var(--grape-dp)' }}
+          style={{ height: 48, boxShadow: '0 4px 12px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)' }}
         >
           Save
         </button>
       </form>
-      <p className="px-1 text-sm font-semibold text-ink/70">
+      <p className="px-1 text-sm font-semibold text-ink-soft">
         {name ? (
           <>
             Playing as <strong>{name}</strong> — greeted on the meadow, and shown
@@ -501,7 +511,7 @@ function AgeSection() {
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      className="flex flex-col gap-3 u-card p-4"
       aria-label="Child's age"
     >
       <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
@@ -525,9 +535,12 @@ function AgeSection() {
                 width: 48,
                 height: 48,
                 fontSize: 20,
-                background: selected ? 'var(--grape)' : 'var(--cream)',
-                color: selected ? 'var(--cream)' : 'var(--ink)',
-                boxShadow: selected ? '0 4px 0 var(--grape-dp)' : undefined,
+                background: selected ? 'var(--grape-grad)' : 'var(--cream)',
+                color: selected ? 'var(--cream)' : 'var(--ink-soft)',
+                border: selected ? '1px solid transparent' : '1px solid var(--line)',
+                boxShadow: selected
+                  ? '0 3px 10px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)'
+                  : 'var(--e1)',
               }}
             >
               {a}
@@ -535,7 +548,7 @@ function AgeSection() {
           )
         })}
       </div>
-      <p className="px-1 text-sm font-semibold text-ink/70">
+      <p className="px-1 text-sm font-semibold text-ink-soft">
         {age !== null ? (
           <>
             Showing the <strong>{bandLabel(band)}</strong> meadow.
@@ -561,7 +574,7 @@ function CurrencySection() {
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      className="flex flex-col gap-3 u-card p-4"
       aria-label="Family currency"
     >
       <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
@@ -584,9 +597,12 @@ function CurrencySection() {
               style={{
                 height: 48,
                 fontSize: 15,
-                background: selected ? 'var(--grape)' : 'var(--cream)',
-                color: selected ? 'var(--cream)' : 'var(--ink)',
-                boxShadow: selected ? '0 4px 0 var(--grape-dp)' : undefined,
+                background: selected ? 'var(--grape-grad)' : 'var(--cream)',
+                color: selected ? 'var(--cream)' : 'var(--ink-soft)',
+                border: selected ? '1px solid transparent' : '1px solid var(--line)',
+                boxShadow: selected
+                  ? '0 3px 10px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)'
+                  : 'var(--e1)',
               }}
             >
               <span aria-hidden="true" style={{ fontSize: 18 }}>
@@ -597,7 +613,7 @@ function CurrencySection() {
           )
         })}
       </div>
-      <p className="px-1 text-sm font-semibold text-ink/70">
+      <p className="px-1 text-sm font-semibold text-ink-soft">
         Coins in the Money games show <strong>{active.symbol}</strong> ({active.name}).
       </p>
     </section>
@@ -641,7 +657,7 @@ function PaceSection() {
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      className="flex flex-col gap-3 u-card p-4"
       aria-label="Learning pace"
     >
       <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
@@ -654,7 +670,7 @@ function PaceSection() {
       {/* Taking the quiz */}
       {step !== null && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold text-ink/60">
+          <p className="text-sm font-semibold text-ink-soft">
             Question {step + 1} of {PACE_QUESTIONS.length}
           </p>
           <p className="font-semibold text-ink">{PACE_QUESTIONS[step].text}</p>
@@ -664,7 +680,8 @@ function PaceSection() {
                 key={`${step}-${i}`}
                 type="button"
                 onClick={() => answerCurrent(i)}
-                className="rounded-2xl bg-cream px-4 py-3 text-left font-semibold text-ink shadow-sm transition-transform active:scale-[0.98]"
+                className="rounded-xl px-4 py-3 text-left font-semibold text-ink transition-transform active:scale-[0.98]"
+                style={{ background: 'var(--cream-2)', border: '1px solid var(--line)' }}
               >
                 {text}
               </button>
@@ -676,7 +693,7 @@ function PaceSection() {
               setStep(null)
               setAnswers([])
             }}
-            className="self-start rounded-2xl px-3 py-1 text-sm font-bold text-ink/60"
+            className="self-start rounded-2xl px-3 py-1 text-sm font-bold text-ink-soft"
           >
             Cancel
           </button>
@@ -686,7 +703,7 @@ function PaceSection() {
       {/* No profile yet */}
       {step === null && !plan && (
         <div className="flex flex-col items-start gap-3">
-          <p className="font-semibold text-ink/80">
+          <p className="font-semibold text-ink">
             Answer five quick questions about how your child likes to play, and
             we’ll suggest a session plan that fits them.
           </p>
@@ -697,7 +714,7 @@ function PaceSection() {
               setStep(0)
             }}
             className="rounded-2xl bg-grape px-5 py-3 font-bold text-cream shadow-md transition-transform active:scale-95"
-            style={{ boxShadow: '0 5px 0 var(--grape-dp)' }}
+            style={{ boxShadow: '0 4px 12px rgba(46,35,64,0.16), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -2px 0 var(--grape-dp)' }}
           >
             Find our pace
           </button>
@@ -710,11 +727,11 @@ function PaceSection() {
           <p className="font-bold text-ink" style={{ fontSize: 18 }}>
             {plan.title}
           </p>
-          <p className="font-semibold text-ink/80">
+          <p className="font-semibold text-ink">
             {plan.levelsPerSession} level{plan.levelsPerSession > 1 ? 's' : ''} per
             sitting · {plan.sessionLength}
           </p>
-          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm font-semibold text-ink/70">
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm font-semibold text-ink-soft">
             {plan.tips.map((tip, i) => (
               <li key={i}>{tip}</li>
             ))}
@@ -737,14 +754,19 @@ function PaceSection() {
 
 function Stat({ value, label, icon }: { value: string; label: string; icon: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-2xl bg-cream/80 py-3">
-      <span aria-hidden="true" style={{ fontSize: 24 }}>
+    <div className="u-card flex flex-col items-center gap-0.5 py-3.5">
+      <span aria-hidden="true" style={{ fontSize: 17 }}>
         {icon}
       </span>
-      <span className="font-bold text-ink" style={{ fontSize: 24 }}>
+      <span
+        className="font-bold tabular-nums text-ink"
+        style={{ fontSize: 'clamp(19px, 5.5vw, 24px)', letterSpacing: '-0.02em' }}
+      >
         {value}
       </span>
-      <span className="text-sm font-semibold text-ink/60">{label}</span>
+      <span className="u-eyebrow" style={{ fontSize: 10 }}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -754,20 +776,27 @@ function StatusPill({
 }: {
   status: 'Mastered' | 'Placed' | 'In progress' | 'Locked'
 }) {
-  // All use ink text — cream-on-leaf (2.1:1) and cream-on-grey (1.6:1)
-  // failed WCAG for this small text; ink passes ≥4.5:1 on each background.
-  // "Placed" (skipped via the age check, not yet mastered) is the plain one.
-  const style =
+  // Tinted pills with dark ink text — a light accent wash reads premium while
+  // ink keeps contrast comfortably ≥4.5:1 on every background (colored text on
+  // a tint would have failed for text this small). Locked is the muted one.
+  const accent =
     status === 'Mastered'
-      ? { background: 'var(--sun)', color: 'var(--ink)' }
+      ? 'var(--sun)'
       : status === 'Placed'
-        ? { background: 'var(--cream)', color: 'var(--ink)' }
+        ? 'var(--grape)'
         : status === 'In progress'
-          ? { background: 'var(--sky-2)', color: 'var(--ink)' }
-          : { background: 'var(--locked)', color: 'var(--ink)' }
+          ? 'var(--leaf)'
+          : null
+  const style = accent
+    ? {
+        background: `color-mix(in srgb, ${accent} 18%, var(--cream))`,
+        color: 'var(--ink)',
+        border: `1px solid color-mix(in srgb, ${accent} 32%, transparent)`,
+      }
+    : { background: 'var(--cream-2)', color: 'var(--ink-faint)', border: '1px solid var(--line)' }
   return (
     <span
-      className="shrink-0 rounded-full px-3 py-1 text-sm font-bold"
+      className="shrink-0 rounded-full px-3 py-1 text-sm font-semibold"
       style={style}
     >
       {status}

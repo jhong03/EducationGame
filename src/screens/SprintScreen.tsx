@@ -162,33 +162,35 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
             type="button"
             onClick={exitSaving}
             aria-label="Back to the levels"
-            className="flex shrink-0 items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
-            style={{ height: 64 }}
+            className="u-glass flex shrink-0 items-center gap-1.5 rounded-full px-4 transition-transform active:scale-90"
+            style={{ height: 56 }}
           >
-            <span aria-hidden="true" style={{ fontSize: 24 }}>
-              ⬅️
+            <span aria-hidden="true" className="text-ink-soft" style={{ fontSize: 20 }}>
+              ‹
             </span>
-            <span className="hidden font-bold text-ink sm:inline">Levels</span>
+            <span className="hidden font-text font-semibold text-ink-soft sm:inline">
+              Levels
+            </span>
           </button>
           <PlayerChip />
         </div>
 
         <div
-          className="flex items-center gap-2 rounded-full bg-cream/85 px-5 shadow-md backdrop-blur"
-          style={{ height: 64 }}
+          className="u-glass flex items-center gap-2 rounded-full px-5"
+          style={{ height: 56 }}
           role="status"
           aria-label={`${score} correct so far`}
         >
-          <span aria-hidden="true" style={{ fontSize: 26 }}>
+          <span aria-hidden="true" style={{ fontSize: 22 }}>
             {arcade && streak >= 3 ? '🔥' : '🏆'}
           </span>
-          <span className="font-bold text-ink" style={{ fontSize: 28 }}>
+          <span className="font-text font-bold tabular-nums text-ink" style={{ fontSize: 26 }}>
             {score}
           </span>
           {arcade && (
             <span
-              className="ml-1 font-bold"
-              style={{ fontSize: 20, color: remainingSec <= 10 ? 'var(--coral)' : 'var(--ink)' }}
+              className="ml-1 font-text font-bold tabular-nums"
+              style={{ fontSize: 18, color: remainingSec <= 10 ? 'var(--coral)' : 'var(--ink-soft)' }}
               aria-label={`${remainingSec} seconds left`}
             >
               {Math.floor(remainingSec / 60)}:{String(remainingSec % 60).padStart(2, '0')}
@@ -203,14 +205,14 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
           get the numeric countdown up in the scoreboard. */}
       <div className="z-10 px-5" aria-hidden="true">
         <div
-          className="relative h-3 w-full overflow-visible rounded-full"
-          style={{ background: 'rgba(255,248,239,0.6)' }}
+          className="relative h-2.5 w-full overflow-visible rounded-full"
+          style={{ background: 'var(--tint)' }}
         >
           <div
-            className="h-3 rounded-full"
+            className="h-2.5 rounded-full"
             style={{
               width: `${remainingPct}%`,
-              background: 'var(--sun)',
+              background: 'var(--sun-grad)',
               transition: 'width 0.5s linear',
             }}
           />
@@ -230,10 +232,10 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
       {phase !== 'done' ? (
         <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-between gap-2 overflow-y-auto px-4 pt-2">
           <div className="flex flex-col items-center">
-            <Twinkle mood={mood} beat={beat} size={92} />
+            <Twinkle mood={mood} beat={beat} size={88} />
             <p
-              className="mt-1 text-center font-semibold text-ink/80"
-              style={{ fontSize: 'clamp(16px, 4.5vw, 24px)' }}
+              className="mt-2 max-w-md text-center font-semibold text-ink"
+              style={{ fontSize: 'clamp(16px, 4.5vw, 24px)', lineHeight: 1.3 }}
             >
               {question.prompt}
             </p>
@@ -252,15 +254,15 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
         </main>
       ) : (
         <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-center gap-5 px-6">
-          <Twinkle mood="cheer" beat={beat} size={150} className="anim-rise" />
+          <Twinkle mood="cheer" beat={beat} size={128} className="anim-rise" />
           <h1
-            className="anim-rise text-center font-bold text-ink drop-shadow-sm"
-            style={{ fontSize: 'clamp(28px, 7.5vw, 46px)' }}
+            className="anim-rise text-center font-bold text-ink"
+            style={{ fontSize: 'clamp(28px, 7.5vw, 46px)', letterSpacing: '-0.015em' }}
           >
             You got {score}!
           </h1>
           <p
-            className="anim-rise flex items-center gap-2 text-center font-semibold text-ink/75"
+            className="anim-rise flex items-center gap-2 text-center font-text font-semibold text-ink-soft"
             style={{ fontSize: 'clamp(17px, 4.5vw, 24px)' }}
           >
             <span aria-hidden="true">🏆</span>
@@ -285,26 +287,27 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
                 setRound((r) => r + 1)
                 loadNext()
               }}
-              className="rounded-3xl bg-grape px-10 font-bold text-cream transition-transform active:translate-y-1"
+              className="rounded-2xl px-10 font-bold text-cream transition-all active:translate-y-0.5"
               style={{
-                height: 'clamp(64px, 16vw, 80px)',
-                fontSize: 'clamp(22px, 6vw, 30px)',
-                boxShadow: '0 6px 0 var(--grape-dp)',
+                height: 'clamp(62px, 16vw, 78px)',
+                fontSize: 'clamp(21px, 6vw, 28px)',
+                background: 'var(--grape-grad)',
+                boxShadow:
+                  '0 6px 16px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -3px 0 var(--grape-dp)',
               }}
             >
-              🏆 Again!
+              <span aria-hidden="true">🏆</span> Again
             </button>
             <button
               type="button"
               onClick={onExit}
-              className="rounded-3xl bg-cream px-10 font-bold text-ink transition-transform active:translate-y-1"
+              className="u-card px-10 font-bold text-ink-soft transition-all active:translate-y-px"
               style={{
-                height: 'clamp(60px, 14vw, 72px)',
-                fontSize: 'clamp(20px, 5vw, 26px)',
-                boxShadow: '0 6px 0 rgba(74,58,107,0.15)',
+                height: 'clamp(58px, 14vw, 70px)',
+                fontSize: 'clamp(19px, 5vw, 24px)',
               }}
             >
-              🗺️ Back to the levels
+              Back to the levels
             </button>
           </div>
         </main>

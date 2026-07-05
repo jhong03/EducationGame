@@ -4,9 +4,14 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `01977a0` (pushed to
-[jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — the working tree
-is CLEAN; everything in the §7 session log is committed and pushed._
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `c93c5da` (pushed to
+[jhong03/EducationGame](https://github.com/jhong03/EducationGame)). **Two big features
+sit in the working tree UNCOMMITTED, pending the user's review (see §7's two latest
+entries): (1) a full warm-premium UI/UX redesign, and (2) the Garden reward economy
+(earn stars + mastery-diamonds → buy, place & rearrange plants/pets/toys/decor in a
+**real 3D low-poly sandbox** — react-three-fiber, lazy-loaded, with a 2D fallback).
+241 tests green, build & lint clean. Suggested commit order: redesign first, then
+garden (deps: three/@react-three/fiber/@react-three/drei added).**_
 
 ---
 
@@ -358,13 +363,34 @@ brief's §8 exactly.
   and `SprintScreen` are keyed by `level.id` for fresh mounts. Cleared→next stays
   inside the category; finishing a category's last level returns home.
 
-### Theme / config
-- [`theme/tokens.css`](src/theme/tokens.css) — the §5 palette as CSS custom properties
-  (`--grape`, `--sun`, `--coral`, `--leaf`, `--ink`, `--cream`, sky gradient, …) + font.
-- [`theme/animations.css`](src/theme/animations.css) — keyframes (pop-in, shake, bob,
-  confetti). All motion is disabled under `prefers-reduced-motion`.
-- Tailwind **v4** via `@tailwindcss/vite`. Rounded font = self-hosted **Fredoka**
-  (`@fontsource`, no runtime CDN fetch).
+### Theme / config — the warm-premium design system (redesigned 2026-07-05)
+- [`theme/tokens.css`](src/theme/tokens.css) — the **warm & premium** palette + system
+  as CSS custom properties: deep-plum ink (`--ink`/`--ink-soft`/`--ink-faint`), warm
+  ivory canvas (`--sky-1/2`, `--cream`, `--cream-2`), de-candied accents (`--grape`
+  amethyst, `--sun` gold, `--coral` dusty-rose, `--leaf` sage, `--clay`), refined `-dp`
+  edge tints, **soft layered elevation** (`--e1/--e2/--e3`, `--e-ring`), premium
+  **gradient fills** (`--grape-grad`, `--sun-grad`, …, `--surface-grad`), a **radius
+  scale** (`--r-sm..--r-xl`, `--r-pill`), hairlines (`--line`, `--line-strong`,
+  `--tint`), and the **type pairing** (`--font-display` Fredoka + `--font-text`
+  Manrope). All aliased into Tailwind v4 via `@theme inline` (`bg-grape`,
+  `text-ink-soft`, `font-text`, …).
+- [`index.css`](src/index.css) — imports both faces, a refined focus ring (crisp
+  amethyst line + soft gold halo), and the **premium utility layer**: `.u-card`
+  (elevated ivory surface), `.u-glass` (frosted top-bar pill), `.u-eyebrow`
+  (uppercase tracked label — the key "grown-up software" tell), `.u-rule`, `.font-text`.
+- [`theme/animations.css`](src/theme/animations.css) — keyframes softened for the
+  premium feel (calmer pop/bob/cheer; the open-tile `glow` is now a soft breathing
+  lift + faint gold ring, not a sticker). All motion disabled under
+  `prefers-reduced-motion`.
+- **The old "kindergarten" tells are gone**: hard `0 6px 0` sticker shadows → soft
+  ambient/inset "tactile key" shadows; `4px solid cream` chunky borders → hairlines;
+  candy primaries → refined gradients; emoji stripped from chrome/labels (kept & framed
+  for kid content); cartoon hills/sun → a subtle light-and-horizon backdrop; flat
+  single-weight type → a real Fredoka-display / Manrope-text hierarchy. Every screen +
+  shared component restyled; Twinkle redrawn (token colours, soft sheen + drop shadow,
+  calmer face). Colour-mixing via `color-mix(in srgb, …)` for accent tints.
+- Tailwind **v4** via `@tailwindcss/vite`. Fonts self-hosted via `@fontsource`
+  (Fredoka + **Manrope**, no runtime CDN fetch).
 - [`vite.config.ts`](vite.config.ts) — React + Tailwind + `vite-plugin-pwa`
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
@@ -413,9 +439,12 @@ brief's §8 exactly.
    Web Audio directly — that's what keeps the recorded-VO swap a one-file change.
 5. **Only earned progress persists.** Transient play state stays in `PlayScreen`; the
    store's `partialize` is the boundary.
-6. **Reduced-motion + chime-feedback + ≥64px touch targets** are quality gates, not
-   nice-to-haves. (The game is VOICELESS by user direction — every instruction is
-   printed; SFX carry the moment-to-moment feedback.)
+6. **Reduced-motion + chime-feedback + generous touch targets** are quality gates, not
+   nice-to-haves. Since the 2026-07-05 redesign the target standard is explicit: the
+   **primary answer surfaces** a child taps to play (number keys, level tiles, category
+   cards, age buttons) stay **≥64px**; secondary chrome (back/mute glass pills) is
+   **≥56px** — still comfortably above WCAG 2.5.5. (The game is VOICELESS by user
+   direction — every instruction is printed; SFX carry the moment-to-moment feedback.)
 7. **Unlock state is derived, never stored.** `progress` (cleared per stable level id) is
    the single source of truth; openness = consecutive-cleared prefix within a category
    (`unlockedUpTo`). Never reintroduce a stored `unlockedOrder`, and **never renumber
@@ -882,3 +911,123 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   accuracy first, date-seeded rotation, one-per-category; replays ride the
   adaptive ramp. **217 tests passing** across 11 files, build & lint clean
   (+ this docs true-up).
+- **2026-07-05 — WARM-PREMIUM UI/UX REDESIGN (user direction: "the design looks
+  like kindergarten — make it high-class so parents believe it's a quality
+  app").** Confirmed direction with the user first (Warm & premium · refine —
+  not remove — the Number Meadow world). Rebuilt the whole visual system, not
+  just colours. **Foundation**: [`tokens.css`](src/theme/tokens.css) retuned to a
+  boutique palette (deep-plum ink w/ soft/faint tiers, warm ivory canvas,
+  de-candied amethyst/gold/dusty-rose/sage + clay), plus NEW elevation
+  (`--e1/2/3`, `--e-ring`), gradient fills, radius scale, hairlines, and a
+  **Fredoka-display + Manrope-text** pairing (`@fontsource/manrope` added); a
+  premium utility layer in [`index.css`](src/index.css) (`.u-card`/`.u-glass`/
+  `.u-eyebrow`); softened [`animations.css`](src/theme/animations.css). Because
+  every screen reads these tokens, the palette shift cascaded across all 62
+  activity stages for free. **Hand-crafted** the marquee surfaces: Home (ivory
+  category cards w/ tinted medallions + segmented meters, a light-and-horizon
+  backdrop replacing the cartoon hills/sun), Category tiles (locked/open/cleared
+  states), the shared number-answer keys (gradient + inset "tactile key" shadow —
+  the old `0 6px 0` sticker look is gone app-wide, incl. a sweep of ~15 stage
+  buttons + `4px cream` borders → hairlines), Play/Sprint/Placement chrome
+  (glass pills, Manrope, refined prompts), Cleared/Age/Name screens, and the
+  **parent dashboard** (Manrope throughout, elevated cards, metric stats, tinted
+  status pills, refined toggles/inputs/export — the buyer's quality-judgment
+  screen). Redrew **Twinkle** (token colours, radial sheen + drop shadow, calmer
+  face); refined ProgressDots/PlayerChip/MuteButton/Confetti/Countable. Emoji
+  removed from chrome & button labels (kept, framed, for kid content). Copy
+  nudged premium ("Hi X!" → eyebrow "Welcome back, X"; decorative 🗺️/🌈/➡️
+  dropped from buttons) — App.test.tsx assertions updated to match (behaviour
+  identical). **217 tests passing** across 11 files, build & lint clean.
+  **UNCOMMITTED** — awaiting the user's look-and-feel review before commit/push.
+- **2026-07-05 — GARDEN REWARD ECONOMY (user request: "kids earn stars &
+  diamonds to buy stuff… a sandbox garden like the old Facebook games").**
+  Confirmed the shape with the user first: a **creative sandbox** (buy · place ·
+  rearrange; NO timers/chores/wilting/loss — the old FB charm without the dark
+  patterns) and **mastery-earned diamonds** (no real money — keeps the local-
+  only/no-collection posture). Two currencies: **stars** = effort (1/correct,
+  already earned) buy plants/toys/decor; **diamonds** = skill buy pets & big
+  builds. New: [`content/garden.ts`](src/content/garden.ts) (46-item catalogue,
+  data-only, stable ids — plants/toys/decorations/pets/builds; effort→star,
+  skill→diamond by test), [`engine/rewards.ts`](src/engine/rewards.ts)
+  (`diamondsForMastery`: +1 first mastery, +5 chapter-complete, 0 on replay/
+  placement — pure/tested). **Store (persist v2→v3)** gained `diamonds`,
+  `starsSpent`/`diamondsSpent`, `owned` (id→count), `garden` (slot→id), and
+  `awardDiamonds`/`buyItem`/`placeItem`/`removeItem` + selectors
+  `starBalance`/`diamondBalance`/`availableCount`. **FORWARD-ONLY UPHELD**: the
+  lifetime earned `stars`/`diamonds` never drop — spending accrues into
+  `*Spent`, so a wallet = earned − spent while the parent's earned metrics stay
+  intact; migration defaults old saves to an empty garden; reset wipes it with
+  the child profile. **Reward hook**: PlayScreen mints diamonds on genuine first
+  mastery (captured pre-clear) and threads the amount to
+  [`ClearedScreen`](src/screens/ClearedScreen.tsx) (a "💎 +N for your garden"
+  pill). **UI**: [`GardenScreen`](src/screens/GardenScreen.tsx) — a 30-slot plot
+  (tap a tray item → tap an empty cell to place; tap a placed item to lift it
+  back — no drag, nothing lost; pets idle-bob for life) + an in-screen **Shop**
+  overlay (sections by kind, buy-on-tap, dimmed when unaffordable, owned-count
+  badges), all in the warm-premium system. Home gained a **🌻 My Garden** entry
+  card; the kid-facing star/diamond numbers (Home chip, PlayerChip, garden) now
+  show the spendable **wallet** (parent dashboard still shows lifetime earned).
+  New `garden` route in App. **241 tests passing** across 14 files
+  (garden catalogue, rewards rule, wallet/plot/migration store tests, + garden
+  integration in App.test), build & lint clean. **UNCOMMITTED** (stacked on the
+  redesign).
+- **2026-07-05 — GARDEN GOES 3D (user: the flat grid was "too effortless… I
+  expected a 3D garden like real life, pets moving, plants in pots").** Confirmed
+  direction: **real stylized 3D** (react-three-fiber) — set the honest
+  expectation that photoreal isn't feasible in a kids' PWA; the target is a
+  charming low-poly world. **The economy/shop/rewards are untouched** — only the
+  plot VIEW changed. New deps: `three` `@react-three/fiber@9` (React 19)
+  `@react-three/drei` + `@types/three`. New: **procedural low-poly models**
+  ([`screens/garden3d/models.tsx`](src/screens/garden3d/models.tsx)) built purely
+  from three primitives (NO asset pipeline) — plants-in-terracotta-pots,
+  critters (long/round/pointy ears, flyers, shells, a horned unicorn), toys,
+  decorations, buildings; each of the 46 items maps to an archetype tinted by an
+  appearance table. **The scene**
+  ([`screens/garden3d/Garden3D.tsx`](src/screens/garden3d/Garden3D.tsx)): grass
+  ground + mown bed, hemisphere + sun light with soft shadows, warm fog, drag-to-
+  orbit camera (constrained via drei `OrbitControls`), **tap the ground to plant**
+  (raycast → snap to a 5×6 grid slot; `e.delta` guard ignores camera drags), a
+  gold target-ring while placing, **pets wander** the lawn (per-pet `useFrame`
+  stroll-and-pause + facing + bob) and are tapped to lift; honours
+  `prefers-reduced-motion` (pets hold still). **GardenScreen** now frames a DOM
+  HUD (header wallet, tray, shop) around the 3D center; the store slot-model is
+  reused verbatim (place/remove/availableCount). **Perf/robustness**: the 3D
+  scene is **code-split + lazy-loaded** ([`webgl.ts`](src/screens/garden3d/webgl.ts)
+  gates it on WebGL support) so the core bundle stays ~110KB gz (3D chunk 243KB
+  gz loads only in the garden); a **2D fallback plot** stands in with no WebGL —
+  which is also why the jsdom tests still pass (three is never imported there).
+  PWA: the 3D chunk is **excluded from precache** (globIgnores) and CacheFirst-
+  cached on first garden visit, so install stays light. **241 tests still green**
+  (the 3D path is exercised via the fallback), build & lint clean. **UNCOMMITTED**
+  (stacked on redesign + garden economy).
+- **2026-07-05 — 3D-garden art pass + camera + tuning (screenshot-driven, since
+  the render can't be seen from here).** Iterated the low-poly models from the
+  user's screenshots: rebuilt the **slide** (proper guard-rail handrails + roof
+  + ladder), **yo-yo** (twin discs on an axle), **kite** (was scattered — now a
+  fixed-anchor sail with a tail threaded on a spine + a taut ground string,
+  gentle wind-sway only), **sandcastle** (towers/crenellations/gate/windows/
+  flags), **bird nest** (twiggy bowl + eggs), **bunting** (grounded poles, flags
+  hanging vertically), **rainbow** (stands vertical over the spot),
+  **fountain** (looping water jets), **bridge** (arched footbridge),
+  **carousel** (spinning horses under a striped canopy), **pagoda** (3 flared
+  tiers). **Real bug fixed**: `deco-stone` (`rock`) and `deco-clock` (`clock`)
+  had no model case so they fell through to `pillar` — identical to the statue;
+  added distinct **stepping stone**, and a **working garden clock** that faces
+  forward and tells the real system time (hour/minute/second hands from
+  `new Date()` each frame; second hand snaps per-second under reduced motion).
+  New/redone creatures: **chick** (dedicated model — cone beak/wings/tuft/tail,
+  no longer a yellow snowman), **bee** (striped body + buzzing wings, distinct
+  from the butterfly), **butterfly** now flies with a fluttering aerial path
+  (`FlyingPet`) vs ground `WanderingPet`, **hedgehog** spines redistributed over
+  the whole back dome pointing radially out (+ ears/feet). **Fairy lights**
+  reworked twice → now floating **4-point sparkle stars** (billboarded via drei,
+  additive glow, spin + twinkle). Added **real-world relative sizing**
+  (`modelScale` — buildings dwarf pets). **Camera** (release-ready for PC +
+  tablet): drei `OrbitControls` with explicit `mouseButtons`/`touches` — PC
+  left-drag orbits, right-drag pans, wheel zooms; touch one-finger orbits, two
+  fingers pan + pinch-zoom; **pan clamped** near the garden; tap-to-place still
+  works via the drag-vs-tap `e.delta` guard. Added a **DEV-only 🔧 currency
+  button** in the garden header (`import.meta.env.DEV`-gated — never ships) for
+  auditing every item. Refactor: appearance data/sizing split into
+  [`garden3d/appearance.ts`](src/screens/garden3d/appearance.ts) (lint-clean
+  component module). **241 tests still green**, build & lint clean.

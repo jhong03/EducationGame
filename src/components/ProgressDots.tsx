@@ -22,11 +22,11 @@ export default function ProgressDots({ total, filled }: ProgressDotsProps) {
             key={i}
             className={isFilled ? 'anim-pop' : ''}
             style={{
-              width: 'clamp(16px, 4.5vw, 22px)',
-              height: 'clamp(16px, 4.5vw, 22px)',
+              width: 'clamp(14px, 4vw, 19px)',
+              height: 'clamp(14px, 4vw, 19px)',
               borderRadius: '9999px',
-              background: isFilled ? 'var(--sun)' : 'rgba(74,58,107,0.15)',
-              boxShadow: isFilled ? '0 2px 0 rgba(233,166,59,0.9)' : 'none',
+              background: isFilled ? 'var(--sun-grad)' : 'var(--line-strong)',
+              boxShadow: isFilled ? '0 1px 3px rgba(197,137,31,0.5)' : 'none',
               transition: 'background 0.2s',
             }}
           />

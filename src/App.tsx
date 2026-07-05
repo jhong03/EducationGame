@@ -12,6 +12,7 @@ import CategoryScreen from './screens/CategoryScreen'
 import PlayScreen from './screens/PlayScreen'
 import SprintScreen from './screens/SprintScreen'
 import ClearedScreen from './screens/ClearedScreen'
+import GardenScreen from './screens/GardenScreen'
 import ParentView from './screens/ParentView'
 
 type Route =
@@ -21,7 +22,8 @@ type Route =
   | { screen: 'category'; categoryId: string }
   | { screen: 'play'; levelId: string }
   | { screen: 'sprint'; levelId: string }
-  | { screen: 'cleared'; levelId: string }
+  | { screen: 'cleared'; levelId: string; earnedDiamonds: number }
+  | { screen: 'garden' }
   | { screen: 'parent' }
 
 export default function App() {
@@ -104,6 +106,7 @@ export default function App() {
       onSelectCategory={(categoryId) => setRoute({ screen: 'category', categoryId })}
       onSelectLevel={(levelId) => setRoute({ screen: 'play', levelId })}
       onOpenParent={() => setRoute({ screen: 'parent' })}
+      onOpenGarden={() => setRoute({ screen: 'garden' })}
     />
   )
 
@@ -140,7 +143,9 @@ export default function App() {
         key={level.id} // fresh mount per level
         level={level}
         onExit={() => setRoute({ screen: 'category', categoryId: level.categoryId })}
-        onCleared={() => setRoute({ screen: 'cleared', levelId: level.id })}
+        onCleared={(earnedDiamonds) =>
+          setRoute({ screen: 'cleared', levelId: level.id, earnedDiamonds })
+        }
       />
     )
   }
@@ -156,6 +161,7 @@ export default function App() {
       <ClearedScreen
         level={level}
         categoryName={category?.name ?? ''}
+        earnedDiamonds={route.earnedDiamonds}
         isLast={!nextLevel}
         onSprint={() => setRoute({ screen: 'sprint', levelId: level.id })}
         onBack={() =>
@@ -175,6 +181,10 @@ export default function App() {
         }
       />
     )
+  }
+
+  if (route.screen === 'garden') {
+    return <GardenScreen onBack={() => setRoute({ screen: 'home' })} />
   }
 
   return home

@@ -3,15 +3,15 @@
    Every duration here is zeroed out by the prefers-reduced-motion rule in
    index.css, so honoring reduced motion needs no per-component work. */
 
-/* Objects pop in with a staggered bounce. */
+/* Objects pop in with a staggered lift — refined overshoot (was springier). */
 @keyframes pop-in {
   0% {
     opacity: 0;
-    transform: scale(0.3) translateY(10px);
+    transform: scale(0.6) translateY(8px);
   }
   70% {
     opacity: 1;
-    transform: scale(1.12) translateY(-2px);
+    transform: scale(1.05) translateY(-1px);
   }
   100% {
     opacity: 1;
@@ -19,7 +19,7 @@
   }
 }
 .anim-pop {
-  animation: pop-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* A tapped countable wiggles. */
@@ -42,33 +42,33 @@
   animation: wiggle 0.4s ease-in-out;
 }
 
-/* Twinkle's gentle idle bob (happy mood). */
+/* Twinkle's gentle idle bob (happy mood) — calmer float. */
 @keyframes bob {
   0%,
   100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
 }
 .anim-bob {
-  animation: bob 2.4s ease-in-out infinite;
+  animation: bob 3s ease-in-out infinite;
 }
 
-/* Twinkle cheers on a correct answer. */
+/* Twinkle cheers on a correct answer — joyful but composed. */
 @keyframes cheer {
   0% {
     transform: scale(1) rotate(0);
   }
   30% {
-    transform: scale(1.28) rotate(-6deg);
+    transform: scale(1.16) rotate(-4deg);
   }
   55% {
-    transform: scale(0.96) rotate(5deg);
+    transform: scale(0.98) rotate(3deg);
   }
   75% {
-    transform: scale(1.15) rotate(-3deg);
+    transform: scale(1.08) rotate(-2deg);
   }
   100% {
     transform: scale(1) rotate(0);
@@ -101,18 +101,19 @@
   animation: shake 0.42s ease-in-out;
 }
 
-/* Open trail nodes glow to invite a tap. */
+/* Open tiles breathe with a soft lift + a faint gold ring — an invitation to
+   tap that reads as refined ambient light, not a candy sticker glow. */
 @keyframes glow {
   0%,
   100% {
-    box-shadow: 0 6px 0 var(--grape-dp), 0 0 0 0 rgba(255, 194, 75, 0);
+    box-shadow: var(--e2), 0 0 0 0 rgba(227, 169, 60, 0);
   }
   50% {
-    box-shadow: 0 6px 0 var(--grape-dp), 0 0 22px 6px rgba(255, 194, 75, 0.75);
+    box-shadow: var(--e3), 0 0 0 5px rgba(227, 169, 60, 0.3);
   }
 }
 .anim-glow {
-  animation: glow 1.8s ease-in-out infinite;
+  animation: glow 2.6s ease-in-out infinite;
 }
 
 /* Confetti pieces fall and spin. */

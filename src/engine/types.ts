@@ -920,4 +920,23 @@ export interface GameState {
    * a worse run never lowers a best.
    */
   bestScores: Record<string, number>
+  /**
+   * Garden reward economy (user-approved 2026-07-05). Everything here is
+   * forward-only: the lifetime `stars` and the skill-currency `diamonds`
+   * (earned via engine/rewards.ts) never drop. Spending instead accrues into
+   * `starsSpent` / `diamondsSpent`, so a wallet balance is (earned − spent)
+   * while the parent's "earned" metrics stay intact. Content-agnostic: `owned`
+   * and `garden` hold opaque catalogue ids (content/garden.ts), so the shop can
+   * grow without a data migration.
+   */
+  diamonds: number
+  starsSpent: number
+  diamondsSpent: number
+  /** How many of each catalogue item the child has bought (item id → count). */
+  owned: Record<string, number>
+  /** The plot layout: grid-slot index (as a string) → placed item id. */
+  garden: Record<string, string>
 }
+
+/** The two garden wallets. */
+export type WalletCurrency = 'star' | 'diamond'

@@ -3,9 +3,11 @@ import type { Answer, Level, ObjectGroup, Question } from '../engine/types'
 import { numberWord, PRAISE } from '../content/words'
 import { shapeById } from '../content/shapes'
 import { currencyById } from '../content/currency'
+import { levelsInCategoryForAge } from '../content/math'
 import ShapeGlyph from '../components/ShapeGlyph'
 import { generateQuestion } from '../engine/generators'
 import { adaptLevel, difficultyScale } from '../engine/adaptive'
+import { diamondsForMastery } from '../engine/rewards'
 import { evaluateAnswer } from '../engine/masteryGate'
 import { useGameStore, hasCleared } from '../engine/store'
 import { audio } from '../audio/AudioManager'
@@ -29,7 +31,7 @@ import PlayerChip from '../components/PlayerChip'
 interface PlayScreenProps {
   level: Level
   onExit: () => void // back to the trail
-  onCleared: () => void // reached the mastery goal
+  onCleared: (earnedDiamonds: number) => void // reached the mastery goal
 }
 
 const pickPraise = () => PRAISE[Math.floor(Math.random() * PRAISE.length)]
@@ -122,10 +124,12 @@ type Phase = 'answering' | 'celebrating'
 
 export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps) {
   const awardStar = useGameStore((s) => s.awardStar)
+  const awardDiamonds = useGameStore((s) => s.awardDiamonds)
   const recordStreak = useGameStore((s) => s.recordStreak)
   const recordAnswer = useGameStore((s) => s.recordAnswer)
   const clearLevel = useGameStore((s) => s.clearLevel)
   const pace = useGameStore((s) => s.pace)
+  const age = useGameStore((s) => s.age)
 
   // Adaptive difficulty (mastery play only — see engine/adaptive.ts).
   // `replay` is the AT-MOUNT cleared state: mastering mid-attempt must not
@@ -207,15 +211,30 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       setConfetti((c) => c + 1)
       awardStar()
       recordStreak(level.id, outcome.streak)
-      // Persist the clear IMMEDIATELY — the celebration timer below is
-      // cancelled on unmount, and a back-tap during the fanfare must never
-      // lose earned progress (only navigation belongs on the delay).
-      if (outcome.cleared) clearLevel(level.id, outcome.streak)
+
+      // On a mastering answer: persist the clear IMMEDIATELY (the celebration
+      // timer below is cancelled on unmount, and a back-tap during the fanfare
+      // must never lose earned progress), then mint any DIAMONDS this first
+      // mastery earns — the garden's skill currency (engine/rewards.ts). A
+      // replay of an already-earned level mints nothing; the clear that
+      // finishes a whole chapter adds a bonus.
+      let earnedDiamonds = 0
+      if (outcome.cleared) {
+        const prev = useGameStore.getState().progress[level.id]
+        const firstEarn = !(prev?.cleared && !prev.placed)
+        clearLevel(level.id, outcome.streak)
+        const fresh = useGameStore.getState().progress
+        const categoryComplete = levelsInCategoryForAge(level.categoryId, age).every(
+          (l) => fresh[l.id]?.cleared,
+        )
+        earnedDiamonds = diamondsForMastery({ firstEarn, categoryComplete })
+        if (earnedDiamonds > 0) awardDiamonds(earnedDiamonds)
+      }
 
       later(
         () => {
           if (outcome.cleared) {
-            onCleared()
+            onCleared(earnedDiamonds)
           } else {
             loadNextQuestion()
           }
@@ -252,13 +271,15 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
             type="button"
             onClick={onExit}
             aria-label="Back to the levels"
-            className="flex shrink-0 items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
-            style={{ height: 64 }}
+            className="u-glass flex shrink-0 items-center gap-1.5 rounded-full px-4 transition-transform active:scale-90"
+            style={{ height: 56 }}
           >
-            <span aria-hidden="true" style={{ fontSize: 24 }}>
-              ⬅️
+            <span aria-hidden="true" className="text-ink-soft" style={{ fontSize: 20 }}>
+              ‹
             </span>
-            <span className="hidden font-bold text-ink sm:inline">Levels</span>
+            <span className="hidden font-text font-semibold text-ink-soft sm:inline">
+              Levels
+            </span>
           </button>
           <PlayerChip />
         </div>
@@ -271,22 +292,26 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       {/* Center stage */}
       <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-between gap-2 overflow-y-auto px-4">
         <div className="flex flex-col items-center">
-          <Twinkle mood={mood} beat={beat} size={116} />
+          <Twinkle mood={mood} beat={beat} size={96} />
           {flash && (
             <p
               key={beat} // re-pop on every new cheer
               role="status"
-              className={`anim-pop mt-1 rounded-full px-5 py-1 font-bold shadow-md ${
-                flash.cheer ? 'bg-sun text-ink' : 'bg-cream/90 text-ink/80'
-              }`}
-              style={{ fontSize: 'clamp(19px, 5vw, 26px)' }}
+              className="anim-pop mt-2 rounded-full px-5 py-1 font-bold"
+              style={{
+                fontSize: 'clamp(18px, 4.6vw, 24px)',
+                color: flash.cheer ? 'var(--ink)' : 'var(--ink-soft)',
+                background: flash.cheer ? 'var(--sun-grad)' : 'rgba(255,253,248,0.8)',
+                border: flash.cheer ? 'none' : '1px solid var(--line)',
+                boxShadow: 'var(--e2)',
+              }}
             >
               {flash.text}
             </p>
           )}
           <p
-            className="mt-1 text-center font-semibold text-ink/80"
-            style={{ fontSize: 'clamp(18px, 5vw, 26px)' }}
+            className="mt-2 max-w-md text-center font-semibold text-ink"
+            style={{ fontSize: 'clamp(18px, 5vw, 26px)', lineHeight: 1.3 }}
           >
             {question.prompt}
           </p>
@@ -715,15 +740,17 @@ export function ActivityStage({
                 disabled={disabled}
                 onClick={() => onAnswer(opt)}
                 aria-label={label}
-                className={`grid place-items-center rounded-3xl font-bold text-cream transition-transform active:translate-y-1 ${
+                className={`grid place-items-center rounded-3xl font-bold text-cream transition-all active:translate-y-0.5 ${
                   isWrong ? 'anim-shake' : ''
                 }`}
                 style={{
                   minWidth: 'clamp(78px, 24vw, 110px)',
                   height: 'clamp(78px, 20vw, 104px)',
                   fontSize: 'clamp(34px, 9vw, 46px)',
-                  background: isRight ? 'var(--leaf)' : 'var(--grape)',
-                  boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'var(--grape-dp)'}`,
+                  background: isRight ? 'var(--leaf-grad)' : 'var(--grape-grad)',
+                  boxShadow: `0 6px 16px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -3px 0 ${
+                    isRight ? 'var(--leaf-dp)' : 'var(--grape-dp)'
+                  }`,
                 }}
               >
                 {label}
@@ -1045,7 +1072,7 @@ function MatchStage({
                 style={{
                   minHeight: 'clamp(96px, 24vw, 150px)',
                   background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                  border: '4px solid var(--cream)',
+                  border: '1px solid var(--line)',
                   boxShadow: '0 4px 0 rgba(74,58,107,0.12)',
                 }}
               >
@@ -1126,8 +1153,10 @@ export function CompareStage({
               minHeight: 'clamp(140px, 34vw, 220px)',
               maxWidth: 240,
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
-              border: '4px solid var(--cream)',
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
+              border: '1px solid var(--line)',
             }}
           >
             {Array.from({ length: group.count }, (_, i) => (
@@ -1190,8 +1219,10 @@ function ShapeStage({
               minHeight: 'clamp(110px, 30vw, 160px)',
               maxWidth: 150,
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
-              border: '4px solid var(--cream)',
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
+              border: '1px solid var(--line)',
             }}
           >
             <ShapeGlyph
@@ -1274,7 +1305,9 @@ function PatternStage({
                 height: 'clamp(72px, 20vw, 96px)',
                 fontSize: 'clamp(34px, 9vw, 48px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               }}
             >
               <span aria-hidden="true">{motif}</span>
@@ -1327,8 +1360,10 @@ function ClockStage({
                 minWidth: 'clamp(88px, 26vw, 120px)',
                 height: 'clamp(72px, 18vw, 96px)',
                 fontSize: 'clamp(26px, 7vw, 36px)',
-                background: isRight ? 'var(--leaf)' : 'var(--grape)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'var(--grape-dp)'}`,
+                background: isRight ? 'var(--leaf-grad)' : 'var(--grape-grad)',
+                boxShadow: `0 6px 16px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -3px 0 ${
+                  isRight ? 'var(--leaf-dp)' : 'var(--grape-dp)'
+                }`,
               }}
             >
               {timeLabel(choice.hour, choice.minute)}
@@ -1446,7 +1481,9 @@ function OddOneOutStage({
               height: 'clamp(76px, 20vw, 104px)',
               fontSize: 'clamp(40px, 11vw, 58px)',
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               animationDelay: `${index * 70}ms`,
             }}
           >
@@ -1516,7 +1553,9 @@ function ShadowStage({
                 height: 'clamp(76px, 20vw, 100px)',
                 fontSize: 'clamp(38px, 10vw, 54px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               }}
             >
               <span aria-hidden="true">{choice.emoji}</span>
@@ -1597,9 +1636,9 @@ function CoinFace({
     <span
       className="grid h-full w-full place-items-center rounded-full font-bold text-ink"
       style={{
-        background: 'var(--sun)',
-        border: '4px solid var(--cream)',
-        boxShadow: '0 4px 0 rgba(233,166,59,0.9)',
+        background: 'var(--sun-grad)',
+        border: '2px solid color-mix(in srgb, var(--sun) 55%, var(--cream))',
+        boxShadow: '0 3px 8px rgba(197,137,31,0.35), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 var(--sun-dp)',
         fontSize,
       }}
     >
@@ -1675,7 +1714,9 @@ function SameOrNotStage({
                 height: 'clamp(72px, 18vw, 92px)',
                 fontSize: 'clamp(30px, 8vw, 42px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               }}
             >
               <span aria-hidden="true">{icon}</span>
@@ -1805,8 +1846,10 @@ function SideAnswerStage({
               minHeight: 'clamp(130px, 34vw, 200px)',
               maxWidth: 210,
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
-              border: '4px solid var(--cream)',
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
+              border: '1px solid var(--line)',
             }}
           >
             {node}
@@ -1886,7 +1929,9 @@ function WhoLeftStage({
                 height: 'clamp(72px, 19vw, 96px)',
                 fontSize: 'clamp(34px, 9vw, 48px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
                 opacity: revealed ? 0.45 : 1,
               }}
             >
@@ -1957,7 +2002,9 @@ function CardPickStage({
                 height: 'clamp(80px, 22vw, 104px)',
                 fontSize: 'clamp(38px, 10vw, 54px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
                 animationDelay: `${index * 70}ms`,
               }}
             >
@@ -2081,7 +2128,7 @@ function MakeAmountStage({
           height: 72,
           fontSize: 30,
           background: 'var(--grape)',
-          boxShadow: '0 6px 0 var(--grape-dp)',
+          boxShadow: '0 5px 14px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -3px 0 var(--grape-dp)',
           opacity: selected.size === 0 ? 0.55 : 1,
         }}
       >
@@ -2124,7 +2171,7 @@ function SetClockStage({
             height: 84,
             fontSize: 34,
             background: 'var(--coral)',
-            boxShadow: '0 6px 0 var(--coral-dp)',
+            boxShadow: '0 5px 14px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -3px 0 var(--coral-dp)',
           }}
         >
           <span aria-hidden="true">🔄</span>
@@ -2140,7 +2187,7 @@ function SetClockStage({
             height: 72,
             fontSize: 30,
             background: 'var(--grape)',
-            boxShadow: '0 6px 0 var(--grape-dp)',
+            boxShadow: '0 5px 14px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -3px 0 var(--grape-dp)',
           }}
         >
           <span aria-hidden="true">✔️</span>
@@ -2194,7 +2241,9 @@ function TapAllStage({
               width: 'clamp(76px, 20vw, 100px)',
               height: 'clamp(76px, 20vw, 100px)',
               background: isFound ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 5px 0 ${isFound ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              boxShadow: isFound
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               animationDelay: `${i * 55}ms`,
             }}
           >
@@ -2426,7 +2475,9 @@ function FractionCards({
               fontSize: 'clamp(26px, 7vw, 36px)',
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
               color: 'var(--ink)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
             }}
           >
             {label}
@@ -2571,7 +2622,9 @@ function UnitPickStage({
                 fontSize: 'clamp(24px, 6.5vw, 32px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
                 color: 'var(--ink)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               }}
             >
               {label}
@@ -2779,8 +2832,10 @@ function ShapeSortStage({
               minHeight: 'clamp(100px, 26vw, 150px)',
               maxWidth: 150,
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
-              border: '4px solid var(--cream)',
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
+              border: '1px solid var(--line)',
             }}
           >
             <ShapeGlyph shapeId={shapeId} size={76} fill={isRight ? 'var(--cream)' : 'var(--grape)'} />
@@ -3021,7 +3076,7 @@ function BuildGraphStage({
           height: 72,
           fontSize: 30,
           background: 'var(--grape)',
-          boxShadow: '0 6px 0 var(--grape-dp)',
+          boxShadow: '0 5px 14px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -3px 0 var(--grape-dp)',
         }}
       >
         <span aria-hidden="true">✔️</span>
@@ -3235,7 +3290,9 @@ function AngleStage({
               minHeight: 'clamp(96px, 25vw, 140px)',
               maxWidth: 140,
               background: isRight ? 'var(--leaf)' : 'var(--cream)',
-              boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+              boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
             }}
           >
             <AngleGlyph degrees={deg} />
@@ -3411,7 +3468,9 @@ function ChanceStage({
                 fontSize: 'clamp(15px, 4vw, 20px)',
                 background: isRight ? 'var(--leaf)' : 'var(--cream)',
                 color: 'var(--ink)',
-                boxShadow: `0 6px 0 ${isRight ? 'var(--leaf-dp)' : 'rgba(74,58,107,0.15)'}`,
+                boxShadow: isRight
+                ? '0 0 0 3px var(--leaf-dp), 0 6px 16px rgba(46,35,64,0.16)'
+                : 'var(--e2)',
               }}
             >
               {label}

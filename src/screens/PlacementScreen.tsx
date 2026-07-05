@@ -126,10 +126,10 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
 
       <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-between gap-2 overflow-y-auto px-4">
         <div className="flex flex-col items-center">
-          <Twinkle mood={mood} beat={beat} size={104} />
+          <Twinkle mood={mood} beat={beat} size={92} />
           <p
-            className="mt-1 text-center font-semibold text-ink/80"
-            style={{ fontSize: 'clamp(17px, 4.5vw, 24px)' }}
+            className="mt-2 max-w-md text-center font-semibold text-ink"
+            style={{ fontSize: 'clamp(17px, 4.5vw, 24px)', lineHeight: 1.3 }}
           >
             {closing ?? `${step === 0 ? `${INTRO} ` : ''}${question.prompt}`}
           </p>
@@ -154,7 +154,7 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
           type="button"
           onClick={onDone}
           aria-label="Skip, start from the beginning"
-          className="mb-1 rounded-full bg-cream/60 px-4 py-2 text-sm font-bold text-ink/60 shadow-sm backdrop-blur transition-transform active:scale-95"
+          className="u-glass mb-1 rounded-full px-5 py-2 font-text text-sm font-semibold text-ink-soft transition-transform active:scale-95"
         >
           Skip
         </button>

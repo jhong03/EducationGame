@@ -16,7 +16,7 @@ const COLORS = [
   'var(--coral)',
   'var(--grape)',
   'var(--leaf)',
-  'var(--sky-2)',
+  'var(--clay)',
 ]
 
 export default function Confetti({ fire, pieces = 26 }: ConfettiProps) {

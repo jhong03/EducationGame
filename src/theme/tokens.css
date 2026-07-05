@@ -1,44 +1,92 @@
-/* Number Meadow — theme tokens.
-   The whole game reads its colors from these custom properties so the
-   storybook palette can be retuned in one place. Never hard-code hex in
-   components; reference var(--token) or the Tailwind theme aliases below. */
+/* Number Meadow — theme tokens (warm & premium).
+   The whole game reads its colors, elevation, radii and type from these custom
+   properties so the look can be retuned in one place. Never hard-code hex in
+   components; reference var(--token) or the Tailwind theme aliases below.
+
+   Design intent: a boutique learning brand — warm ivory canvas, deep-plum ink,
+   and a refined clay/sage/gold/amethyst accent set. Depth comes from soft,
+   layered ambient shadows (see --e1..--e3), NOT hard offset "sticker" edges. */
 
 :root {
-  /* Palette (see spec §5) */
-  --sky-1: #ffe9c7; /* warm peach, top of sky */
-  --sky-2: #ffd6e8; /* blush, bottom of sky   */
-  --grape: #7c5cff; /* primary buttons        */
-  --grape-dp: #4b2fb0; /* button drop-shadow   */
-  --sun: #ffc24b; /* stars, accents           */
-  --coral: #ff7a9a; /* pops, plus sign        */
-  --coral-dp: #d14e71; /* coral button drop-shadow */
-  --leaf: #56c36a; /* the hill                 */
-  --leaf-dp: #3ea655;
-  --ink: #4a3a6b; /* soft aubergine text, never pure black */
-  --cream: #fff8ef;
+  /* ---- Canvas ---------------------------------------------------------- */
+  --sky-1: #f8f3ea; /* warm ivory — top of the light wash          */
+  --sky-2: #efe6d6; /* soft sand   — bottom of the wash            */
+  --cream: #fffdf8; /* card / surface — warm near-white            */
+  --cream-2: #fbf5ea; /* subtly deeper surface for insets          */
 
-  /* Locked / disabled trail nodes */
-  --locked: #cbc3d9;
-  --locked-dp: #a99fbd;
+  /* ---- Ink ------------------------------------------------------------- */
+  --ink: #2e2340; /* deep plum — primary text (never pure black)   */
+  --ink-soft: #63576f; /* muted plum — secondary text              */
+  --ink-faint: #9b91a6; /* tertiary / captions on light surfaces   */
 
+  /* ---- Accents (refined, de-candied) ----------------------------------- */
+  --grape: #6a4e9c; /* primary action — dusty amethyst             */
+  --grape-dp: #4e3778; /* deeper amethyst — bevel / edge           */
+  --sun: #e3a93c; /* gold — stars & rewards                        */
+  --sun-dp: #c5891f; /* deeper gold                                */
+  --coral: #c56a82; /* dusty rose — pops, the plus sign            */
+  --coral-dp: #9d5067; /* deeper rose                              */
+  --leaf: #74975c; /* sage — the horizon + the "correct" green     */
+  --leaf-dp: #56743f; /* deeper sage                               */
+  --clay: #c9805a; /* warm terracotta — tertiary accent           */
+  --clay-dp: #a5623f;
+
+  /* ---- Locked / disabled ----------------------------------------------- */
+  --locked: #ddd5c7; /* warm stone                                 */
+  --locked-dp: #bcb1a0;
+
+  /* ---- Hairlines & tints ----------------------------------------------- */
+  --line: rgba(46, 35, 64, 0.1); /* default hairline border         */
+  --line-strong: rgba(46, 35, 64, 0.16);
+  --tint: rgba(46, 35, 64, 0.05); /* faint inset wash                */
+
+  /* ---- Elevation — soft, warm-tinted ambient shadows ------------------- */
+  --e1: 0 1px 2px rgba(46, 35, 64, 0.06), 0 1px 1px rgba(46, 35, 64, 0.04);
+  --e2: 0 2px 8px rgba(46, 35, 64, 0.08), 0 1px 2px rgba(46, 35, 64, 0.05);
+  --e3: 0 10px 28px rgba(46, 35, 64, 0.13), 0 3px 8px rgba(46, 35, 64, 0.07);
+  --e-ring: 0 0 0 4px rgba(227, 169, 60, 0.22); /* gentle attention halo */
+
+  /* ---- Gradients (premium fills) --------------------------------------- */
+  --grape-grad: linear-gradient(180deg, #7b5cb0 0%, #634795 100%);
+  --sun-grad: linear-gradient(180deg, #edb84e 0%, #dd9d2c 100%);
+  --coral-grad: linear-gradient(180deg, #d07a90 0%, #bd6079 100%);
+  --leaf-grad: linear-gradient(180deg, #82a568 0%, #6b8d52 100%);
+  --surface-grad: linear-gradient(180deg, #fffefb 0%, #fdf8ef 100%);
+
+  /* ---- Radius scale ---------------------------------------------------- */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+
+  /* ---- Type ------------------------------------------------------------ */
   --font-display: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-text: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* Expose tokens to Tailwind v4's utility engine so `bg-grape`, `text-ink`,
-   `bg-sky-1` etc. resolve to the same variables. */
+   `bg-sky-1`, `text-ink-soft`, `font-text` etc. resolve to the same variables. */
 @theme inline {
   --color-sky-1: var(--sky-1);
   --color-sky-2: var(--sky-2);
+  --color-cream: var(--cream);
+  --color-cream-2: var(--cream-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
   --color-grape: var(--grape);
   --color-grape-dp: var(--grape-dp);
   --color-sun: var(--sun);
+  --color-sun-dp: var(--sun-dp);
   --color-coral: var(--coral);
   --color-coral-dp: var(--coral-dp);
   --color-leaf: var(--leaf);
   --color-leaf-dp: var(--leaf-dp);
-  --color-ink: var(--ink);
-  --color-cream: var(--cream);
+  --color-clay: var(--clay);
+  --color-clay-dp: var(--clay-dp);
   --color-locked: var(--locked);
   --color-locked-dp: var(--locked-dp);
   --font-display: var(--font-display);
+  --font-text: var(--font-text);
 }

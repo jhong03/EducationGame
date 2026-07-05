@@ -20,8 +20,8 @@ export default function MuteButton({ className = '' }: { className?: string }) {
       }}
       aria-pressed={muted}
       aria-label={muted ? 'Unmute sound' : 'Mute sound'}
-      className={`grid place-items-center rounded-full bg-cream/80 shadow-md backdrop-blur transition-transform active:scale-90 ${className}`}
-      style={{ width: 64, height: 64, fontSize: 28 }}
+      className={`u-glass grid place-items-center rounded-full transition-transform active:scale-90 ${className}`}
+      style={{ width: 56, height: 56, fontSize: 24 }}
     >
       <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
     </button>

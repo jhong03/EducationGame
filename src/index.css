@@ -1,10 +1,16 @@
 @import 'tailwindcss';
 
-/* Rounded display font, self-hosted via @fontsource (no runtime CDN fetch). */
+/* Type pairing, self-hosted via @fontsource (no runtime CDN fetch):
+   Fredoka  — the rounded, characterful DISPLAY face (headings, numbers, play).
+   Manrope  — the clean humanist TEXT face (labels, captions, the parent UI). */
 @import '@fontsource/fredoka/400.css';
 @import '@fontsource/fredoka/500.css';
 @import '@fontsource/fredoka/600.css';
 @import '@fontsource/fredoka/700.css';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
 
 @import './theme/tokens.css';
 @import './theme/animations.css';
@@ -44,11 +50,60 @@ body {
   }
 }
 
-/* Always-visible, chunky focus ring for keyboard play. */
+/* Always-visible focus ring for keyboard play — refined: a crisp amethyst
+   line over a soft gold halo, so it reads intentional rather than default. */
 :focus-visible {
-  outline: 4px solid var(--grape);
+  outline: 3px solid var(--grape);
   outline-offset: 3px;
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: var(--e-ring);
+}
+
+/* ---------------------------------------------------------------------------
+   Premium utility layer — a small set of reusable surface/label primitives so
+   the "boutique" treatment is consistent and defined once. Screens compose
+   these with Tailwind utilities; inline styles still win where a screen needs
+   a bespoke fill (e.g. the number-answer buttons).
+   ------------------------------------------------------------------------- */
+
+/* The clean text face — opt-in for chrome, labels, captions and the parent UI.
+   (Body defaults to the display face; kid-facing prompts stay characterful.) */
+.font-text {
+  font-family: var(--font-text);
+  letter-spacing: 0;
+}
+
+/* An elevated ivory card — the workhorse surface. */
+.u-card {
+  background: var(--surface-grad);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--e2);
+}
+
+/* A frosted "glass" pill for top-bar controls floating over the canvas. */
+.u-glass {
+  background: rgba(255, 253, 248, 0.72);
+  border: 1px solid var(--line);
+  box-shadow: var(--e1);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+
+/* An eyebrow / section label — uppercase, tracked, quiet. The single most
+   effective "grown-up software" tell. */
+.u-eyebrow {
+  font-family: var(--font-text);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+}
+
+/* Hairline divider. */
+.u-rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
 }
 
 /* Honor reduced-motion everywhere: near-instant, no bouncing. The delay must

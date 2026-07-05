@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { GameState, Level, LevelProgress, PaceId } from './types'
+import type { GameState, Level, LevelProgress, PaceId, WalletCurrency } from './types'
 
 // The engine stores the currency as an opaque id; content/currency.ts owns
 // the list and rendering falls back to the default for unknown ids, so the
@@ -49,6 +49,19 @@ interface GameActions {
    * awards stars — placement grants position, not rewards.
    */
   placeLevels: (levelIds: readonly string[]) => void
+  /** Grant diamonds (the skill currency) — forward-only; ignores n ≤ 0. */
+  awardDiamonds: (n: number) => void
+  /**
+   * Buy one of a catalogue item if the matching wallet can afford it. The
+   * caller passes price + currency (the store stays content-agnostic).
+   * Returns whether the purchase went through. Never lets a balance go
+   * negative and never touches the lifetime "earned" totals.
+   */
+  buyItem: (itemId: string, currency: WalletCurrency, price: number) => boolean
+  /** Place an owned (unplaced) item into a plot slot; swaps any occupant out. */
+  placeItem: (slot: number, itemId: string) => void
+  /** Clear a plot slot (the item returns to the tray — nothing is ever lost). */
+  removeItem: (slot: number) => void
   /** Wipe all progress back to the start (used by the reset control / tests). */
   reset: () => void
 }
@@ -64,6 +77,11 @@ const initialState: GameState = {
   name: null,
   currency: DEFAULT_CURRENCY,
   bestScores: {},
+  diamonds: 0,
+  starsSpent: 0,
+  diamondsSpent: 0,
+  owned: {},
+  garden: {},
 }
 
 /** One write path for names: trimmed, capped, empty → null. */
@@ -101,7 +119,25 @@ export function migratePersistedState(persisted: unknown): GameState {
         ([, v]) => typeof v === 'number' && Number.isFinite(v) && v >= 0,
       ),
     ),
+    // Garden economy (added v3). Old saves default to an empty garden; the
+    // earned/spent totals validate to sane non-negative numbers.
+    diamonds: coerceCount(s.diamonds),
+    starsSpent: coerceCount(s.starsSpent),
+    diamondsSpent: coerceCount(s.diamondsSpent),
+    owned: Object.fromEntries(
+      Object.entries(s.owned ?? {}).filter(
+        ([, v]) => typeof v === 'number' && Number.isInteger(v) && v > 0,
+      ),
+    ),
+    garden: Object.fromEntries(
+      Object.entries(s.garden ?? {}).filter(([, v]) => typeof v === 'string'),
+    ),
   }
+}
+
+/** A persisted non-negative counter, or 0 for anything malformed. */
+function coerceCount(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0
 }
 
 function bumpBest(
@@ -184,6 +220,43 @@ export const useGameStore = create<GameStore>()(
           return { progress }
         }),
 
+      awardDiamonds: (n) => set((s) => (n > 0 ? { diamonds: s.diamonds + n } : s)),
+
+      buyItem: (itemId, currency, price) => {
+        let ok = false
+        set((s) => {
+          if (!(price > 0)) return s
+          const balance = currency === 'star' ? starBalance(s) : diamondBalance(s)
+          if (balance < price) return s // can't afford — no negative wallets
+          ok = true
+          const owned = { ...s.owned, [itemId]: (s.owned[itemId] ?? 0) + 1 }
+          // Spend accrues into *Spent so the lifetime "earned" totals stay put.
+          return currency === 'star'
+            ? { starsSpent: s.starsSpent + price, owned }
+            : { diamondsSpent: s.diamondsSpent + price, owned }
+        })
+        return ok
+      },
+
+      placeItem: (slot, itemId) =>
+        set((s) => {
+          const key = String(slot)
+          if (s.garden[key] === itemId) return s // already there
+          // Need a spare (unplaced) copy. Overwriting a slot frees its old
+          // occupant back to the tray (placed counts are recomputed on read).
+          if (availableCount(s.owned, s.garden, itemId) <= 0) return s
+          return { garden: { ...s.garden, [key]: itemId } }
+        }),
+
+      removeItem: (slot) =>
+        set((s) => {
+          const key = String(slot)
+          if (s.garden[key] === undefined) return s
+          const garden = { ...s.garden }
+          delete garden[key]
+          return { garden }
+        }),
+
       // Reset wipes the CHILD's progress, age AND name (a fresh start is
       // often a different child — the gate re-asks, placement re-offers).
       // Pace, mute and currency describe the household/device, so they survive.
@@ -197,7 +270,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'number-meadow/v1', // storage key — keep stable so old saves load
-      version: 2, // v2: dropped `unlockedOrder` (unlock is derived now)
+      version: 3, // v3: added the garden economy (diamonds/spent/owned/garden)
       migrate: migratePersistedState,
       // Persist only the earned progress + settings, never action closures.
       partialize: (s): GameState => ({
@@ -209,6 +282,11 @@ export const useGameStore = create<GameStore>()(
         name: s.name,
         currency: s.currency,
         bestScores: s.bestScores,
+        diamonds: s.diamonds,
+        starsSpent: s.starsSpent,
+        diamondsSpent: s.diamondsSpent,
+        owned: s.owned,
+        garden: s.garden,
       }),
     },
   ),
@@ -247,6 +325,34 @@ export function categorySprintScore(
   bestScores: Record<string, number>,
 ): number {
   return levels.reduce((sum, l) => sum + (bestScores[l.id] ?? 0), 0)
+}
+
+// ---- Garden wallet selectors ----------------------------------------------
+
+/** Spendable stars = lifetime earned − spent (clamped ≥ 0). */
+export function starBalance(s: Pick<GameState, 'stars' | 'starsSpent'>): number {
+  return Math.max(0, s.stars - s.starsSpent)
+}
+
+/** Spendable diamonds = lifetime earned − spent (clamped ≥ 0). */
+export function diamondBalance(s: Pick<GameState, 'diamonds' | 'diamondsSpent'>): number {
+  return Math.max(0, s.diamonds - s.diamondsSpent)
+}
+
+/** How many of an item are currently placed on the plot. */
+export function placedCount(garden: Record<string, string>, itemId: string): number {
+  let n = 0
+  for (const id of Object.values(garden)) if (id === itemId) n++
+  return n
+}
+
+/** Owned copies not currently placed — what's waiting in the tray. */
+export function availableCount(
+  owned: Record<string, number>,
+  garden: Record<string, string>,
+  itemId: string,
+): number {
+  return (owned[itemId] ?? 0) - placedCount(garden, itemId)
 }
 
 /**

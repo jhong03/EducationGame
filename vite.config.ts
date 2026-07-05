@@ -15,6 +15,20 @@ export default defineConfig({
       workbox: {
         // Fonts precache too, so the meadow looks right offline.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // The heavy 3D-garden chunk is NOT precached on install (that would
+        // bloat the PWA install for kids who may never open the garden) — it's
+        // cached on first visit to the garden instead.
+        globIgnores: ['**/Garden3D-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/Garden3D-[^/]+\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'garden-3d',
+              expiration: { maxEntries: 4 },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'Number Meadow',

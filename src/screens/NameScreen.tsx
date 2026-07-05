@@ -21,19 +21,36 @@ export default function NameScreen({ onDone }: NameScreenProps) {
   const trimmed = value.trim()
 
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center gap-4 bg-gradient-to-b from-sky-1 to-sky-2 px-6">
+    <div className="relative flex h-full w-full flex-col items-center justify-center gap-5 overflow-hidden bg-gradient-to-b from-sky-1 to-sky-2 px-6">
+      {/* Soft warm light overhead. */}
+      <div
+        className="pointer-events-none absolute z-0"
+        style={{
+          top: '-18%',
+          width: '70%',
+          height: '46%',
+          background:
+            'radial-gradient(circle at 50% 45%, rgba(227,169,60,0.22), rgba(227,169,60,0) 70%)',
+        }}
+        aria-hidden="true"
+      />
       <div className="safe-pt absolute right-4 top-4 z-10">
         <MuteButton />
       </div>
 
-      <Twinkle mood="happy" beat={0} size={116} />
-      <h1
-        className="text-center font-bold text-ink"
-        style={{ fontSize: 'clamp(26px, 7vw, 40px)' }}
-      >
-        {PROMPT}
-      </h1>
-      <p className="max-w-sm text-center text-sm font-semibold text-ink/60">
+      <Twinkle mood="happy" beat={0} size={96} />
+      <header className="z-10 text-center">
+        <p className="u-eyebrow" style={{ fontSize: 12 }}>
+          Nice to meet you
+        </p>
+        <h1
+          className="font-bold text-ink"
+          style={{ fontSize: 'clamp(26px, 7vw, 40px)', letterSpacing: '-0.01em' }}
+        >
+          {PROMPT}
+        </h1>
+      </header>
+      <p className="z-10 max-w-sm text-center font-text text-sm font-medium text-ink-soft">
         A grown-up can type it — or skip and add it later in the settings.
       </p>
 
@@ -42,7 +59,7 @@ export default function NameScreen({ onDone }: NameScreenProps) {
           e.preventDefault()
           if (trimmed) onDone(trimmed)
         }}
-        className="flex w-full max-w-sm flex-col items-center gap-4"
+        className="z-10 flex w-full max-w-sm flex-col items-center gap-4"
       >
         <input
           value={value}
@@ -52,22 +69,28 @@ export default function NameScreen({ onDone }: NameScreenProps) {
           autoCapitalize="words"
           aria-label="Your name"
           placeholder="Your name"
-          className="w-full rounded-3xl bg-cream px-5 text-center font-bold text-ink shadow-md outline-none"
-          style={{ height: 72, fontSize: 26 }}
+          className="w-full rounded-2xl bg-cream px-5 text-center font-bold text-ink outline-none"
+          style={{
+            height: 68,
+            fontSize: 24,
+            border: '1px solid var(--line)',
+            boxShadow: 'var(--e2)',
+          }}
         />
         <button
           type="submit"
           disabled={!trimmed}
           aria-label="Done, that's my name"
-          className="flex items-center gap-2 rounded-3xl bg-grape px-8 font-bold text-cream shadow-md transition-transform active:translate-y-1"
+          className="flex items-center gap-2 rounded-2xl px-8 font-bold text-cream transition-all active:translate-y-0.5"
           style={{
-            height: 68,
-            fontSize: 22,
-            boxShadow: '0 6px 0 var(--grape-dp)',
-            opacity: trimmed ? 1 : 0.55,
+            height: 64,
+            fontSize: 21,
+            background: 'var(--grape-grad)',
+            boxShadow:
+              '0 6px 16px rgba(46,35,64,0.18), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -3px 0 var(--grape-dp)',
+            opacity: trimmed ? 1 : 0.5,
           }}
         >
-          <span aria-hidden="true">✔️</span>
           Done
         </button>
       </form>
@@ -76,9 +99,9 @@ export default function NameScreen({ onDone }: NameScreenProps) {
         type="button"
         onClick={() => onDone(null)}
         aria-label="Skip name"
-        className="rounded-full bg-cream/60 px-4 py-2 text-sm font-bold text-ink/60 shadow-sm backdrop-blur transition-transform active:scale-95"
+        className="u-glass z-10 rounded-full px-5 py-2 font-text text-sm font-semibold text-ink-soft transition-transform active:scale-95"
       >
-        Skip
+        Skip for now
       </button>
     </div>
   )

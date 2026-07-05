@@ -12,12 +12,12 @@ import MuteButton from '../components/MuteButton'
 import Twinkle from '../components/Twinkle'
 
 /**
- * CategoryScreen — the levels of one category as a grid of big chunky tiles
- * (deliberately NOT a winding path). Tile states mirror the old trail nodes:
- * locked (grey 🔒), open (its icon, glowing to invite a tap), cleared (star
- * badge). Tapping an open tile starts it. Locked tiles stay focusable and
- * answer a tap with a soft boop and a padlock shake — "not yet" without a
- * voice, never dead silence.
+ * CategoryScreen — the levels of one category as a grid of refined tiles
+ * (deliberately NOT a winding path). Three states, each visually distinct:
+ * locked (muted stone, dashed, a padlock), open (ivory card, a breathing gold
+ * ring inviting a tap), cleared (ivory card with a sage medallion + gold star).
+ * Locked tiles stay focusable and answer a tap with a soft boop and a padlock
+ * shake — "not yet" without a voice, never dead silence.
  */
 
 interface CategoryScreenProps {
@@ -52,31 +52,42 @@ export default function CategoryScreen({
           type="button"
           onClick={onBack}
           aria-label="Back to the meadow"
-          className="flex items-center gap-1 rounded-full bg-cream/85 px-4 shadow-md backdrop-blur transition-transform active:scale-90"
-          style={{ height: 64 }}
+          className="u-glass flex items-center gap-1.5 rounded-full px-4 transition-transform active:scale-90"
+          style={{ height: 56 }}
         >
-          <span aria-hidden="true" style={{ fontSize: 24 }}>
-            ⬅️
+          <span aria-hidden="true" className="text-ink-soft" style={{ fontSize: 20 }}>
+            ‹
           </span>
-          <span className="hidden font-bold text-ink sm:inline">Meadow</span>
+          <span className="hidden font-text font-semibold text-ink-soft sm:inline">
+            Meadow
+          </span>
         </button>
 
-        <div className="flex min-w-0 items-center gap-2">
-          <span aria-hidden="true" style={{ fontSize: 28 }}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className="grid shrink-0 place-items-center rounded-xl"
+            aria-hidden="true"
+            style={{
+              width: 42,
+              height: 42,
+              fontSize: 22,
+              background: 'color-mix(in srgb, var(--grape) 14%, var(--cream))',
+            }}
+          >
             {category.icon}
           </span>
           <h1
             className="truncate font-bold text-ink"
-            style={{ fontSize: 'clamp(22px, 6vw, 32px)' }}
+            style={{ fontSize: 'clamp(20px, 5.4vw, 28px)', letterSpacing: '-0.01em' }}
           >
             {category.name}
           </h1>
           {trophyTotal > 0 && (
             <span
-              className="flex shrink-0 items-center gap-1 rounded-full bg-cream/85 px-3 py-1 font-bold text-ink shadow-sm"
+              className="u-glass flex shrink-0 items-center gap-1 rounded-full px-3 py-1 font-text font-bold text-ink"
               role="img"
               aria-label={`category high score ${trophyTotal}`}
-              style={{ fontSize: 16 }}
+              style={{ fontSize: 14 }}
             >
               <span aria-hidden="true">🏆</span>
               {trophyTotal}
@@ -89,88 +100,108 @@ export default function CategoryScreen({
 
       {/* Level tiles */}
       <main className="safe-pb z-10 flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto px-6 py-4">
-        <div className="grid w-full max-w-sm grid-cols-2 justify-items-center gap-4">
+        <div className="grid w-full max-w-md grid-cols-2 justify-items-center gap-3.5">
           {levels.map((level) => {
             const unlocked = isLevelUnlocked(level, levels, progress)
             const cleared = hasCleared(progress, level.id)
             const glow = unlocked && !cleared
+            const accent = cleared ? 'var(--leaf)' : 'var(--grape)'
             return (
               <div key={level.id} className="flex w-full flex-col items-stretch gap-2">
-              <button
-                type="button"
-                aria-disabled={!unlocked}
-                onClick={() => {
-                  audio.unlock()
-                  if (!unlocked) {
-                    // Focusable + responsive even when locked: the soft boop
-                    // and a padlock shake say "not yet" without a voice.
-                    audio.sfx('soft')
-                    setShake((s) => ({ id: level.id, token: (s?.token ?? 0) + 1 }))
-                    return
-                  }
-                  audio.sfx('pop')
-                  onSelectLevel(level.id)
-                }}
-                aria-label={unlocked ? level.name : `${level.name}, locked`}
-                className={`relative flex w-full flex-col items-center justify-center gap-1.5 rounded-3xl p-3 transition-transform ${
-                  unlocked ? 'active:scale-95' : 'cursor-not-allowed'
-                } ${glow ? 'anim-glow' : ''}`}
-                style={{
-                  minHeight: 'clamp(110px, 30vw, 140px)',
-                  background: unlocked ? 'var(--grape)' : 'var(--locked)',
-                  boxShadow: glow
-                    ? undefined
-                    : `0 6px 0 ${unlocked ? 'var(--grape-dp)' : 'var(--locked-dp)'}`,
-                  border: '4px solid var(--cream)',
-                }}
-              >
-                <span
-                  key={shake?.id === level.id ? shake.token : 'base'}
-                  aria-hidden="true"
-                  className={shake?.id === level.id ? 'anim-shake' : ''}
-                  style={{ fontSize: 'clamp(34px, 9vw, 46px)', lineHeight: 1 }}
-                >
-                  {unlocked ? level.icon : '🔒'}
-                </span>
-                {/* Ink-on-cream pill: readable on grape AND locked-grey tiles
-                    (cream text was 1.6:1 on grey — invisible). */}
-                <span
-                  className="rounded-full bg-cream px-2.5 py-0.5 font-bold text-ink"
-                  style={{ fontSize: 'clamp(13px, 3.6vw, 16px)' }}
-                >
-                  {level.name}
-                </span>
-                {cleared && (
-                  <span
-                    className="absolute -right-1 -top-1 grid h-7 w-7 place-items-center rounded-full bg-sun text-ink shadow"
-                    style={{ fontSize: 16 }}
-                    aria-hidden="true"
-                  >
-                    ⭐
-                  </span>
-                )}
-              </button>
-
-              {/* Mastery opens the sprint door: the 🏆 chip replays this
-                  level as a timed high-score round. */}
-              {cleared && (
                 <button
                   type="button"
+                  aria-disabled={!unlocked}
                   onClick={() => {
                     audio.unlock()
+                    if (!unlocked) {
+                      // Focusable + responsive even when locked: the soft boop
+                      // and a padlock shake say "not yet" without a voice.
+                      audio.sfx('soft')
+                      setShake((s) => ({ id: level.id, token: (s?.token ?? 0) + 1 }))
+                      return
+                    }
                     audio.sfx('pop')
-                    onSelectSprint(level.id)
+                    onSelectLevel(level.id)
                   }}
-                  aria-label={`Sprint ${level.name}`}
-                  className="flex items-center justify-center gap-1.5 rounded-full bg-sun font-bold text-ink shadow-sm transition-transform active:translate-y-0.5"
-                  style={{ height: 56, boxShadow: '0 4px 0 rgba(233,166,59,0.9)' }}
+                  aria-label={unlocked ? level.name : `${level.name}, locked`}
+                  className={`relative flex w-full flex-col items-center justify-center gap-2 rounded-3xl p-3 transition-all ${
+                    unlocked ? 'u-card active:translate-y-px' : 'cursor-not-allowed'
+                  } ${glow ? 'anim-glow' : ''}`}
+                  style={{
+                    minHeight: 'clamp(112px, 30vw, 142px)',
+                    ...(unlocked
+                      ? {}
+                      : {
+                          background: 'var(--cream-2)',
+                          border: '1.5px dashed var(--line-strong)',
+                        }),
+                  }}
                 >
-                  <span aria-hidden="true" style={{ fontSize: 20 }}>
-                    🏆
+                  {/* Icon medallion — accent tint (sage when mastered, amethyst
+                      when open); muted stone when still locked. */}
+                  <span
+                    key={shake?.id === level.id ? shake.token : 'base'}
+                    aria-hidden="true"
+                    className={`grid place-items-center rounded-2xl ${
+                      shake?.id === level.id ? 'anim-shake' : ''
+                    }`}
+                    style={{
+                      width: 'clamp(52px, 14vw, 64px)',
+                      height: 'clamp(52px, 14vw, 64px)',
+                      fontSize: 'clamp(28px, 7.5vw, 38px)',
+                      lineHeight: 1,
+                      opacity: unlocked ? 1 : 0.55,
+                      background: unlocked
+                        ? `color-mix(in srgb, ${accent} 15%, var(--cream))`
+                        : 'transparent',
+                    }}
+                  >
+                    {unlocked ? level.icon : '🔒'}
                   </span>
-                  <span style={{ fontSize: 17 }}>{bestScores[level.id] ?? 0}</span>
+                  <span
+                    className="text-center font-text font-semibold"
+                    style={{
+                      fontSize: 'clamp(13px, 3.5vw, 15px)',
+                      color: unlocked ? 'var(--ink)' : 'var(--ink-faint)',
+                    }}
+                  >
+                    {level.name}
+                  </span>
+                  {cleared && (
+                    <span
+                      className="absolute -right-1.5 -top-1.5 grid h-7 w-7 place-items-center rounded-full bg-sun text-ink"
+                      style={{ fontSize: 15, boxShadow: 'var(--e2)' }}
+                      aria-hidden="true"
+                    >
+                      ⭐
+                    </span>
+                  )}
                 </button>
-              )}
+
+                {/* Mastery opens the sprint door: the 🏆 chip replays this
+                    level as a timed high-score round. */}
+                {cleared && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      audio.unlock()
+                      audio.sfx('pop')
+                      onSelectSprint(level.id)
+                    }}
+                    aria-label={`Sprint ${level.name}`}
+                    className="flex items-center justify-center gap-1.5 rounded-full font-text font-bold text-sun-dp transition-transform active:translate-y-px"
+                    style={{
+                      height: 46,
+                      background: 'color-mix(in srgb, var(--sun) 16%, var(--cream))',
+                      border: '1px solid color-mix(in srgb, var(--sun) 40%, transparent)',
+                    }}
+                  >
+                    <span aria-hidden="true" style={{ fontSize: 17 }}>
+                      🏆
+                    </span>
+                    <span style={{ fontSize: 15 }}>{bestScores[level.id] ?? 0}</span>
+                  </button>
+                )}
               </div>
             )
           })}
@@ -180,7 +211,7 @@ export default function CategoryScreen({
       {/* Twinkle keeps the child company (hidden on very short viewports so
           she never sits on top of a tile — see .corner-buddy in index.css). */}
       <div className="corner-buddy pointer-events-none absolute bottom-2 left-3 z-10">
-        <Twinkle mood="happy" size={88} />
+        <Twinkle mood="happy" size={72} />
       </div>
     </div>
   )

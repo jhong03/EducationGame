@@ -126,8 +126,8 @@ describe('full play loop', () => {
     }
 
     // Cleared screen appeared — with the sprint door now open.
-    expect(container.textContent).toContain('Level complete!')
-    expect(buttonByText('🏆 Sprint!')).not.toBeNull()
+    expect(container.textContent).toContain('Level complete')
+    expect(buttonByText('🏆 Sprint')).not.toBeNull()
 
     // Store reflects the win, and the next level in the category derives open.
     const state = useGameStore.getState()
@@ -139,7 +139,7 @@ describe('full play loop', () => {
 
     // "Next level" goes straight into Count to 5 — prove WHICH level loaded by
     // mastering it and checking level 2's progress record.
-    click(buttonByText('Next level ➡️'))
+    click(buttonByText('Next level'))
     expect(buttonByAria('Back to the levels')).not.toBeNull()
     for (let i = 0; i < 3; i++) {
       click(buttonByAria('2'))
@@ -163,7 +163,7 @@ describe('full play loop', () => {
       click(buttonByAria('2'))
       advance(1200)
     }
-    click(buttonByText('🗺️ Pick a level'))
+    click(buttonByText('Pick a level'))
 
     // The RENDERED tiles reflect the new unlock: level 2 open, level 3 locked.
     expect(buttonByAria('Count to 5')).not.toBeNull()
@@ -209,8 +209,8 @@ describe('full play loop', () => {
     }
     expect(container.textContent).toContain('You finished More or Less!')
     // No next level — the button leads back to the meadow instead.
-    expect(buttonByText('Next level ➡️')).toBeNull()
-    click(buttonByText('🌈 Back to the meadow'))
+    expect(buttonByText('Next level')).toBeNull()
+    click(buttonByText('Back to the meadow'))
     expect(categoryCard('Counting')).not.toBeNull()
   })
 
@@ -232,7 +232,7 @@ describe('full play loop', () => {
 
     // Age 4 has no placement plan — straight into the meadow, greeted.
     expect(categoryCard('Counting')).not.toBeNull() // early-band meadow
-    expect(container.textContent).toContain('Hi Maya!')
+    expect(container.textContent).toContain('Welcome back, Maya')
   })
 
   it('ages 5+ get the placement check: passes place rungs, the first miss starts them there', () => {
@@ -444,7 +444,7 @@ describe('full play loop', () => {
     expect(useGameStore.getState().bestScores['math-early-1']).toBe(2)
 
     // Again — a worse round cannot lower the best.
-    click(buttonByText('🏆 Again!'))
+    click(buttonByText('🏆 Again'))
     click(buttonByAria('2'))
     advance(500)
     advance(60_000)
@@ -452,7 +452,7 @@ describe('full play loop', () => {
     expect(useGameStore.getState().bestScores['math-early-1']).toBe(2)
 
     // Back to the levels — the chip now shows the best.
-    click(buttonByText('🗺️ Back to the levels'))
+    click(buttonByText('Back to the levels'))
     expect(buttonByAria('Sprint Count to 3')?.textContent).toContain('2')
     expect(container.textContent).toContain('🏆') // category header total
   })
@@ -483,5 +483,33 @@ describe('full play loop', () => {
     // …and meets the age gate on the way out.
     click(buttonByText('Back to the start'))
     expect(container.textContent).toContain('How old are you?')
+  })
+
+  it('first mastery mints a diamond, shown on the cleared screen', () => {
+    click(categoryCard('Counting'))
+    click(buttonByAria('Count to 3'))
+    for (let i = 0; i < 3; i++) {
+      click(buttonByAria('2'))
+      advance(1200)
+    }
+    // The reward reads out on the cleared screen…
+    expect(container.textContent).toContain('for your garden')
+    // …and exactly one diamond was minted (first mastery, chapter not yet done).
+    expect(useGameStore.getState().diamonds).toBe(1)
+  })
+
+  it('the garden card opens the garden, and the shop spends earned stars', () => {
+    act(() => {
+      useGameStore.setState({ stars: 50 })
+    })
+    click(buttonByAria('My Garden'))
+    expect(container.textContent).toContain('My Garden')
+
+    click(buttonByAria('Open the shop'))
+    click(buttonByAria('Buy Blossom for 5 stars'))
+    // Bought one Blossom; the star WALLET spent 5 but lifetime earned is intact.
+    expect(useGameStore.getState().owned['plant-blossom']).toBe(1)
+    expect(useGameStore.getState().starsSpent).toBe(5)
+    expect(useGameStore.getState().stars).toBe(50)
   })
 })

@@ -369,6 +369,11 @@ describe('persisted-state migration (v1 → v2)', () => {
       name: null, // …and the name screen
       currency: 'USD', // …and the currency setting (defaulted)
       bestScores: {}, // …and sprint scores
+      diamonds: 0, // …and the whole garden economy (v3)
+      starsSpent: 0,
+      diamondsSpent: 0,
+      owned: {},
+      garden: {},
     })
     expect('unlockedOrder' in migrated).toBe(false)
 
@@ -384,6 +389,13 @@ describe('persisted-state migration (v1 → v2)', () => {
   })
 
   it('tolerates malformed or empty persisted state', () => {
+    const emptyGarden = {
+      diamonds: 0,
+      starsSpent: 0,
+      diamondsSpent: 0,
+      owned: {},
+      garden: {},
+    }
     expect(migratePersistedState(undefined)).toEqual({
       stars: 0,
       progress: {},
@@ -393,6 +405,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       name: null,
       currency: 'USD',
       bestScores: {},
+      ...emptyGarden,
     })
     expect(
       migratePersistedState({ stars: 'nope', muted: 'yes', pace: 'warp', age: 99, name: 42 }),
@@ -405,6 +418,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       name: null, // non-string names are discarded
       currency: 'USD',
       bestScores: {},
+      ...emptyGarden,
     })
     // Plausible values survive.
     expect(migratePersistedState({ age: 8 }).age).toBe(8)

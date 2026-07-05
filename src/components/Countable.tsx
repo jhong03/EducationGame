@@ -63,7 +63,7 @@ export default function Countable({
           fontSize: SIZES[size].emoji,
           lineHeight: 1,
           filter: counted
-            ? 'drop-shadow(0 3px 2px rgba(74,58,107,0.25))'
+            ? 'drop-shadow(0 3px 3px rgba(46,35,64,0.2))'
             : 'saturate(0.92)',
         }}
       >
@@ -72,8 +72,8 @@ export default function Countable({
 
       {counted && ordinal !== undefined && (
         <span
-          className="anim-pop absolute -right-1 -top-1 grid h-7 w-7 place-items-center rounded-full bg-sun font-bold text-ink shadow"
-          style={{ fontSize: 15 }}
+          className="anim-pop absolute -right-1 -top-1 grid h-7 w-7 place-items-center rounded-full bg-sun font-text font-bold text-ink"
+          style={{ fontSize: 14, boxShadow: 'var(--e2)' }}
         >
           {ordinal}
         </span>
