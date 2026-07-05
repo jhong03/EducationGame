@@ -187,6 +187,9 @@ describe('ParentView', () => {
     })
     click(buttonByAria('Chapter progress'))
     expect(container.textContent).toContain('3 answers · 67% right')
+    // The export controls live here too.
+    expect(buttonByAria('Download CSV')).not.toBeNull()
+    expect(buttonByAria('Download JSON')).not.toBeNull()
   })
 
   it('placed levels show as “Placed”, not “Mastered”, and don’t inflate the mastered stat', () => {

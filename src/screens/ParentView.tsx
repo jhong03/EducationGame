@@ -4,6 +4,12 @@ import { CATEGORIES, TRAIL, categoriesForBand, levelsInCategory } from '../conte
 import { PACE_PLANS, PACE_QUESTIONS, planFor } from '../engine/pace'
 import { AGES, bandForAge, bandLabel } from '../engine/band'
 import { CURRENCIES, currencyById } from '../content/currency'
+import {
+  buildProgressReport,
+  filenamePrefix,
+  toCsv,
+  toJson,
+} from '../export/progressReport'
 
 /**
  * "For grown-ups" — an adults-only progress panel (spec §11: the parent/teacher
@@ -247,10 +253,27 @@ export default function ParentView({ onClose }: ParentViewProps) {
  * pills, best streaks, sprint bests). Its own page so the settings screen
  * stays a short scroll; reached via the "Chapter progress" card.
  */
+/** Save a text file from the browser; quietly does nothing where unsupported. */
+function downloadFile(filename: string, mime: string, content: string) {
+  try {
+    const blob = new Blob([content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch {
+    /* jsdom / very old browsers — nothing to save */
+  }
+}
+
 function ProgressPage({ onBack }: { onBack: () => void }) {
   const stars = useGameStore((s) => s.stars)
   const progress = useGameStore((s) => s.progress)
   const bestScores = useGameStore((s) => s.bestScores)
+  const name = useGameStore((s) => s.name)
+  const age = useGameStore((s) => s.age)
 
   // "Mastered" counts only EARNED clears; placement grants position, not credit.
   const masteredCount = TRAIL.filter(
@@ -259,6 +282,17 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
   const finishedCategories = CATEGORIES.filter((c) =>
     levelsInCategory(c.id).every((l) => hasCleared(progress, l.id)),
   ).length
+
+  function exportAs(kind: 'csv' | 'json') {
+    const report = buildProgressReport(
+      { name, age, stars, progress, bestScores },
+      new Date().toISOString(),
+    )
+    const date = report.exportedAt.slice(0, 10)
+    const base = `${filenamePrefix(name)}number-meadow-progress-${date}`
+    if (kind === 'csv') downloadFile(`${base}.csv`, 'text/csv', toCsv(report))
+    else downloadFile(`${base}.json`, 'application/json', toJson(report))
+  }
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-y-auto bg-gradient-to-b from-sky-1 to-sky-2">
@@ -286,6 +320,38 @@ function ProgressPage({ onBack }: { onBack: () => void }) {
             label="Categories"
             icon="🌈"
           />
+        </section>
+
+        {/* Export — the teacher/parent take-away copy. */}
+        <section
+          className="flex flex-wrap items-center gap-2 rounded-3xl bg-cream/70 p-4"
+          aria-label="Save a copy"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold text-ink">Save a copy</span>
+            <span className="block text-sm font-semibold text-ink/70">
+              Every level with status, streaks and accuracy — straight from this
+              device.
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => exportAs('csv')}
+            aria-label="Download CSV"
+            className="rounded-2xl bg-grape px-4 font-bold text-cream shadow-sm transition-transform active:scale-95"
+            style={{ height: 48, boxShadow: '0 4px 0 var(--grape-dp)' }}
+          >
+            ⬇️ CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => exportAs('json')}
+            aria-label="Download JSON"
+            className="rounded-2xl bg-cream px-4 font-bold text-ink shadow-sm transition-transform active:scale-95"
+            style={{ height: 48 }}
+          >
+            ⬇️ JSON
+          </button>
         </section>
 
         {CATEGORIES.map((category) => {
