@@ -4,7 +4,7 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `5c82b7c` (pushed to
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `01977a0` (pushed to
 [jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — the working tree
 is CLEAN; everything in the §7 session log is committed and pushed._
 
