@@ -20,9 +20,23 @@ describe('placement plans', () => {
     expect(placementPlanFor(NaN)).toHaveLength(0)
   })
 
-  it('mid ages and age 10 have no plan — their ladder starts fresh at rung 1', () => {
-    for (const age of [7, 9, 10]) {
+  it('band-floor ages (7 and 10) have no plan — their ladder starts fresh', () => {
+    for (const age of [7, 10]) {
       expect(placementPlanFor(age)).toHaveLength(0)
+    }
+  })
+
+  it('mid 8/9 have plans over mid-band levels, and 9 probes deeper than 8', () => {
+    const plan8 = placementPlanFor(8)
+    const plan9 = placementPlanFor(9)
+    expect(plan8.length).toBeGreaterThan(0)
+    expect(plan9.length).toBeGreaterThan(plan8.length)
+    for (const cp of [...plan8, ...plan9]) {
+      for (const id of [cp.probe, ...cp.places]) {
+        const level = levelById(id)
+        expect(level, id).toBeDefined()
+        expect(level!.band).toBe('mid')
+      }
     }
   })
 
@@ -65,7 +79,7 @@ describe('placement plans', () => {
   })
 
   it('passing checkpoints in order never leaves an unlock gap in any category', () => {
-    for (const age of [5, 6, 11, 12]) {
+    for (const age of [5, 6, 8, 9, 11, 12]) {
       useGameStore.getState().reset()
       for (const cp of placementPlanFor(age)) {
         useGameStore.getState().placeLevels(cp.places)

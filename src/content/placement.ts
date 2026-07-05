@@ -39,6 +39,26 @@ const AGE_6_PLAN: readonly PlacementCheckpoint[] = [
 ]
 
 /**
+ * Mid band, age 8: a Year-3-ish starter proves the mid basics (tens & ones,
+ * the first tables, adding within 20) and skips straight to newer material.
+ * Probes are the top rung of each placed range, as everywhere.
+ */
+const AGE_8_PLAN: readonly PlacementCheckpoint[] = [
+  { probe: 'math-mid-1', places: ['math-mid-1'] }, // tens and ones
+  { probe: 'math-mid-5', places: ['math-mid-4', 'math-mid-5'] }, // groups → ×2,5,10
+  { probe: 'math-mid-8', places: ['math-mid-8'] }, // add within 20
+]
+
+/** Age 9 probes deeper: hundreds, the ×3/4/6 tables, adding within 100,
+ *  and exact division. */
+const AGE_9_PLAN: readonly PlacementCheckpoint[] = [
+  { probe: 'math-mid-2', places: ['math-mid-1', 'math-mid-2'] }, // hundreds too
+  { probe: 'math-mid-6', places: ['math-mid-4', 'math-mid-5', 'math-mid-6'] }, // ×3,4,6
+  { probe: 'math-mid-9', places: ['math-mid-8', 'math-mid-9'] }, // add within 100
+  { probe: 'math-mid-13', places: ['math-mid-12', 'math-mid-13'] }, // share → divide
+]
+
+/**
  * Upper band, age 11: the band is age-tiered, so an older starter proves the
  * grindy NUMBER-WORK of the base tier and begins at their own material. Each
  * probe is the top rung of the range it places; the novel meadow forms
@@ -67,14 +87,15 @@ const AGE_12_UPPER_PLAN: readonly PlacementCheckpoint[] = [
 
 /**
  * The checkpoint sequence for an age; empty = no placement (start at rung 1).
- * Early 5–6 skip the counting grind; upper 11–12 skip the tiers below their
- * own (age 10 IS the base tier — nothing to skip). Mid children start fresh —
- * a mid plan arrives when that ladder earns a fast lane.
+ * Every band's FIRST age starts fresh (4, 7 and 10 ARE their band's floor);
+ * older starters within a band probe past what they clearly know:
+ * early 5–6, mid 8–9, upper 11–12.
  */
 export function placementPlanFor(age: number): readonly PlacementCheckpoint[] {
   if (!Number.isFinite(age) || age <= 4) return []
   const band = bandForAge(age)
   if (band === 'early') return age === 5 ? AGE_5_PLAN : AGE_6_PLAN
+  if (band === 'mid' && age >= 8) return age === 8 ? AGE_8_PLAN : AGE_9_PLAN
   if (band === 'upper' && age >= 11) {
     return age === 11 ? AGE_11_UPPER_PLAN : AGE_12_UPPER_PLAN
   }
