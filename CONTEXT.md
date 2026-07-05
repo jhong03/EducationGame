@@ -44,10 +44,13 @@ The last "still growing" fallback is gone.
   levels, 11 sees 41, 12 sees all 52.
 - **Systems all live:** category navigation (derived unlock, never re-locks), age gate
   + band filtering, **name profile** (asked after the gate, greets on the meadow,
-  rides a live name+⭐ chip during play), placement check (ages 5–6 early, 11–12
-  upper), pace profiler, **adaptive difficulty** (mastery-only: hard questions
-  soften the next one, mastered replays ramp by pace), per-continent + SEA
-  currency,
+  rides a live name+⭐ chip during play), placement check (**5–6 / 8–9 / 11–12** —
+  every band's older starters), pace profiler, **adaptive difficulty**
+  (mastery-only: hard questions soften the next one, mastered replays ramp by
+  pace), **lifetime accuracy stats** (per-level attempts/correct, mastery only),
+  **daily warm-up** (spaced review v1: shakiest earned skills resurface each
+  day), **progress export** (CSV/JSON from the Chapter-progress page),
+  per-continent + SEA currency,
   **Sprint mode** (post-mastery high scores: ambient sun timer for early, m:ss
   countdown + 🔥 streak-doubling for mid), parent dashboard with gated reset
   (reset re-asks age → new-sibling handoff).
@@ -59,7 +62,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **197 passed** across 9 files |
+| Unit + loop + app tests | `npm test` | **217 passed** across 11 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -158,7 +161,10 @@ brief's §8 exactly.
   (key `number-meadow/v1`, **version 2**, `migrate: migratePersistedState` — v1 saves
   keep their earned fields; level ids unchanged so cleared levels keep counting).
   Persists earned progress + settings via `partialize` (`stars`, `progress`, `muted`,
-  `pace`, `age`, `name`, `currency`, `bestScores`). Names go through ONE write
+  `pace`, `age`, `name`, `currency`, `bestScores`). `LevelProgress` carries
+  optional **lifetime `attempts`/`correct` counters** (bumped by `recordAnswer`
+  on every MASTERY answer — sprints don't count; every other write carries
+  them through). Names go through ONE write
   path (`sanitizeName`: trim, 20-char cap, empty → null) from every entry point;
   reset clears `name` with `age` (the child profile). Sprint bests live in `bestScores`
   (`recordSprintScore` is forward-only; `categorySprintScore` sums a category).
@@ -182,6 +188,12 @@ brief's §8 exactly.
   ramps ×1.5 eager / ×1.25 steady / ×1 gentle; `adaptLevel` scales ONLY `max`
   (rounded, floored at 3; `column-op` excluded — its max is a digit MODE).
   Mastery play only: sprints and placement never adapt, the goal never changes.
+- [`engine/warmup.ts`](src/engine/warmup.ts) — **daily warm-up picker** (spaced
+  review v1; pure, content-free): up to 3 EARNED-mastered levels, shakiest
+  lifetime accuracy first (never-measured last), date-seeded tie rotation,
+  one-per-category spread. Home renders the card; replays ride the adaptive
+  replay ramp. No timestamps in the save — "spaced" ≈ daily reshuffle +
+  accuracy priority.
 - [`engine/pace.ts`](src/engine/pace.ts) — **learning-pace profiler** (pure, tested):
   5-question parent preferences quiz (`PACE_QUESTIONS`) → `scorePace` (0–3 gentle /
   4–7 steady / 8–10 eager, inputs clamped) → `PACE_PLANS` (levels per sitting, session
@@ -233,12 +245,12 @@ brief's §8 exactly.
   [`content/stories.ts`](src/content/stories.ts) gained `TWO_STEP_TEMPLATES`.
 - [`content/stories.ts`](src/content/stories.ts) — word-problem templates
   (+/−/× with `{a}` `{b}` `{things}` placeholders).
-- [`content/placement.ts`](src/content/placement.ts) — placement plans: early
-  **5–6** (skip the counting grind) and upper **11–12** (prove the tiers below
-  your own — age 11 probes the base tier's number-work in 5 checkpoints, age 12
-  extends two probes into the 11+ rungs; each probe is the TOP rung of what it
-  places, novel forms left as quick wins). Age 10 IS the base tier — no plan;
-  mid starts fresh. Gap-free + minAge-visible by test.
+- [`content/placement.ts`](src/content/placement.ts) — placement plans for every
+  band's older starters: early **5–6** (skip the counting grind), mid **8–9**
+  (tens-and-ones → tables → adding; 9 probes deeper), upper **11–12** (the
+  tiers below your own; 12 reaches into the 11+ rungs). Band floors (4, 7, 10)
+  start fresh. Each probe is the TOP rung of what it places. Gap-free +
+  minAge-visible by test.
 
 ### Audio
 - [`audio/AudioManager.ts`](src/audio/AudioManager.ts) — the **only** place the game
@@ -274,7 +286,8 @@ brief's §8 exactly.
   LIVE star count pill on the Play/Sprint top bars (renders nothing unnamed).
 - [`screens/Home.tsx`](src/screens/Home.tsx) — **category cards** on the meadow (one per
   strand of the child's **band**, always open, mini progress dots); star counter;
-  "Hi {name}! 👋" under the title; discreet "⚙️ For grown-ups" entry. The 🌱 "still
+  "Hi {name}! 👋" under the title; **🔄 Today's warm-up card** (chips replay
+  earned levels directly); discreet "⚙️ For grown-ups" entry. The 🌱 "still
   growing" fallback (empty band → early meadow + banner) is now UNREACHABLE —
   every band has content — but stays as the safety net for any future empty band.
   *(Replaced the old winding trail.)*
@@ -320,9 +333,13 @@ brief's §8 exactly.
   age** section (age chips → band; changing age never touches progress), **Money
   currency** picker, **Learning pace** section (the 5-question quiz → suggested
   session plan), a **"Chapter progress" card → its own `ProgressPage`** (sticky
-  header + back-to-settings; stats + all 33 categories' level lists with status
-  pills — "Placed" distinct from "Mastered" — best streaks and 🏆 sprint bests;
-  the grown-up sees FULL ladders incl. rungs above the child's tier), a
+  header + back-to-settings; stats, a **"Save a copy" export row (CSV/JSON
+  via [`export/progressReport.ts`](src/export/progressReport.ts)** — pure
+  builders, name-slugged dated filenames, proper CSV quoting), and all 33
+  categories' level lists with status pills — "Placed" distinct from
+  "Mastered" — best streaks, **"N answers · X% right" accuracy lines**, and
+  🏆 sprint bests; the grown-up sees FULL ladders incl. rungs above the
+  child's tier), a
   local-only-storage privacy note, and **Reset all progress** gated behind a
   one-shot addition challenge — reset
   wipes progress **and the age** (gate re-asks; new-sibling handoff) while pace, mute
@@ -352,7 +369,12 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (197, all passing)
+### Tests (217, all passing)
+- [`engine/warmup.test.ts`](src/engine/warmup.test.ts) — earned-only picking,
+  shakiest-first, category spread, same-day determinism.
+- [`export/progressReport.test.ts`](src/export/progressReport.test.ts) —
+  full-coverage rows, status parity with the panel, accuracy math, CSV
+  escaping + field-count sweep, JSON round-trip, filename slugs.
 - [`engine/adaptive.test.ts`](src/engine/adaptive.test.ts) — the scale rule
   table, pass-through identities, and a sweep proving every scale the seam can
   emit still generates sound questions for every scalable level.
@@ -450,23 +472,23 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 > **ALL PHASES 0–6 ✅ BUILT** — the full 4–12 spine is playable.
 
 ### Near-term
-1. **Parent dashboard extras:** progress **export** (CSV/JSON) for the teacher
-   use-case, richer per-level stats (attempts, accuracy) once tracked. The
-   Chapter-progress page is the natural home for the export button.
+1. ~~**Parent dashboard extras**~~ ✅ Done — CSV/JSON export from the
+   Chapter-progress page + lifetime attempts/accuracy per level.
 
 ### Later (seams noted, not built)
-3. **Spaced review** — a scheduler that re-surfaces older cleared skills.
-4. **Mid placement plans** — early (5–6) and upper (11–12) placement are live and
-   PlacementScreen now renders any activity via ActivityStage; a mid (8–9) plan
-   is a pure content addition in [`content/placement.ts`](src/content/placement.ts)
-   whenever the mid ladder earns a fast lane.
-5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
+2. ~~**Spaced review**~~ ✅ Done (v1) — the daily warm-up
+   ([`engine/warmup.ts`](src/engine/warmup.ts)). A v2 with real timestamps
+   (`lastPlayedAt` per level) would enable true spacing intervals.
+3. ~~**Mid placement plans**~~ ✅ Done — ages 8–9 probe past the mid basics.
+4. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
-6. ~~**Recorded voice-over clips**~~ RETIRED — the game is voiceless by user
+5. ~~**Recorded voice-over clips**~~ RETIRED — the game is voiceless by user
    direction (2026-07-05). The Piper pipeline and hybrid playback live in git
    history (`a691f55`/`e4c10d9`) should voice ever return.
-7. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
-   coordinates in four quadrants, logic grids) — strand rungs beyond the core spine.
+6. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
+   logic grids) — strand rungs beyond the core spine.
+7. **Multiple named profiles** (siblings without reset) — a real store
+   restructure (per-profile progress maps); a decision, not a chore.
 
 ### Pre-launch (product/legal — not engineering-blocked, keep in mind)
 - **COPPA (US) / GDPR-K (EU)** constrain accounts, data collection, ads. Currently no
@@ -480,7 +502,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **197 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **217 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -842,4 +864,21 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   stale "spoken" comments trued up. **Known trade-off flagged**: a few
   early-band prompts now need a grown-up to read them to a pre-reader.
   **197 tests passing** across 9 files, build & lint clean. Committed & pushed
-  as **`c7d6ae0`** (+ this docs true-up).
+  as **`c7d6ae0`** (+ docs `b49727a`/`31989d1`).
+- **2026-07-05 — The polish queue lands: four increments, one session.**
+  **(1) Mid placement** (`d9d16d3`): ages 8–9 probe past the mid basics (8:
+  tens-and-ones/first-tables/add-20 in 3 checkpoints; 9 deeper in 4); every
+  band now fast-lanes its older starters (5–6 / 8–9 / 11–12), floors 4/7/10
+  start fresh. **(2) Lifetime stats** (`d559be8`): `LevelProgress` gains
+  `attempts`/`correct`, bumped by `recordAnswer` on every MASTERY answer
+  (sprints excluded); all other writes carry the counters; the panel reads
+  "N answers · X% right". **(3) Progress export** (`e61938b`):
+  [`export/progressReport.ts`](src/export/progressReport.ts) (pure) + a "Save
+  a copy" row on ProgressPage — CSV (proper quoting; comma-bearing level
+  names) and JSON (metadata + rows), name-slugged dated filenames, panel-
+  parity statuses, null accuracy never fakes 0%. **(4) Spaced review v1**
+  (`bcd8d2c`): [`engine/warmup.ts`](src/engine/warmup.ts) — a daily
+  "Today's warm-up" card on Home: up to 3 earned-mastered levels, shakiest
+  accuracy first, date-seeded rotation, one-per-category; replays ride the
+  adaptive ramp. **217 tests passing** across 11 files, build & lint clean
+  (+ this docs true-up).
