@@ -1,5 +1,6 @@
 import type { Band } from '../engine/types'
 import { useGameStore, hasCleared } from '../engine/store'
+import { pickWarmup } from '../engine/warmup'
 import { categoriesForBand, levelsInCategoryForAge } from '../content/math'
 import { audio } from '../audio/AudioManager'
 import MuteButton from '../components/MuteButton'
@@ -22,6 +23,7 @@ import Twinkle from '../components/Twinkle'
 interface HomeProps {
   band: Band
   onSelectCategory: (categoryId: string) => void
+  onSelectLevel: (levelId: string) => void // warm-up chips replay a level
   onOpenParent: () => void
 }
 
@@ -38,7 +40,12 @@ const CARD_COLORS = [
   { bg: 'var(--leaf)', shadow: 'var(--leaf-dp)', text: 'var(--ink)' },
 ] as const
 
-export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps) {
+export default function Home({
+  band,
+  onSelectCategory,
+  onSelectLevel,
+  onOpenParent,
+}: HomeProps) {
   const progress = useGameStore((s) => s.progress)
   const stars = useGameStore((s) => s.stars)
   const age = useGameStore((s) => s.age) // gates the age-tier rungs off the dots
@@ -48,6 +55,15 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
   const bandCategories = categoriesForBand(band)
   const growing = bandCategories.length === 0
   const categories = growing ? categoriesForBand('early') : bandCategories
+
+  // Today's warm-up: a daily mix of earned-mastered levels, shakiest first
+  // (spaced review v1 — see engine/warmup.ts). Replays ride the adaptive
+  // replay ramp, so review is gently harder than the first pass was.
+  const warmup = pickWarmup(
+    categories.flatMap((c) => levelsInCategoryForAge(c.id, age)),
+    progress,
+    new Date().toDateString(),
+  )
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-gradient-to-b from-sky-1 to-sky-2">
@@ -121,6 +137,44 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
           >
             🌱 {GROWING_NOTE}
           </p>
+        )}
+        {warmup.length > 0 && (
+          <section
+            aria-label="Today's warm-up"
+            className="w-full max-w-sm rounded-3xl bg-cream/80 p-3 shadow-md"
+          >
+            <p className="px-1 pb-2 font-bold text-ink" style={{ fontSize: 15 }}>
+              🔄 Today’s warm-up
+            </p>
+            <div className="flex flex-col gap-2">
+              {warmup.map((level) => (
+                <button
+                  key={level.id}
+                  type="button"
+                  onClick={() => {
+                    audio.unlock()
+                    audio.sfx('pop')
+                    onSelectLevel(level.id)
+                  }}
+                  aria-label={`Warm up: ${level.name}`}
+                  className="flex items-center gap-2.5 rounded-2xl bg-cream px-3 py-2 text-left shadow-sm transition-transform active:scale-[0.98]"
+                >
+                  <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>
+                    {level.icon}
+                  </span>
+                  <span
+                    className="min-w-0 flex-1 truncate font-bold text-ink"
+                    style={{ fontSize: 15 }}
+                  >
+                    {level.name}
+                  </span>
+                  <span aria-hidden="true" className="font-bold text-ink/40">
+                    ↻
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
         )}
         {categories.map((category, i) => {
           const levels = levelsInCategoryForAge(category.id, age)

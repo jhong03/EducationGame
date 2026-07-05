@@ -102,6 +102,7 @@ export default function App() {
     <Home
       band={band}
       onSelectCategory={(categoryId) => setRoute({ screen: 'category', categoryId })}
+      onSelectLevel={(levelId) => setRoute({ screen: 'play', levelId })}
       onOpenParent={() => setRoute({ screen: 'parent' })}
     />
   )

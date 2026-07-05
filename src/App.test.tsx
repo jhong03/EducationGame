@@ -309,6 +309,22 @@ describe('full play loop', () => {
     expect(buttonByAria('Find the number')).not.toBeNull() // placed stays replayable
   })
 
+  it('the daily warm-up resurfaces earned levels and replays them on tap', () => {
+    act(() => {
+      useGameStore.setState({
+        progress: {
+          'math-early-1': { cleared: true, bestStreak: 3, attempts: 6, correct: 4 },
+          'math-early-2': { cleared: true, bestStreak: 3, attempts: 6, correct: 6 },
+        },
+      })
+    })
+    expect(container.textContent).toContain('Today’s warm-up')
+    // Shakiest first: 67% Count to 3 leads 100% Count to 5.
+    click(buttonByAria('Warm up: Count to 3'))
+    expect(container.textContent).toContain('How many apples?') // straight into play
+    click(buttonByAria('Back to the levels'))
+  })
+
   it('feedback is WORDS on screen: Try again! on a miss, a praise word on a hit', () => {
     click(categoryCard('Counting'))
     click(buttonByAria('Count to 3'))
