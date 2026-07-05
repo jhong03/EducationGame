@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Piper voice models (dev tooling for tools/vo/generate-vo.sh, ~63MB)
+tools/vo/models/
