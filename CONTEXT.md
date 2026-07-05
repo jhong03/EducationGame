@@ -59,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **205 passed** across 10 files |
+| Unit + loop + app tests | `npm test` | **197 passed** across 9 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -158,7 +158,7 @@ brief's §8 exactly.
   (key `number-meadow/v1`, **version 2**, `migrate: migratePersistedState` — v1 saves
   keep their earned fields; level ids unchanged so cleared levels keep counting).
   Persists earned progress + settings via `partialize` (`stars`, `progress`, `muted`,
-  `pace`, `age`, `name`, `currency`, `voiceId`, `bestScores`). Names go through ONE write
+  `pace`, `age`, `name`, `currency`, `bestScores`). Names go through ONE write
   path (`sanitizeName`: trim, 20-char cap, empty → null) from every entry point;
   reset clears `name` with `age` (the child profile). Sprint bests live in `bestScores`
   (`recordSprintScore` is forward-only; `categorySprintScore` sums a category).
@@ -219,14 +219,14 @@ brief's §8 exactly.
   setting, picked in ParentView, survives reset). Real-world denominations are
   deliberately not modeled.
 - [`content/words.ts`](src/content/words.ts) — number words 0–20 (`numberWord`,
-  `capitalize`) + `fractionWord` ("3/4" → "three quarters"; TTS can't read a raw
-  label) + `numberWordBig` (to 9,999 — find-number prints WORDS and hides the
-  numerals in the buttons), shared by spoken prompts and the AudioManager.
+  `capitalize`) + `fractionWord` ("3/4" → "three quarters") + `numberWordBig`
+  (to 999,999 — find-number prints WORDS and hides the numerals in the
+  buttons) + `PRAISE` (the on-screen cheer pool). All printed in prompts.
 - [`content/themes.ts`](src/content/themes.ts) — 15 countable objects, each with
   emoji + plural + a `kind` tag (food/animal/nature/toy) powering sorting play.
 - [`content/world.ts`](src/content/world.ts) — weight pairs (heavier-first),
   day scenes, `MEASURE_OBJECTS` (thing + right unit + same-dimension foil),
-  `SCALE_UNITS` (cm/g/ml — printed label + spoken name for read-scale),
+  `SCALE_UNITS` (cm/g/ml — printed label + long name for read-scale),
   `CONVERT_PAIRS` (metric hops + factors), `CHANCE_LABELS`/`CHANCE_SCENARIOS`
   (the probability-language scale). [`content/shapes.ts`](src/content/shapes.ts)
   gained `SHAPE_SYMMETRY` (mirror-line counts as ShapeGlyph draws them);
@@ -242,31 +242,14 @@ brief's §8 exactly.
 
 ### Audio
 - [`audio/AudioManager.ts`](src/audio/AudioManager.ts) — the **only** place the game
-  makes sound. `speak(text, style?) / sayNumber / sfx / setMuted / unlock /
-  voiceChoices / setVoice / preview`. **Voice quality** (user feedback "too plain
-  and robotic", fixed 2026-07-05): `rankVoices` surfaces the device's modern
-  voices (Natural/Neural/Premium markers → known-good families → plain local;
-  non-English never listed; pure + tested), auto mode follows the top rank, and
-  the family can pick a favourite (persisted `voiceId`, mirrored from the store
-  by App). **Four delivery styles** — `prompt` (clear) / `praise` (bright,
-  quick) / `soft` (gentle — never scolding) / `count` (crisp) — plus ±4%
-  rate/pitch jitter per utterance so repeats never sound like replayed samples.
-  Synthesized Web-Audio SFX (`good/soft/pop/win`). Everything feature-detected +
-  try/catch → silent, never crashes. **The recorded-VO seam is now REAL:**
-  `speak()` plays a recorded mp3 for any FIXED line in the
-  [`voClips.ts`](src/audio/voClips.ts) manifest (13 lines: praise pool, comfort,
-  milestones, the two big prompts — keyed by EXACT spoken text, so call sites
-  never change) and falls through to styled TTS for dynamic sentences. Per-line
-  negative memoization: a missing/refused clip fails once then that line is TTS
-  for the session — the app ships with an empty `public/vo/` at zero cost and
-  lights up when mp3s land there (recording sheet with moods:
-  [`public/vo/README.md`](public/vo/README.md)). Clips precache for offline
-  (workbox glob includes mp3). **The 13 clips ARE generated and shipped**
-  (156KB): Piper (local neural TTS, per user direction) via
-  [`tools/vo/generate-vo.sh`](tools/vo/generate-vo.sh) — the Jarvis app's
-  bundled `piper.exe` + a fresh `en_GB-jenny_dioco-medium` voice (Twinkle's
-  own), per-mood `length_scale`, ffmpeg silence-trim + loudnorm. Re-generate
-  any time by re-downloading the model (URL in the script; ~63MB, gitignored).
+  makes sound, and **the game is VOICELESS by design (user direction
+  2026-07-05: all voiceovers removed)**. What remains: the synthesized
+  Web-Audio SFX palette (`good/soft/pop/win`), `setMuted`, and `unlock()`
+  (AudioContext resume on first gesture). Every instruction is PRINTED, praise
+  is chime + on-screen word pills, counting shows ordinals visually. Because
+  this seam is still the single door to sound, a voice layer could return
+  without touching game code (the whole TTS/clip era lives in git history —
+  Piper pipeline included). Feature-detected + try/catch → never crashes.
 
 ### UI
 - [`components/Twinkle.tsx`](src/components/Twinkle.tsx) — hand-built SVG star guide with
@@ -281,23 +264,24 @@ brief's §8 exactly.
 - [`components/MuteButton.tsx`](src/components/MuteButton.tsx) — always-visible toggle,
   reads/writes the persisted `muted` flag.
 - [`screens/AgeScreen.tsx`](src/screens/AgeScreen.tsx) — **first-launch age gate**
-  ("How old are you?", spoken; big numeral buttons 4–12; one tap, no confirm — a
+  ("How old are you?" printed big; numeral buttons 4–12; one tap, no confirm — a
   grown-up can correct it later). Shows whenever `age === null` (fresh installs and
   pre-age saves).
 - [`screens/NameScreen.tsx`](src/screens/NameScreen.tsx) — "What's your name?",
-  right after the age gate (spoken; typed by a grown-up or reading child,
+  right after the age gate (typed by a grown-up or reading child,
   ALWAYS skippable). Purely cosmetic; placement (if any) follows from here.
   [`components/PlayerChip.tsx`](src/components/PlayerChip.tsx) — the name +
   LIVE star count pill on the Play/Sprint top bars (renders nothing unnamed).
 - [`screens/Home.tsx`](src/screens/Home.tsx) — **category cards** on the meadow (one per
-  strand of the child's **band**, always open, mini progress dots, tap speaks the
-  category name); star counter; discreet "⚙️ For grown-ups" entry. The 🌱 "still
-  growing" fallback (empty band → early meadow + spoken banner) is now UNREACHABLE —
+  strand of the child's **band**, always open, mini progress dots); star counter;
+  "Hi {name}! 👋" under the title; discreet "⚙️ For grown-ups" entry. The 🌱 "still
+  growing" fallback (empty band → early meadow + banner) is now UNREACHABLE —
   every band has content — but stays as the safety net for any future empty band.
   *(Replaced the old winding trail.)*
 - [`screens/CategoryScreen.tsx`](src/screens/CategoryScreen.tsx) — one category's levels
-  as a **grid of chunky tiles** (locked 🔒 / open+glowing / cleared ⭐); tap speaks the
-  level name and starts it. Deliberately *not* a path.
+  as a **grid of chunky tiles** (locked 🔒 / open+glowing / cleared ⭐); tapping a
+  locked tile answers with a soft boop + padlock shake (focus preserved).
+  Deliberately *not* a path.
 - [`screens/PlayScreen.tsx`](src/screens/PlayScreen.tsx) — the mastery loop. Holds
   **transient** play state (current question, in-attempt streak, tap-count map,
   wrong-shake token); only earned progress goes to the store; `clearLevel` persists
@@ -335,9 +319,7 @@ brief's §8 exactly.
   categories finished X/33), **Child's
   age** section (age chips → band; changing age never touches progress), **Money
   currency** picker, **Learning pace** section (the 5-question quiz → suggested
-  session plan), **Twinkle's voice** picker (top-6 ranked device voices as chips,
-  instant preview on tap; fallback note when a device has none),
-  a **"Chapter progress" card → its own `ProgressPage`** (sticky
+  session plan), a **"Chapter progress" card → its own `ProgressPage`** (sticky
   header + back-to-settings; stats + all 33 categories' level lists with status
   pills — "Placed" distinct from "Mastered" — best streaks and 🏆 sprint bests;
   the grown-up sees FULL ladders incl. rungs above the child's tier), a
@@ -370,10 +352,7 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (200, all passing)
-- [`audio/AudioManager.test.ts`](src/audio/AudioManager.test.ts) — the voice
-  ranking heuristics (natural > known-good > plain local; English only; stable)
-  and SKU-noise-free labels.
+### Tests (197, all passing)
 - [`engine/adaptive.test.ts`](src/engine/adaptive.test.ts) — the scale rule
   table, pass-through identities, and a sweep proving every scale the seam can
   emit still generates sound questions for every scalable level.
@@ -412,7 +391,9 @@ brief's §8 exactly.
    Web Audio directly — that's what keeps the recorded-VO swap a one-file change.
 5. **Only earned progress persists.** Transient play state stays in `PlayScreen`; the
    store's `partialize` is the boundary.
-6. **Reduced-motion + audio-first + ≥64px touch targets** are quality gates, not nice-to-haves.
+6. **Reduced-motion + chime-feedback + ≥64px touch targets** are quality gates, not
+   nice-to-haves. (The game is VOICELESS by user direction — every instruction is
+   printed; SFX carry the moment-to-moment feedback.)
 7. **Unlock state is derived, never stored.** `progress` (cleared per stable level id) is
    the single source of truth; openness = consecutive-cleared prefix within a category
    (`unlockedUpTo`). Never reintroduce a stored `unlockedOrder`, and **never renumber
@@ -445,11 +426,12 @@ None of these break Phase 0; they're the first things to consider next.
   rasterized PNGs (192/512, maskable) for widest install compatibility. Noted in README §PWA-icons.
 - ~~**Adaptive difficulty has no dedicated seam module.**~~ ✅ Filled —
   [`engine/adaptive.ts`](src/engine/adaptive.ts), wired into mastery play only.
-- **`sayNumber` word list covers 0–20**; beyond that it falls back to digits, which
-  TTS reads correctly ("30" → "thirty") — fine in practice, extend words.ts if
-  recorded VO ever lands.
+- **The game is voiceless** (user direction 2026-07-05) — a few early-band prompts
+  (heavier/lighter, first/last, one-more/fewer) rely on a grown-up reading the
+  printed question to a pre-reader. The AudioManager seam still exists, so a
+  voice layer could return from git history if ever wanted.
 - **Mid band relaxes the pre-reader rule deliberately** (7–9s read): expression cards,
-  unit labels, story text. Prompts are still always spoken.
+  unit labels, story text. Prompts are printed on every screen.
 - **Praise selection uses `Math.random()`** in `PlayScreen` (UI-only, fine). Generators
   correctly use the injectable RNG in `random.ts` for determinism under test.
 
@@ -498,7 +480,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **205 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **197 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -845,4 +827,19 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   big prompts). What still speaks: question prompts, tap-counting, the sprint
   running score, guidance, greetings — the INFORMATIONAL voice. **205 tests
   passing** (words-on-screen flow + praise-is-unvoiced pins), build & lint
-  clean. Committed & pushed as **`da99fb1`** (+ this docs true-up).
+  clean. Committed & pushed as **`da99fb1`** (+ docs `def3610`).
+- **2026-07-05 — THE MEADOW GOES VOICELESS (user direction: "remove all
+  voiceovers").** AudioManager slims to the SFX palette (`good/soft/pop/win`,
+  `setMuted`, `unlock`) — still the single sound seam, so a voice layer could
+  return without touching game code. Every screen communicates visually +
+  chime: printed prompts (🔊 replay buttons removed), tap-counting pops with
+  ordinal badges, sprint scores tick silently in the chip, placement sign-offs
+  show as TEXT in the prompt slot, locked tiles boop + shake their padlock
+  (focus preserved), Age/Name gates are printed questions, Home drops the
+  greeting/growing speech and category-name speech. ParentView loses the voice
+  picker; `voiceId` retired from the store (old saves drop it on migrate).
+  Deleted: voClips.ts, `public/vo/` clips, `tools/vo/`, the voice test suites;
+  stale "spoken" comments trued up. **Known trade-off flagged**: a few
+  early-band prompts now need a grown-up to read them to a pre-reader.
+  **197 tests passing** across 9 files, build & lint clean. Committed & pushed
+  as **`c7d6ae0`** (+ this docs true-up).
