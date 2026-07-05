@@ -37,6 +37,11 @@ describe('rankVoices', () => {
     const ranked = rankVoices([v('Alpha'), v('Beta')])
     expect(ranked.map((x) => x.name)).toEqual(['Alpha', 'Beta'])
   })
+
+  it('nudges en-GB ahead of otherwise-equal voices — narration matches the clip accent', () => {
+    const ranked = rankVoices([v('Bob', 'en-US'), v('Betty', 'en-GB')])
+    expect(ranked[0].name).toBe('Betty')
+  })
 })
 
 describe('voiceLabel', () => {

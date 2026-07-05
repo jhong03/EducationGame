@@ -63,7 +63,9 @@ const KNOWN_GOOD = ['google', 'samantha', 'aria', 'jenny', 'libby', 'sonia', 'ka
 /**
  * English voices, best-sounding first. Pure and exported so the heuristics
  * are pinned by tests: neural/natural markers beat known-good families beat
- * plain local voices; non-English voices never appear at all.
+ * plain local voices; non-English voices never appear at all. en-GB gets a
+ * nudge so auto-picked NARRATION sits close to the recorded UK clip voice —
+ * one character, not two.
  */
 export function rankVoices(voices: readonly VoiceLike[]): VoiceLike[] {
   const score = (v: VoiceLike): number => {
@@ -72,6 +74,7 @@ export function rankVoices(voices: readonly VoiceLike[]): VoiceLike[] {
     if (QUALITY_MARKERS.some((m) => n.includes(m))) s += 4
     if (KNOWN_GOOD.some((m) => n.includes(m))) s += 2
     if (v.localService) s += 1 // no network hiccups mid-sentence
+    if (v.lang.toLowerCase().startsWith('en-gb')) s += 1 // match the clip accent
     return s
   }
   return voices
@@ -216,6 +219,24 @@ class WebAudioManager implements AudioManager {
     }
     // Nudge the voice list to populate if it hasn't yet.
     if (this.hasSpeech() && !this.voiceReady) this.loadVoice()
+    // Warm the whole clip pack (~156KB) so playback is INSTANT and never
+    // caught mid-fetch by the next line (the two-voices-at-once race).
+    this.warmClips()
+  }
+
+  private warmClips(): void {
+    if (!this.canPlayClips()) return
+    try {
+      for (const [text, url] of VO_CLIPS) {
+        if (this.clipCache.has(text)) continue
+        const el = new Audio(url)
+        el.preload = 'auto'
+        el.load()
+        this.clipCache.set(text, el)
+      }
+    } catch {
+      /* clips stay lazy-loaded */
+    }
   }
 
   setMuted(muted: boolean): void {
@@ -276,10 +297,22 @@ class WebAudioManager implements AudioManager {
       if (this.hasSpeech()) window.speechSynthesis.cancel()
       el.currentTime = 0
       this.currentClip = el
-      el.play()?.catch(() => {
-        // Missing file / decode / autoplay refusal: remember, hand to TTS.
-        this.clipCache.set(text, null)
+      el.onended = () => {
         if (this.currentClip === el) this.currentClip = null
+      }
+      el.play()?.catch((err: unknown) => {
+        // AbortError = WE interrupted it (a newer line, or mute) — that is
+        // normal flow, NOT a broken clip. Poisoning it here (or speaking the
+        // stale line) is exactly the two-voices-at-once bug.
+        if ((err as { name?: string } | null)?.name === 'AbortError') {
+          if (this.currentClip === el) this.currentClip = null
+          return
+        }
+        // Superseded some other way? The newer line owns the stage — stay out.
+        if (this.currentClip !== el) return
+        // A GENUINE failure (missing file, decode): remember, hand to TTS.
+        this.clipCache.set(text, null)
+        this.currentClip = null
         this.speakTts(text, style)
       })
       return true
