@@ -261,8 +261,12 @@ brief's §8 exactly.
   for the session — the app ships with an empty `public/vo/` at zero cost and
   lights up when mp3s land there (recording sheet with moods:
   [`public/vo/README.md`](public/vo/README.md)). Clips precache for offline
-  (workbox glob includes mp3). **Clip GENERATION is currently blocked**: the
-  Higgs workspace is free-plan with 0 credits (~1.3 credits for all 13).
+  (workbox glob includes mp3). **The 13 clips ARE generated and shipped**
+  (156KB): Piper (local neural TTS, per user direction) via
+  [`tools/vo/generate-vo.sh`](tools/vo/generate-vo.sh) — the Jarvis app's
+  bundled `piper.exe` + a fresh `en_GB-jenny_dioco-medium` voice (Twinkle's
+  own), per-mood `length_scale`, ffmpeg silence-trim + loudnorm. Re-generate
+  any time by re-downloading the model (URL in the script; ~63MB, gitignored).
 
 ### UI
 - [`components/Twinkle.tsx`](src/components/Twinkle.tsx) — hand-built SVG star guide with
@@ -476,10 +480,9 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
    whenever the mid ladder earns a fast lane.
 5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
-6. **Recorded voice-over clips** — the playback pipeline is BUILT (hybrid:
-   fixed lines from `public/vo/`, dynamic lines TTS). Remaining: generate or
-   record the 13 mp3s per [`public/vo/README.md`](public/vo/README.md)
-   (Higgs generation needs ~1.3 credits; the account currently has 0).
+6. ~~**Recorded voice-over clips**~~ ✅ Done — hybrid playback + all 13 clips
+   generated with Piper (`tools/vo/generate-vo.sh`). Future VO work is
+   re-recording with a human artist or growing the fixed-line set.
 7. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
    coordinates in four quadrants, logic grids) — strand rungs beyond the core spine.
 
@@ -799,4 +802,16 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   0 credits (~1.3 needed for 13 clips)** — the manifest + `public/vo/README.md`
   recording sheet are the generation script for when credits exist. **202
   tests passing**, build & lint clean. Committed & pushed as **`e4c10d9`**
-  (+ this docs true-up).
+  (+ docs `cf6d3a4`).
+- **2026-07-05 — VO pack GENERATED with Piper (user direction: "just use
+  piper, like my Jarvis dashboard").** All 13 clips real and shipped (156KB
+  total): the Jarvis app's bundled `piper.exe` + a freshly-downloaded
+  **`en_GB-jenny_dioco-medium`** voice (warm UK female — Twinkle's own; Alan
+  stays Jarvis's), driven by [`tools/vo/generate-vo.sh`](tools/vo/generate-vo.sh)
+  (per-mood `length_scale`: praise 0.92 / comfort 1.06 / prompts 1.0; ffmpeg
+  edge-silence trim + `loudnorm` to one level; mono mp3 q4). The hybrid seam
+  lit up with ZERO code changes — praise/comfort/milestones/big prompts now
+  play recorded audio, dynamic sentences stay on ranked styled TTS. Model
+  (~63MB) gitignored with its download URL in the script. PWA precache 25→38
+  entries (clips offline). **202 tests passing**, build & lint clean.
+  Committed & pushed as **`a691f55`** (+ this docs true-up).
