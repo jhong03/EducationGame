@@ -32,8 +32,9 @@ export default function ClearedScreen({
   const [confetti, setConfetti] = useState(0)
 
   useEffect(() => {
+    // Praise is words + chime now (user direction): the screen's big title
+    // says it, the win arpeggio celebrates it — no voice on top.
     audio.sfx('win')
-    audio.speak(isLast ? `You finished ${categoryName}!` : 'Level complete!', 'praise')
     setConfetti((c) => c + 1)
     // a second burst for extra sparkle
     const id = setTimeout(() => setConfetti((c) => c + 1), 700)

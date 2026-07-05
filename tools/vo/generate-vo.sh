@@ -44,17 +44,11 @@ preset() {
 }
 
 # file|mood|spoken text
+# (Praise lines were retired 2026-07-05 — correct/wrong feedback is chime +
+# on-screen words by user direction; only guidance and prompts are voiced.)
 LINES=(
-  "yes.mp3|cheer|Yes!"
-  "you-did-it.mp3|cheer|You did it!"
-  "great-job.mp3|cheer|Great job!"
-  "woohoo.mp3|cheer|Woo-hoo!"
-  "nice-counting.mp3|cheer|Nice counting!"
-  "well-done.mp3|cheer|Well done!"
-  "try-again.mp3|gentle|Try again!"
   "thats-okay.mp3|gentle|That's okay! We'll start here."
   "not-yet.mp3|gentle|Not yet! Finish the level before it."
-  "level-complete.mp3|cheer|Level complete!"
   "off-you-go.mp3|cheer|Wow! Off you go!"
   "how-old.mp3|ask|How old are you?"
   "whats-name.mp3|ask|What's your name?"

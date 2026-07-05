@@ -309,6 +309,18 @@ describe('full play loop', () => {
     expect(buttonByAria('Find the number')).not.toBeNull() // placed stays replayable
   })
 
+  it('feedback is WORDS on screen: Try again! on a miss, a praise word on a hit', () => {
+    click(categoryCard('Counting'))
+    click(buttonByAria('Count to 3'))
+    click(buttonByAria('1')) // wrong — the mocked answer is 2
+    expect(container.textContent).toContain('Try again!')
+    click(buttonByAria('2')) // correct
+    expect(container.textContent).toMatch(
+      /Yes!|You did it!|Great job!|Woohoo!|Nice counting!|Well done!/,
+    )
+    advance(1100) // settle the celebration timer
+  })
+
   it('the player chip shows the name and LIVE stars while playing', () => {
     act(() => {
       useGameStore.setState({ name: 'Maya' }) // age 5 from the suite setup

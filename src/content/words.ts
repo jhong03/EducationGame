@@ -19,7 +19,8 @@ export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1)
 }
 
-/** The spoken praise pool (PlayScreen picks at random; every line has a VO clip). */
+/** The praise pool — shown as ON-SCREEN words with the correct chime
+ *  (praise is deliberately unvoiced; PlayScreen picks at random). */
 export const PRAISE = [
   'Yes!',
   'You did it!',

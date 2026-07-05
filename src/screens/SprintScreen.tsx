@@ -94,13 +94,9 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
     setMood('cheer')
     setBeat((b) => b + 1)
     setConfetti((c) => c + 1)
+    // The end is words + chime (user direction): the score was spoken as it
+    // climbed, and the done screen prints "You got N!" in big type.
     audio.sfx('win')
-    const n = scoreRef.current
-    const beatBest = n > prevBest.current
-    audio.speak(
-      `Time for a rest! You got ${n}!${beatBest ? ' A new best!' : ''}`,
-      'praise',
-    )
   }
 
   function loadNext() {

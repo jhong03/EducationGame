@@ -19,19 +19,11 @@ export interface VoLine {
 }
 
 export const VO_LINES: readonly VoLine[] = [
-  // The praise pool (PlayScreen's pickPraise)
-  { text: 'Yes!', file: 'yes.mp3' },
-  { text: 'You did it!', file: 'you-did-it.mp3' },
-  { text: 'Great job!', file: 'great-job.mp3' },
-  { text: 'Woohoo!', file: 'woohoo.mp3' },
-  { text: 'Nice counting!', file: 'nice-counting.mp3' },
-  { text: 'Well done!', file: 'well-done.mp3' },
-  // Comfort — must sound WARM, never scolding
-  { text: 'Try again!', file: 'try-again.mp3' },
+  // NOTE: praise is deliberately NOT here (user direction 2026-07-05):
+  // correct/wrong feedback is chime + on-screen words, never a voice.
+  // Comfort & guidance — must sound WARM, never scolding
   { text: "That's okay! We'll start here.", file: 'thats-okay.mp3' },
   { text: 'Not yet! Finish the level before it.', file: 'not-yet.mp3' },
-  // Milestones
-  { text: 'Level complete!', file: 'level-complete.mp3' },
   { text: 'Wow! Off you go!', file: 'off-you-go.mp3' },
   // The big fixed prompts
   { text: 'How old are you?', file: 'how-old.mp3' },

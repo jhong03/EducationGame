@@ -152,6 +152,10 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
   const [wrong, setWrong] = useState<Answer | null>(null)
   const [shakeToken, setShakeToken] = useState(0)
 
+  // Praise/feedback as WORDS on screen (user direction: no praise voices —
+  // the good/soft chimes carry the sound, the flash carries the words).
+  const [flash, setFlash] = useState<{ text: string; cheer: boolean } | null>(null)
+
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const later = (fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms)
@@ -178,6 +182,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
     countedRef.current = {}
     setCounted({})
     setWrong(null)
+    setFlash(null)
     setMood('happy')
     setPhase('answering')
     setQuestion(generateQuestion(adaptLevel(level, scale)))
@@ -205,7 +210,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       setStreak(outcome.streak)
       setWrong(null)
       audio.sfx(outcome.cleared ? 'win' : 'good')
-      audio.speak(pickPraise(), 'praise')
+      setFlash({ text: pickPraise(), cheer: true }) // words, not voice
       setMood('cheer')
       bumpBeat()
       setConfetti((c) => c + 1)
@@ -231,12 +236,15 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       // tells the adaptive seam to soften the NEXT question.
       triesRef.current += 1
       audio.sfx('soft')
-      audio.speak('Try again!', 'soft')
+      setFlash({ text: 'Try again!', cheer: false }) // gentle words, no voice
       setMood('sad')
       bumpBeat()
       setWrong(given)
       setShakeToken((t) => t + 1)
-      later(() => setMood('happy'), 850)
+      later(() => {
+        setMood('happy')
+        setFlash((f) => (f && !f.cheer ? null : f))
+      }, 850)
     }
   }
 
@@ -284,6 +292,18 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       <main className="safe-pb flex min-h-0 flex-1 flex-col items-center justify-between gap-2 overflow-y-auto px-4">
         <div className="flex flex-col items-center">
           <Twinkle mood={mood} beat={beat} size={116} />
+          {flash && (
+            <p
+              key={beat} // re-pop on every new cheer
+              role="status"
+              className={`anim-pop mt-1 rounded-full px-5 py-1 font-bold shadow-md ${
+                flash.cheer ? 'bg-sun text-ink' : 'bg-cream/90 text-ink/80'
+              }`}
+              style={{ fontSize: 'clamp(19px, 5vw, 26px)' }}
+            >
+              {flash.text}
+            </p>
+          )}
           <p
             className="mt-1 text-center font-semibold text-ink/80"
             style={{ fontSize: 'clamp(18px, 5vw, 26px)' }}

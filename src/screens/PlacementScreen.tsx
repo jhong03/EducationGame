@@ -101,7 +101,7 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
 
       const nextStep = step + 1
       if (nextStep < plan.length) {
-        audio.speak('Yes!', 'praise')
+        // Praise is chime-only here too; Twinkle's cheer carries the moment.
         later(() => {
           const level = probeLevel(plan[nextStep])
           if (!level) {

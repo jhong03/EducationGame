@@ -620,8 +620,8 @@ function VoiceSection() {
             })}
           </div>
           <p className="px-1 text-sm font-semibold text-ink/70">
-            Tap one to hear it. Prompts, cheers and gentle nudges each get their
-            own delivery, with a little natural variation every time.
+            Tap one to hear it. Questions and hints are spoken; cheers come as
+            chimes and words on the screen.
           </p>
         </>
       )}

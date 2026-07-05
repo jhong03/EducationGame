@@ -65,20 +65,23 @@ describe('VO clip manifest', () => {
     }
   })
 
-  it('covers every praise line and the key fixed prompts EXACTLY as spoken', () => {
-    for (const line of PRAISE) {
-      expect(VO_CLIPS.has(line), line).toBe(true)
-    }
+  it('covers the guidance lines and fixed prompts EXACTLY as spoken', () => {
     for (const line of [
-      'Try again!',
       "That's okay! We'll start here.",
       'Not yet! Finish the level before it.',
-      'Level complete!',
       'Wow! Off you go!',
       'How old are you?',
       "What's your name?",
     ]) {
       expect(VO_CLIPS.has(line), line).toBe(true)
     }
+  })
+
+  it('praise is deliberately UNVOICED — words + chime, never a clip', () => {
+    for (const line of PRAISE) {
+      expect(VO_CLIPS.has(line), line).toBe(false)
+    }
+    expect(VO_CLIPS.has('Try again!')).toBe(false)
+    expect(VO_CLIPS.has('Level complete!')).toBe(false)
   })
 })
