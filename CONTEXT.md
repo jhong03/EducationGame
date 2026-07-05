@@ -59,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **203 passed** across 10 files |
+| Unit + loop + app tests | `npm test` | **205 passed** across 10 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -498,7 +498,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **203 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **205 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -835,4 +835,14 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   gesture (no pending-fetch window); `rankVoices` nudges **en-GB** so
   auto-picked narration matches the clip accent — one character across both
   channels. **203 tests passing**, build & lint clean. Committed & pushed as
-  **`3e089ee`** (+ this docs true-up).
+  **`3e089ee`** (+ docs `af15f2e`).
+- **2026-07-05 — Praise unvoiced (user direction): chimes + on-screen words.**
+  Correct/wrong feedback no longer SPEAKS: PlayScreen pops a praise word next
+  to Twinkle (sun pill, `flash` state) on hits and a gentle "Try again!" pill
+  on misses; the good/soft/win chimes stay as the pre-reader audio signal.
+  ClearedScreen, sprint end and placement "Yes!" also went silent (their
+  screens print the words). VO pack slimmed 13→5 clips (guidance + the two
+  big prompts). What still speaks: question prompts, tap-counting, the sprint
+  running score, guidance, greetings — the INFORMATIONAL voice. **205 tests
+  passing** (words-on-screen flow + praise-is-unvoiced pins), build & lint
+  clean. Committed & pushed as **`da99fb1`** (+ this docs true-up).
