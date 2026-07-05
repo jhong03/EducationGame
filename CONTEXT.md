@@ -59,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **195 passed** across 9 files |
+| Unit + loop + app tests | `npm test` | **200 passed** across 10 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -158,7 +158,7 @@ brief's §8 exactly.
   (key `number-meadow/v1`, **version 2**, `migrate: migratePersistedState` — v1 saves
   keep their earned fields; level ids unchanged so cleared levels keep counting).
   Persists earned progress + settings via `partialize` (`stars`, `progress`, `muted`,
-  `pace`, `age`, `name`, `currency`, `bestScores`). Names go through ONE write
+  `pace`, `age`, `name`, `currency`, `voiceId`, `bestScores`). Names go through ONE write
   path (`sanitizeName`: trim, 20-char cap, empty → null) from every entry point;
   reset clears `name` with `age` (the child profile). Sprint bests live in `bestScores`
   (`recordSprintScore` is forward-only; `categorySprintScore` sums a category).
@@ -242,13 +242,18 @@ brief's §8 exactly.
 
 ### Audio
 - [`audio/AudioManager.ts`](src/audio/AudioManager.ts) — the **only** place the game
-  makes sound. `speak / sayNumber / sfx / setMuted / unlock`. TTS (SpeechSynthesis,
-  rate 0.9 / pitch 1.2) + synthesized Web-Audio SFX (`good/soft/pop/win` as
-  gain-enveloped oscillator notes). Everything feature-detected + try/catch → silent,
-  never crashes, on unsupported devices. `unlock()` resumes the AudioContext on first
-  gesture (wired in [`App.tsx`](src/App.tsx)).
-  **VO seam:** `TODO: swap for recorded VO` at [AudioManager.ts:148](src/audio/AudioManager.ts#L148) —
-  replace that block with clip playback; no component changes needed.
+  makes sound. `speak(text, style?) / sayNumber / sfx / setMuted / unlock /
+  voiceChoices / setVoice / preview`. **Voice quality** (user feedback "too plain
+  and robotic", fixed 2026-07-05): `rankVoices` surfaces the device's modern
+  voices (Natural/Neural/Premium markers → known-good families → plain local;
+  non-English never listed; pure + tested), auto mode follows the top rank, and
+  the family can pick a favourite (persisted `voiceId`, mirrored from the store
+  by App). **Four delivery styles** — `prompt` (clear) / `praise` (bright,
+  quick) / `soft` (gentle — never scolding) / `count` (crisp) — plus ±4%
+  rate/pitch jitter per utterance so repeats never sound like replayed samples.
+  Synthesized Web-Audio SFX (`good/soft/pop/win`). Everything feature-detected +
+  try/catch → silent, never crashes. **VO seam unchanged:** the `TODO: swap for
+  recorded VO` block in `speak()` is still the one-block clip-playback swap.
 
 ### UI
 - [`components/Twinkle.tsx`](src/components/Twinkle.tsx) — hand-built SVG star guide with
@@ -317,7 +322,9 @@ brief's §8 exactly.
   categories finished X/33), **Child's
   age** section (age chips → band; changing age never touches progress), **Money
   currency** picker, **Learning pace** section (the 5-question quiz → suggested
-  session plan), a **"Chapter progress" card → its own `ProgressPage`** (sticky
+  session plan), **Twinkle's voice** picker (top-6 ranked device voices as chips,
+  instant preview on tap; fallback note when a device has none),
+  a **"Chapter progress" card → its own `ProgressPage`** (sticky
   header + back-to-settings; stats + all 33 categories' level lists with status
   pills — "Placed" distinct from "Mastered" — best streaks and 🏆 sprint bests;
   the grown-up sees FULL ladders incl. rungs above the child's tier), a
@@ -350,7 +357,10 @@ brief's §8 exactly.
   (`autoUpdate`, manifest with theme/background colors). Vitest config lives here too
   (jsdom, globals).
 
-### Tests (195, all passing)
+### Tests (200, all passing)
+- [`audio/AudioManager.test.ts`](src/audio/AudioManager.test.ts) — the voice
+  ranking heuristics (natural > known-good > plain local; English only; stable)
+  and SKU-noise-free labels.
 - [`engine/adaptive.test.ts`](src/engine/adaptive.test.ts) — the scale rule
   table, pass-through identities, and a sweep proving every scale the seam can
   emit still generates sound questions for every scalable level.
@@ -474,7 +484,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **195 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **200 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -752,4 +762,16 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   can't ramp its own attempt. **195 tests passing** across 9 files (rule
   table + a sweep proving every emitted scale still generates sound questions
   for every scalable level), build & lint clean. Committed & pushed as
-  **`9219091`** (+ this docs true-up).
+  **`9219091`** (+ docs `0378228`).
+- **2026-07-05 — Voice overhaul (user feedback: "too plain and robotic").**
+  Three fixes inside the AudioManager seam: **(1) ranked voices** —
+  `rankVoices` prefers the device's modern Natural/Neural voices over the
+  browser default (auto mode follows the top rank); **(2) a family picker** —
+  "Twinkle's voice" in the grown-ups panel (top-6 chips, friendly labels via
+  `voiceLabel`, instant preview; persisted `voiceId` device setting that
+  survives reset); **(3) delivery styles** — `prompt`/`praise`/`soft`/`count`
+  presets replace the single flat rate/pitch, applied across every call site
+  (cheers bright, "Try again!" gentle, numbers crisp), with ±4% per-utterance
+  jitter so repeated lines never sound like replayed samples. Recorded-VO seam
+  untouched. **200 tests passing** across 10 files, build & lint clean.
+  Committed & pushed as **`677a7b7`** (+ this docs true-up).
