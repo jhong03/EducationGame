@@ -59,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **202 passed** across 10 files |
+| Unit + loop + app tests | `npm test` | **203 passed** across 10 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -498,7 +498,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **202 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **203 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -824,4 +824,15 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   deviate where it reads better ("Woo-hoo!") — app keys/files unchanged.
   Tuning knobs live in `preset()` in
   [`tools/vo/generate-vo.sh`](tools/vo/generate-vo.sh). Committed & pushed as
-  **`0b3c502`** (+ this docs true-up).
+  **`0b3c502`** (+ docs `a8eec94`).
+- **2026-07-05 — Voice-overlap fix (user-reported: two voices at once on level
+  complete).** Root cause: stopping a clip whose `play()` promise was still
+  pending made its AbortError rejection look like a broken clip — poisoning it
+  AND speaking the STALE line via TTS over the new one (cascading on
+  cleared-screen transitions). Now: our own aborts are normal flow (no poison,
+  no fallback), superseded elements stay silent, only genuine failures on the
+  CURRENT clip fall back; `unlock()` warms the whole 156KB pack on first
+  gesture (no pending-fetch window); `rankVoices` nudges **en-GB** so
+  auto-picked narration matches the clip accent — one character across both
+  channels. **203 tests passing**, build & lint clean. Committed & pushed as
+  **`3e089ee`** (+ this docs true-up).
