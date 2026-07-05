@@ -4,14 +4,16 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `c93c5da` (pushed to
-[jhong03/EducationGame](https://github.com/jhong03/EducationGame)). **Two big features
-sit in the working tree UNCOMMITTED, pending the user's review (see §7's two latest
-entries): (1) a full warm-premium UI/UX redesign, and (2) the Garden reward economy
-(earn stars + mastery-diamonds → buy, place & rearrange plants/pets/toys/decor in a
-**real 3D low-poly sandbox** — react-three-fiber, lazy-loaded, with a 2D fallback).
-241 tests green, build & lint clean. Suggested commit order: redesign first, then
-garden (deps: three/@react-three/fiber/@react-three/drei added).**_
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `79d3242` (committed & pushed to
+[jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — working tree CLEAN.
+**This session landed, in one commit (`79d3242`): (1) a full warm-premium UI/UX
+redesign, (2) the Garden reward economy (earn stars + mastery-diamonds → buy, place &
+rearrange plants/pets/toys/decor), and (3) the garden as a REAL 3D low-poly world
+(react-three-fiber, lazy-loaded + code-split, WebGL-gated with a 2D fallback). 241
+tests green, build & lint clean. Deps added: @fontsource/manrope, three,
+@react-three/fiber, @react-three/drei.** Next time: the DEV-only 🔧 currency button in
+the garden header (`import.meta.env.DEV`-gated) is for auditing item models —
+screenshot the 3D items and iterate; several models are still stylised approximations._
 
 ---
 
@@ -937,8 +939,8 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   removed from chrome & button labels (kept, framed, for kid content). Copy
   nudged premium ("Hi X!" → eyebrow "Welcome back, X"; decorative 🗺️/🌈/➡️
   dropped from buttons) — App.test.tsx assertions updated to match (behaviour
-  identical). **217 tests passing** across 11 files, build & lint clean.
-  **UNCOMMITTED** — awaiting the user's look-and-feel review before commit/push.
+  identical). **217 tests passing** across 11 files, build & lint clean. Committed
+  & pushed (with the garden work) as **`79d3242`**.
 - **2026-07-05 — GARDEN REWARD ECONOMY (user request: "kids earn stars &
   diamonds to buy stuff… a sandbox garden like the old Facebook games").**
   Confirmed the shape with the user first: a **creative sandbox** (buy · place ·
@@ -969,8 +971,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   show the spendable **wallet** (parent dashboard still shows lifetime earned).
   New `garden` route in App. **241 tests passing** across 14 files
   (garden catalogue, rewards rule, wallet/plot/migration store tests, + garden
-  integration in App.test), build & lint clean. **UNCOMMITTED** (stacked on the
-  redesign).
+  integration in App.test), build & lint clean. Committed & pushed as **`79d3242`**.
 - **2026-07-05 — GARDEN GOES 3D (user: the flat grid was "too effortless… I
   expected a 3D garden like real life, pets moving, plants in pots").** Confirmed
   direction: **real stylized 3D** (react-three-fiber) — set the honest
@@ -998,8 +999,8 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   which is also why the jsdom tests still pass (three is never imported there).
   PWA: the 3D chunk is **excluded from precache** (globIgnores) and CacheFirst-
   cached on first garden visit, so install stays light. **241 tests still green**
-  (the 3D path is exercised via the fallback), build & lint clean. **UNCOMMITTED**
-  (stacked on redesign + garden economy).
+  (the 3D path is exercised via the fallback), build & lint clean. Committed &
+  pushed as **`79d3242`**.
 - **2026-07-05 — 3D-garden art pass + camera + tuning (screenshot-driven, since
   the render can't be seen from here).** Iterated the low-poly models from the
   user's screenshots: rebuilt the **slide** (proper guard-rail handrails + roof
@@ -1030,4 +1031,5 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   button** in the garden header (`import.meta.env.DEV`-gated — never ships) for
   auditing every item. Refactor: appearance data/sizing split into
   [`garden3d/appearance.ts`](src/screens/garden3d/appearance.ts) (lint-clean
-  component module). **241 tests still green**, build & lint clean.
+  component module). **241 tests still green**, build & lint clean. Committed &
+  pushed as **`79d3242`**.
