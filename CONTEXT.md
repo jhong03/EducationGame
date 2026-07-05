@@ -462,9 +462,9 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
    whenever the mid ladder earns a fast lane.
 5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
-6. ~~**Recorded voice-over clips**~~ ✅ Done — hybrid playback + all 13 clips
-   generated with Piper (`tools/vo/generate-vo.sh`). Future VO work is
-   re-recording with a human artist or growing the fixed-line set.
+6. ~~**Recorded voice-over clips**~~ RETIRED — the game is voiceless by user
+   direction (2026-07-05). The Piper pipeline and hybrid playback live in git
+   history (`a691f55`/`e4c10d9`) should voice ever return.
 7. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
    coordinates in four quadrants, logic grids) — strand rungs beyond the core spine.
 
