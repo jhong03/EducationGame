@@ -101,7 +101,7 @@ export default function CategoryScreen({
                     // Focusable + audible even when locked: a pre-reader taps
                     // and hears WHY nothing opens, instead of dead silence.
                     audio.sfx('soft')
-                    audio.speak('Not yet! Finish the level before it.')
+                    audio.speak('Not yet! Finish the level before it.', 'soft')
                     return
                   }
                   audio.sfx('pop')

@@ -27,6 +27,7 @@ type Route =
 export default function App() {
   const [route, setRoute] = useState<Route>({ screen: 'home' })
   const muted = useGameStore((s) => s.muted)
+  const voiceId = useGameStore((s) => s.voiceId)
   const age = useGameStore((s) => s.age)
   const setAge = useGameStore((s) => s.setAge)
 
@@ -34,6 +35,11 @@ export default function App() {
   useEffect(() => {
     audio.setMuted(muted)
   }, [muted])
+
+  // Mirror the persisted voice pick too (null = auto best).
+  useEffect(() => {
+    audio.setVoice(voiceId)
+  }, [voiceId])
 
   // Resume audio on the first user gesture (autoplay policies, spec §6).
   useEffect(() => {

@@ -5,6 +5,16 @@
  * game code — swap the body of `speak`/`sayNumber` for clip playback and the
  * rest of the app is untouched.
  *
+ * Voice quality (user feedback: "too plain and robotic") is fought on three
+ * fronts, all inside this seam:
+ * 1. VOICE CHOICE — devices ship many voices and the default is rarely the
+ *    best. `rankVoices` prefers the modern neural/natural ones; the family
+ *    can also pick a favourite in the grown-ups panel (persisted `voiceId`).
+ * 2. DELIVERY STYLES — prompts are clear and steady, praise is bright and
+ *    quick, comfort lines are soft and slow. One voice, many moods.
+ * 3. NATURAL VARIATION — every utterance jitters rate/pitch a few percent,
+ *    so a repeated "Try again!" never sounds like a sample being replayed.
+ *
  * Everything is feature-detected and wrapped in try/catch: on a device with no
  * speech or no Web Audio, the game stays silent but never crashes.
  */
@@ -13,13 +23,81 @@ import { numberWord } from '../content/words'
 
 export type SfxKind = 'good' | 'soft' | 'pop' | 'win'
 
+/** How a line should be delivered. */
+export type SpeakStyle = 'prompt' | 'praise' | 'soft' | 'count'
+
+export interface VoiceChoice {
+  id: string // voiceURI — what the store persists
+  label: string // friendly, vendor-prefix-free name for the picker
+}
+
 export interface AudioManager {
-  speak(text: string): void // TTS now; recorded clips later
+  speak(text: string, style?: SpeakStyle): void // TTS now; recorded clips later
   sayNumber(n: number): void // "one".. for counting
   sfx(kind: SfxKind): void
   setMuted(muted: boolean): void
   /** Resume the AudioContext / prime TTS on the first user gesture. */
   unlock(): void
+  /** Ranked English voices actually on this device, best first (≤ 6). */
+  voiceChoices(): VoiceChoice[]
+  /** Pick a voice by id; null returns to auto (best available). */
+  setVoice(id: string | null): void
+  /** Say a short line in the current voice — the settings preview. */
+  preview(): void
+}
+
+/** The slice of SpeechSynthesisVoice the ranking needs (testable shape). */
+export interface VoiceLike {
+  voiceURI: string
+  name: string
+  lang: string
+  localService: boolean
+}
+
+// Names the modern, natural-sounding voices tend to carry…
+const QUALITY_MARKERS = ['natural', 'neural', 'premium', 'enhanced']
+// …and specific families known to sound good across platforms.
+const KNOWN_GOOD = ['google', 'samantha', 'aria', 'jenny', 'libby', 'sonia', 'karen', 'daniel']
+
+/**
+ * English voices, best-sounding first. Pure and exported so the heuristics
+ * are pinned by tests: neural/natural markers beat known-good families beat
+ * plain local voices; non-English voices never appear at all.
+ */
+export function rankVoices(voices: readonly VoiceLike[]): VoiceLike[] {
+  const score = (v: VoiceLike): number => {
+    const n = v.name.toLowerCase()
+    let s = 0
+    if (QUALITY_MARKERS.some((m) => n.includes(m))) s += 4
+    if (KNOWN_GOOD.some((m) => n.includes(m))) s += 2
+    if (v.localService) s += 1 // no network hiccups mid-sentence
+    return s
+  }
+  return voices
+    .filter((v) => v.lang.toLowerCase().startsWith('en'))
+    .map((v, i) => ({ v, i }))
+    .sort((a, b) => score(b.v) - score(a.v) || a.i - b.i) // stable
+    .map((x) => x.v)
+}
+
+/** "Microsoft Aria Online (Natural) - English" → "Aria (Natural)". */
+export function voiceLabel(name: string): string {
+  return (
+    name
+      .replace(/^(Microsoft|Google|Apple)\s+/i, '')
+      .replace(/\s+Online/i, '')
+      .replace(/\s*[-–]\s*English.*$/i, '')
+      .replace(/\s*\(.*(United|Great|UK|US|English).*\)\s*$/i, '')
+      .trim() || name
+  )
+}
+
+/** Delivery presets — the base each style jitters around. */
+const STYLE_PRESETS: Record<SpeakStyle, { rate: number; pitch: number }> = {
+  prompt: { rate: 0.92, pitch: 1.15 }, // clear, unhurried — the question
+  praise: { rate: 1.05, pitch: 1.35 }, // bright and quick — the cheer
+  soft: { rate: 0.85, pitch: 1.0 }, // gentle — comfort, never scolding
+  count: { rate: 0.98, pitch: 1.2 }, // crisp — numbers land one by one
 }
 
 /** Simple gain-enveloped note recipes for each cue (frequencies in Hz). */
@@ -50,6 +128,7 @@ class WebAudioManager implements AudioManager {
   private ctx: AudioContext | null = null
   private voice: SpeechSynthesisVoice | null = null
   private voiceReady = false
+  private preferredId: string | null = null
 
   constructor() {
     // Voices populate asynchronously in most browsers.
@@ -96,14 +175,23 @@ class WebAudioManager implements AudioManager {
     return this.ctx
   }
 
+  private allVoices(): SpeechSynthesisVoice[] {
+    try {
+      return window.speechSynthesis.getVoices()
+    } catch {
+      return []
+    }
+  }
+
+  /** Resolve the active voice: the family's pick if present, else the best. */
   private loadVoice() {
     try {
-      const voices = window.speechSynthesis.getVoices()
+      const voices = this.allVoices()
       if (!voices.length) return
-      this.voice =
-        voices.find((v) => v.lang.startsWith('en') && v.localService) ??
-        voices.find((v) => v.lang.startsWith('en')) ??
-        voices[0]
+      const preferred = this.preferredId
+        ? voices.find((v) => v.voiceURI === this.preferredId)
+        : undefined
+      this.voice = preferred ?? (rankVoices(voices)[0] as SpeechSynthesisVoice | undefined) ?? voices[0]
       this.voiceReady = true
     } catch {
       /* ignore */
@@ -136,15 +224,34 @@ class WebAudioManager implements AudioManager {
     }
   }
 
-  speak(text: string): void {
+  voiceChoices(): VoiceChoice[] {
+    if (!this.hasSpeech()) return []
+    return rankVoices(this.allVoices())
+      .slice(0, 6)
+      .map((v) => ({ id: v.voiceURI, label: voiceLabel(v.name) }))
+  }
+
+  setVoice(id: string | null): void {
+    this.preferredId = id
+    if (this.hasSpeech()) this.loadVoice()
+  }
+
+  preview(): void {
+    this.speak("Hi! Let's play Number Meadow!", 'praise')
+  }
+
+  speak(text: string, style: SpeakStyle = 'prompt'): void {
     if (this.muted || !this.hasSpeech() || !text) return
     try {
       const synth = window.speechSynthesis
       synth.cancel() // latest prompt wins; no pile-up of queued speech
       // TODO: swap for recorded VO — replace this block with clip playback.
       const u = new SpeechSynthesisUtterance(text)
-      u.rate = 0.9 // friendly, unhurried
-      u.pitch = 1.2 // warm, slightly higher
+      const preset = STYLE_PRESETS[style]
+      // ±4% humanizing jitter: the same line never plays back identically.
+      const jitter = () => 1 + (Math.random() - 0.5) * 0.08
+      u.rate = preset.rate * jitter()
+      u.pitch = preset.pitch * jitter()
       if (this.voice) u.voice = this.voice
       synth.speak(u)
     } catch {
@@ -153,7 +260,7 @@ class WebAudioManager implements AudioManager {
   }
 
   sayNumber(n: number): void {
-    this.speak(numberWord(n))
+    this.speak(numberWord(n), 'count')
   }
 
   sfx(kind: SfxKind): void {

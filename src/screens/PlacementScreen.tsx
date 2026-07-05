@@ -83,8 +83,8 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
     audio.sayNumber(n)
   }
 
-  function finish(spoken: string) {
-    audio.speak(spoken)
+  function finish(spoken: string, style: 'praise' | 'soft') {
+    audio.speak(spoken, style)
     later(onDone, 1100)
   }
 
@@ -101,7 +101,7 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
 
       const nextStep = step + 1
       if (nextStep < plan.length) {
-        audio.speak('Yes!')
+        audio.speak('Yes!', 'praise')
         later(() => {
           const level = probeLevel(plan[nextStep])
           if (!level) {
@@ -116,14 +116,14 @@ export default function PlacementScreen({ age, onDone }: PlacementScreenProps) {
           setPhase('answering')
         }, 900)
       } else {
-        finish('Wow! Off you go!')
+        finish('Wow! Off you go!', 'praise')
       }
     } else {
       // A miss is only information — start here, cheerfully.
       audio.sfx('soft')
       setMood('happy')
       setBeat((b) => b + 1)
-      finish("That's okay! We'll start here.")
+      finish("That's okay! We'll start here.", 'soft')
     }
   }
 

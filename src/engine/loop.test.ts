@@ -304,6 +304,14 @@ describe('player name', () => {
     expect(migratePersistedState({ name: '  Maya  ' }).name).toBe('Maya')
     expect(migratePersistedState({ name: '' }).name).toBeNull()
   })
+
+  it('voiceId is a DEVICE setting: survives reset, migrates as an opaque id', () => {
+    useGameStore.getState().setVoiceId('some-voice-uri')
+    useGameStore.getState().reset()
+    expect(useGameStore.getState().voiceId).toBe('some-voice-uri')
+    expect(migratePersistedState({ voiceId: 'x' }).voiceId).toBe('x')
+    expect(migratePersistedState({ voiceId: 42 }).voiceId).toBeNull()
+  })
 })
 
 describe('persisted-state migration (v1 → v2)', () => {
@@ -327,6 +335,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       age: null, // …and the age gate, which will ask once
       name: null, // …and the name screen
       currency: 'USD', // …and the currency setting (defaulted)
+      voiceId: null, // …and the voice picker
       bestScores: {}, // …and sprint scores
     })
     expect('unlockedOrder' in migrated).toBe(false)
@@ -351,6 +360,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       age: null,
       name: null,
       currency: 'USD',
+      voiceId: null,
       bestScores: {},
     })
     expect(
@@ -363,6 +373,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       age: null, // implausible age re-asks the gate
       name: null, // non-string names are discarded
       currency: 'USD',
+      voiceId: null,
       bestScores: {},
     })
     // Plausible values survive.

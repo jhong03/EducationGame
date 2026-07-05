@@ -908,6 +908,13 @@ export interface GameState {
    */
   currency: string
   /**
+   * The chosen TTS voice (a SpeechSynthesisVoice.voiceURI), picked in the
+   * grown-ups panel. null = auto (the best-ranked voice on the device).
+   * A device setting like `muted`/`currency`: survives reset; unknown ids
+   * simply fall back to auto at speak time.
+   */
+  voiceId: string | null
+  /**
    * Best sprint score per level id. Forward-only, like everything earned:
    * a worse run never lowers a best.
    */

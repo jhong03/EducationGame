@@ -206,7 +206,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       setStreak(outcome.streak)
       setWrong(null)
       audio.sfx(outcome.cleared ? 'win' : 'good')
-      audio.speak(pickPraise())
+      audio.speak(pickPraise(), 'praise')
       setMood('cheer')
       bumpBeat()
       setConfetti((c) => c + 1)
@@ -232,7 +232,7 @@ export default function PlayScreen({ level, onExit, onCleared }: PlayScreenProps
       // tells the adaptive seam to soften the NEXT question.
       triesRef.current += 1
       audio.sfx('soft')
-      audio.speak('Try again!')
+      audio.speak('Try again!', 'soft')
       setMood('sad')
       bumpBeat()
       setWrong(given)

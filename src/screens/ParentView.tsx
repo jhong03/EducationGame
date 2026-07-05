@@ -4,6 +4,7 @@ import { CATEGORIES, TRAIL, categoriesForBand, levelsInCategory } from '../conte
 import { PACE_PLANS, PACE_QUESTIONS, planFor } from '../engine/pace'
 import { AGES, bandForAge, bandLabel } from '../engine/band'
 import { CURRENCIES, currencyById } from '../content/currency'
+import { audio } from '../audio/AudioManager'
 
 /**
  * "For grown-ups" — an adults-only progress panel (spec §11: the parent/teacher
@@ -132,6 +133,9 @@ export default function ParentView({ onClose }: ParentViewProps) {
 
         {/* Family currency → what the Money coins show */}
         <CurrencySection />
+
+        {/* Twinkle's voice → which TTS voice speaks, with instant preview */}
+        <VoiceSection />
 
         {/* Learning pace: quiz → suggested session plan */}
         <PaceSection />
@@ -524,6 +528,103 @@ function CurrencySection() {
       <p className="px-1 text-sm font-semibold text-ink/70">
         Coins in the Money games show <strong>{active.symbol}</strong> ({active.name}).
       </p>
+    </section>
+  )
+}
+
+/**
+ * Twinkle's voice — which of the device's speech voices reads the game.
+ * The list is ranked (modern natural voices first) and every tap previews
+ * instantly, so picking a favourite takes seconds. "Auto" follows the
+ * best-ranked voice; the pick is a device setting and survives reset.
+ */
+function VoiceSection() {
+  const voiceId = useGameStore((s) => s.voiceId)
+  const setVoiceId = useGameStore((s) => s.setVoiceId)
+  const [choices, setChoices] = useState(() => audio.voiceChoices())
+
+  // Voices populate asynchronously in most browsers — refresh when they land.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+    const refresh = () => setChoices(audio.voiceChoices())
+    refresh()
+    try {
+      window.speechSynthesis.addEventListener?.('voiceschanged', refresh)
+      return () => window.speechSynthesis.removeEventListener?.('voiceschanged', refresh)
+    } catch {
+      /* voice list just stays as-is */
+    }
+  }, [])
+
+  function pick(id: string | null) {
+    setVoiceId(id)
+    audio.setVoice(id) // apply now — don't wait for the store mirror
+    audio.preview() // hear it immediately
+  }
+
+  return (
+    <section
+      className="flex flex-col gap-3 rounded-3xl bg-cream/70 p-4"
+      aria-label="Twinkle's voice"
+    >
+      <h2 className="flex items-center gap-2 px-1 font-bold text-ink">
+        <span aria-hidden="true" style={{ fontSize: 20 }}>
+          🗣️
+        </span>
+        Twinkle’s voice
+      </h2>
+      {choices.length === 0 ? (
+        <p className="px-1 text-sm font-semibold text-ink/70">
+          This device offers no extra voices — the built-in one is used.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => pick(null)}
+              aria-pressed={voiceId === null}
+              aria-label="Automatic voice"
+              className="rounded-2xl px-4 font-bold shadow-sm transition-transform active:scale-95"
+              style={{
+                height: 48,
+                fontSize: 15,
+                background: voiceId === null ? 'var(--grape)' : 'var(--cream)',
+                color: voiceId === null ? 'var(--cream)' : 'var(--ink)',
+                boxShadow: voiceId === null ? '0 4px 0 var(--grape-dp)' : undefined,
+              }}
+            >
+              ✨ Auto
+            </button>
+            {choices.map((c) => {
+              const selected = c.id === voiceId
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => pick(c.id)}
+                  aria-pressed={selected}
+                  aria-label={`Voice: ${c.label}`}
+                  className="rounded-2xl px-4 font-bold shadow-sm transition-transform active:scale-95"
+                  style={{
+                    height: 48,
+                    fontSize: 15,
+                    background: selected ? 'var(--grape)' : 'var(--cream)',
+                    color: selected ? 'var(--cream)' : 'var(--ink)',
+                    boxShadow: selected ? '0 4px 0 var(--grape-dp)' : undefined,
+                  }}
+                >
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="px-1 text-sm font-semibold text-ink/70">
+            Tap one to hear it. Prompts, cheers and gentle nudges each get their
+            own delivery, with a little natural variation every time.
+          </p>
+        </>
+      )}
     </section>
   )
 }

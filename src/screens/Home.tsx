@@ -77,7 +77,7 @@ export default function Home({ band, onSelectCategory, onOpenParent }: HomeProps
     if (!name || greetingSpoken) return
     const id = setTimeout(() => {
       greetingSpoken = true
-      audio.speak(`Hi ${name}!`)
+      audio.speak(`Hi ${name}!`, 'praise')
     }, 1200)
     return () => clearTimeout(id)
   }, [name])

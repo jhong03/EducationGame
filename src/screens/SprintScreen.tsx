@@ -99,6 +99,7 @@ export default function SprintScreen({ level, onExit }: SprintScreenProps) {
     const beatBest = n > prevBest.current
     audio.speak(
       `Time for a rest! You got ${n}!${beatBest ? ' A new best!' : ''}`,
+      'praise',
     )
   }
 

@@ -33,7 +33,7 @@ export default function ClearedScreen({
 
   useEffect(() => {
     audio.sfx('win')
-    audio.speak(isLast ? `You finished ${categoryName}!` : 'Level complete!')
+    audio.speak(isLast ? `You finished ${categoryName}!` : 'Level complete!', 'praise')
     setConfetti((c) => c + 1)
     // a second burst for extra sparkle
     const id = setTimeout(() => setConfetti((c) => c + 1), 700)

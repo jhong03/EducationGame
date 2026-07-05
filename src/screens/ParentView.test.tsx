@@ -73,6 +73,7 @@ describe('ParentView', () => {
     expect(container.textContent).toContain('1/146') // mastered levels
     expect(container.textContent).toContain('0/33') // finished categories
     expect(container.textContent).toContain('Money currency')
+    expect(container.textContent).toContain('Twinkle’s voice') // picker (or fallback note in jsdom)
     expect(container.textContent).toContain('Reset all progress')
     // …but NOT the 33-category pill list.
     expect(container.textContent).not.toContain('Counting')
