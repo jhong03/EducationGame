@@ -59,7 +59,7 @@ recorded VO, PWA PNG icons (§5).
 ### Verified this session (all green)
 | Gate | Command | Result |
 |---|---|---|
-| Unit + loop + app tests | `npm test` | **200 passed** across 10 files |
+| Unit + loop + app tests | `npm test` | **202 passed** across 10 files |
 | Type-check + prod build | `npm run build` | **clean**, PWA `sw.js` generated |
 | Lint | `npm run lint` (oxlint) | **clean** |
 
@@ -252,8 +252,17 @@ brief's §8 exactly.
   quick) / `soft` (gentle — never scolding) / `count` (crisp) — plus ±4%
   rate/pitch jitter per utterance so repeats never sound like replayed samples.
   Synthesized Web-Audio SFX (`good/soft/pop/win`). Everything feature-detected +
-  try/catch → silent, never crashes. **VO seam unchanged:** the `TODO: swap for
-  recorded VO` block in `speak()` is still the one-block clip-playback swap.
+  try/catch → silent, never crashes. **The recorded-VO seam is now REAL:**
+  `speak()` plays a recorded mp3 for any FIXED line in the
+  [`voClips.ts`](src/audio/voClips.ts) manifest (13 lines: praise pool, comfort,
+  milestones, the two big prompts — keyed by EXACT spoken text, so call sites
+  never change) and falls through to styled TTS for dynamic sentences. Per-line
+  negative memoization: a missing/refused clip fails once then that line is TTS
+  for the session — the app ships with an empty `public/vo/` at zero cost and
+  lights up when mp3s land there (recording sheet with moods:
+  [`public/vo/README.md`](public/vo/README.md)). Clips precache for offline
+  (workbox glob includes mp3). **Clip GENERATION is currently blocked**: the
+  Higgs workspace is free-plan with 0 credits (~1.3 credits for all 13).
 
 ### UI
 - [`components/Twinkle.tsx`](src/components/Twinkle.tsx) — hand-built SVG star guide with
@@ -467,8 +476,10 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
    whenever the mid ladder earns a fast lane.
 5. **New subjects** (reading, shapes-as-subject, …) — the engine is already
    subject-agnostic; more content modules + activities.
-6. **Recorded human voice-over** — replace the TTS block at
-   [AudioManager.ts:148](src/audio/AudioManager.ts#L148) with clip playback.
+6. **Recorded voice-over clips** — the playback pipeline is BUILT (hybrid:
+   fixed lines from `public/vo/`, dynamic lines TTS). Remaining: generate or
+   record the 13 mp3s per [`public/vo/README.md`](public/vo/README.md)
+   (Higgs generation needs ~1.3 credits; the account currently has 0).
 7. **Deeper upper enrichment** (long division, protractor measuring, pie charts,
    coordinates in four quadrants, logic grids) — strand rungs beyond the core spine.
 
@@ -484,7 +495,7 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
 
 ## 6. How to pick up next session
 
-1. `npm install` (if needed) → `npm test` should show **200 passing** → `npm run dev` to
+1. `npm install` (if needed) → `npm test` should show **202 passing** → `npm run dev` to
    play the loop (age gate → pick the Counting card → Count to 3 → tap-count aloud →
    answer 3× to unlock the next tile).
 2. Pick one item from §5. For anything touching generators/mastery, **write/extend the
@@ -774,4 +785,18 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   (cheers bright, "Try again!" gentle, numbers crisp), with ±4% per-utterance
   jitter so repeated lines never sound like replayed samples. Recorded-VO seam
   untouched. **200 tests passing** across 10 files, build & lint clean.
-  Committed & pushed as **`677a7b7`** (+ this docs true-up).
+  Committed & pushed as **`677a7b7`** (+ docs `41552dc`).
+- **2026-07-05 — Recorded-VO hybrid: the playback pipeline lands.** `speak()`
+  now plays a recorded mp3 for any FIXED line in the
+  [`voClips.ts`](src/audio/voClips.ts) manifest (13 lines, keyed by EXACT
+  spoken text → zero call-site changes) and falls through to styled TTS for
+  dynamic sentences and any missing/refused clip (per-line negative
+  memoization — an empty `public/vo/` costs nothing). Mute stops clips;
+  latest-line-wins spans both channels; jsdom gated out via `canPlayType`.
+  Workbox precaches mp3 (+fonts, 7→25 entries) for offline; `PRAISE` moved to
+  [`content/words.ts`](src/content/words.ts). **Clip generation attempted via
+  Higgs `generate_audio` (seed_audio, "Skye" preset) but BLOCKED: free plan,
+  0 credits (~1.3 needed for 13 clips)** — the manifest + `public/vo/README.md`
+  recording sheet are the generation script for when credits exist. **202
+  tests passing**, build & lint clean. Committed & pushed as **`e4c10d9`**
+  (+ this docs true-up).
