@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { rankVoices, voiceLabel, type VoiceLike } from './AudioManager'
+import { VO_CLIPS, VO_LINES } from './voClips'
+import { PRAISE } from '../content/words'
 
 /**
  * The voice-quality heuristics ("too plain and robotic" feedback): the
@@ -45,5 +47,33 @@ describe('voiceLabel', () => {
     expect(voiceLabel('Google UK English Female')).toBe('UK English Female')
     expect(voiceLabel('Karen (English (Australia))')).toBe('Karen')
     expect(voiceLabel('Samantha')).toBe('Samantha')
+  })
+})
+
+describe('VO clip manifest', () => {
+  it('lines and files are unique, files are kebab mp3s under /vo/', () => {
+    expect(new Set(VO_LINES.map((l) => l.text)).size).toBe(VO_LINES.length)
+    expect(new Set(VO_LINES.map((l) => l.file)).size).toBe(VO_LINES.length)
+    for (const line of VO_LINES) {
+      expect(line.file).toMatch(/^[a-z0-9-]+\.mp3$/)
+      expect(VO_CLIPS.get(line.text)).toBe(`/vo/${line.file}`)
+    }
+  })
+
+  it('covers every praise line and the key fixed prompts EXACTLY as spoken', () => {
+    for (const line of PRAISE) {
+      expect(VO_CLIPS.has(line), line).toBe(true)
+    }
+    for (const line of [
+      'Try again!',
+      "That's okay! We'll start here.",
+      'Not yet! Finish the level before it.',
+      'Level complete!',
+      'Wow! Off you go!',
+      'How old are you?',
+      "What's your name?",
+    ]) {
+      expect(VO_CLIPS.has(line), line).toBe(true)
+    }
   })
 })

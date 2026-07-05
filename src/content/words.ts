@@ -19,6 +19,16 @@ export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1)
 }
 
+/** The spoken praise pool (PlayScreen picks at random; every line has a VO clip). */
+export const PRAISE = [
+  'Yes!',
+  'You did it!',
+  'Great job!',
+  'Woohoo!',
+  'Nice counting!',
+  'Well done!',
+] as const
+
 const TENS_WORDS = [
   '', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
 ] as const

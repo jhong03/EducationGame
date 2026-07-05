@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Answer, Level, ObjectGroup, Question } from '../engine/types'
-import { numberWord } from '../content/words'
+import { numberWord, PRAISE } from '../content/words'
 import { shapeById } from '../content/shapes'
 import { currencyById } from '../content/currency'
 import ShapeGlyph from '../components/ShapeGlyph'
@@ -32,7 +32,6 @@ interface PlayScreenProps {
   onCleared: () => void // reached the mastery goal
 }
 
-const PRAISE = ['Yes!', 'You did it!', 'Great job!', 'Woohoo!', 'Nice counting!', 'Well done!']
 const pickPraise = () => PRAISE[Math.floor(Math.random() * PRAISE.length)]
 
 /** Activities whose stage IS the answer surface (tap a card/side/panel), so

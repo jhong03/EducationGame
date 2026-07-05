@@ -12,6 +12,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      workbox: {
+        // Recorded VO clips (public/vo/*.mp3) must work offline too.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,mp3}'],
+      },
       manifest: {
         name: 'Number Meadow',
         short_name: 'Meadow',

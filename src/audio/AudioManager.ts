@@ -20,6 +20,7 @@
  */
 
 import { numberWord } from '../content/words'
+import { VO_CLIPS } from './voClips'
 
 export type SfxKind = 'good' | 'soft' | 'pop' | 'win'
 
@@ -129,6 +130,11 @@ class WebAudioManager implements AudioManager {
   private voice: SpeechSynthesisVoice | null = null
   private voiceReady = false
   private preferredId: string | null = null
+  // Recorded-clip channel: element per line (null = failed once, TTS from
+  // then on), plus whichever clip is currently sounding.
+  private clipCache = new Map<string, HTMLAudioElement | null>()
+  private currentClip: HTMLAudioElement | null = null
+  private clipsSupported: boolean | null = null
 
   constructor() {
     // Voices populate asynchronously in most browsers.
@@ -214,12 +220,15 @@ class WebAudioManager implements AudioManager {
 
   setMuted(muted: boolean): void {
     this.muted = muted
-    if (muted && this.hasSpeech()) {
-      // Cutting sound off means cutting off any in-flight speech immediately.
-      try {
-        window.speechSynthesis.cancel()
-      } catch {
-        /* ignore */
+    if (muted) {
+      // Cutting sound off means cutting off any in-flight voice immediately.
+      this.stopClip()
+      if (this.hasSpeech()) {
+        try {
+          window.speechSynthesis.cancel()
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
@@ -241,11 +250,72 @@ class WebAudioManager implements AudioManager {
   }
 
   speak(text: string, style: SpeakStyle = 'prompt'): void {
-    if (this.muted || !this.hasSpeech() || !text) return
+    if (this.muted || !text) return
+    // The hybrid VO seam, realised: fixed lines play their recorded clip
+    // (public/vo/, manifest in voClips.ts); everything dynamic — and any
+    // clip that's missing or refused — falls through to styled TTS.
+    if (this.playClip(text, style)) return
+    this.speakTts(text, style)
+  }
+
+  /** True when playback of `text`'s recorded clip has started (or begun trying). */
+  private playClip(text: string, style: SpeakStyle): boolean {
+    if (!this.canPlayClips()) return false
+    const url = VO_CLIPS.get(text)
+    if (!url) return false
+    if (this.clipCache.get(text) === null) return false // failed before → TTS
     try {
+      let el = this.clipCache.get(text)
+      if (!el) {
+        el = new Audio(url)
+        el.preload = 'auto'
+        this.clipCache.set(text, el)
+      }
+      // Latest line wins across BOTH channels.
+      this.stopClip()
+      if (this.hasSpeech()) window.speechSynthesis.cancel()
+      el.currentTime = 0
+      this.currentClip = el
+      el.play()?.catch(() => {
+        // Missing file / decode / autoplay refusal: remember, hand to TTS.
+        this.clipCache.set(text, null)
+        if (this.currentClip === el) this.currentClip = null
+        this.speakTts(text, style)
+      })
+      return true
+    } catch {
+      this.clipCache.set(text, null)
+      return false
+    }
+  }
+
+  /** Can this environment actually sound mp3 clips? (jsdom says no.) */
+  private canPlayClips(): boolean {
+    if (this.clipsSupported !== null) return this.clipsSupported
+    try {
+      this.clipsSupported =
+        typeof Audio === 'function' && new Audio().canPlayType('audio/mpeg') !== ''
+    } catch {
+      this.clipsSupported = false
+    }
+    return this.clipsSupported
+  }
+
+  private stopClip(): void {
+    try {
+      this.currentClip?.pause()
+    } catch {
+      /* ignore */
+    }
+    this.currentClip = null
+  }
+
+  private speakTts(text: string, style: SpeakStyle): void {
+    if (this.muted || !this.hasSpeech()) return
+    try {
+      this.stopClip() // TTS speaks alone too
       const synth = window.speechSynthesis
       synth.cancel() // latest prompt wins; no pile-up of queued speech
-      // TODO: swap for recorded VO — replace this block with clip playback.
       const u = new SpeechSynthesisUtterance(text)
       const preset = STYLE_PRESETS[style]
       // ±4% humanizing jitter: the same line never plays back identically.
