@@ -4,16 +4,17 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `79d3242` (committed & pushed to
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `7dfab57` (committed & pushed to
 [jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — working tree CLEAN.
-**This session landed, in one commit (`79d3242`): (1) a full warm-premium UI/UX
-redesign, (2) the Garden reward economy (earn stars + mastery-diamonds → buy, place &
-rearrange plants/pets/toys/decor), and (3) the garden as a REAL 3D low-poly world
-(react-three-fiber, lazy-loaded + code-split, WebGL-gated with a 2D fallback). 241
-tests green, build & lint clean. Deps added: @fontsource/manrope, three,
-@react-three/fiber, @react-three/drei.** Next time: the DEV-only 🔧 currency button in
-the garden header (`import.meta.env.DEV`-gated) is for auditing item models —
-screenshot the 3D items and iterate; several models are still stylised approximations._
+**Recent arc (see §7): warm-premium redesign → Garden reward economy → real 3D garden →
+free-placement garden → lesson/class system → practice mode → deeper mastery goals. 247
+tests green, build & lint clean.** Resume pointers: the DEV-only 🔧 button in the garden
+header (`import.meta.env.DEV`-gated) grants currency for auditing the 3D item models
+(several are still stylised approximations — iterate from user screenshots); mastery
+goals are tunable in `MASTERY_OVERRIDE` (math.ts). **The user plans to publish to the
+GOOGLE PLAY STORE — see §5's "Google Play Store launch" checklist (TWA/PWA wrap; the
+app's local-only, no-data, no-ads, no-SDK design makes kids'-app compliance the easy
+path; the real gaps are HTTPS hosting + rasterized PNG icons + a privacy-policy page).**_
 
 ---
 
@@ -1076,5 +1077,5 @@ no third-party SDKs, no ads, offline-capable — which makes the kids'-app compl
   level. New App routes `lesson` + `practice`. **(5) MASTERY GOALS RAISED** —
   `masteryGoalFor(band, category)` in math.ts: base **4/5/6** by band with
   per-chapter overrides (tables/place-value/fractions 6; decimals/percents/ratios
-  7); `MASTERY_OVERRIDE` is the one place to retune. **UNCOMMITTED at time of
-  writing** — see the commit below.
+  7); `MASTERY_OVERRIDE` is the one place to retune. Committed & pushed as
+  **`7dfab57`**.
