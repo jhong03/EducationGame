@@ -114,3 +114,23 @@ export function itemsByKind(kind: GardenKind): GardenItem[] {
 export function isLivelyKind(kind: GardenKind): boolean {
   return kind === 'pet'
 }
+
+/**
+ * Placement layer. Most items sit ON the ground (height 0); a few float in the
+ * air and render at this height above the spot where they're dropped. Used by
+ * the 3D scene to lift floating items and by the HUD to label them.
+ */
+const FLOAT_HEIGHT: Record<string, number> = {
+  'deco-sparkles': 0.95, // fairy lights hang in the air
+  'toy-balloon': 0.9, // a balloon drifts up
+}
+
+/** The height an item floats at when placed (0 = sits on the ground). */
+export function floatHeight(item: GardenItem): number {
+  return FLOAT_HEIGHT[item.id] ?? 0
+}
+
+/** Does this item float in the air rather than rest on the ground? */
+export function isFloating(item: GardenItem): boolean {
+  return floatHeight(item) > 0
+}

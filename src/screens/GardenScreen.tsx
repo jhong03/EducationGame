@@ -10,8 +10,10 @@ import {
   GARDEN_SECTIONS,
   gardenItemById,
   itemsByKind,
+  isFloating,
   type GardenItem,
 } from '../content/garden'
+import type { PlacedItem } from '../engine/types'
 import { audio } from '../audio/AudioManager'
 import MuteButton from '../components/MuteButton'
 import { hasWebGL } from './garden3d/webgl'
@@ -33,7 +35,6 @@ const Garden3D = lazy(() => import('./garden3d/Garden3D'))
 
 /** A cool gem accent for diamonds — distinct from the warm gold of stars. */
 const DIAMOND = '#3f9dc4'
-const SLOTS = 30
 
 interface GardenScreenProps {
   onBack: () => void
@@ -59,18 +60,19 @@ export default function GardenScreen({ onBack }: GardenScreenProps) {
 
   const tray = GARDEN_ITEMS.filter((it) => availableCount(owned, garden, it.id) > 0)
   const selectedAvailable = selected ? availableCount(owned, garden, selected) : 0
+  const selectedItem = selected ? gardenItemById(selected) : undefined
+  const selectedFloats = selectedItem ? isFloating(selectedItem) : false
 
-  function place(slot: number) {
+  function place(x: number, z: number) {
     if (!selected) return
-    if (garden[String(slot)] !== undefined) return // occupied
-    placeItem(slot, selected)
+    placeItem(selected, x, z)
     audio.sfx('pop')
     if (selectedAvailable <= 1) setSelected(null)
   }
 
-  function remove(slot: number) {
+  function remove(key: string) {
     audio.unlock()
-    removeItem(slot)
+    removeItem(key)
     audio.sfx('pop')
   }
 
@@ -148,7 +150,9 @@ export default function GardenScreen({ onBack }: GardenScreenProps) {
             className="u-glass pointer-events-none absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full px-4 py-1.5 text-center font-text text-sm font-semibold text-ink-soft"
             role="status"
           >
-            Tap the garden to plant it 🌱
+            {selectedFloats
+              ? 'Tap the garden to float it in the air ✨'
+              : 'Tap the garden to plant it 🌱'}
           </p>
         )}
       </main>
@@ -250,9 +254,10 @@ function GardenLoading() {
 }
 
 /**
- * A plain 2D plot for devices without WebGL (and the test env): the same
- * tap-to-place / tap-to-lift model as the 3D scene, so the garden is fully
- * usable everywhere.
+ * A plain 2D plot for devices without WebGL (and the test env). It can't do the
+ * free spatial placement of the 3D scene, so it keeps the same economy simply:
+ * tap the plot to drop the held item (spread out), and tap a placed chip to pick
+ * it back up. The full free placement lives in the 3D garden.
  */
 function FallbackPlot({
   garden,
@@ -260,45 +265,60 @@ function FallbackPlot({
   onPlace,
   onRemove,
 }: {
-  garden: Record<string, string>
+  garden: PlacedItem[]
   selected: string | null
-  onPlace: (slot: number) => void
-  onRemove: (slot: number) => void
+  onPlace: (x: number, z: number) => void
+  onRemove: (key: string) => void
 }) {
   return (
-    <div className="h-full w-full overflow-y-auto px-4 py-3">
-      <div
-        className="mx-auto grid w-full max-w-md gap-2 rounded-3xl p-3"
+    <div className="flex h-full w-full flex-col gap-3 overflow-y-auto p-4">
+      <button
+        type="button"
+        disabled={!selected}
+        onClick={() => {
+          if (!selected) return
+          const n = garden.length
+          onPlace(((n % 5) - 2) * 1.1, (Math.floor(n / 5) - 2) * 1.1)
+        }}
+        aria-label="Plant the held item"
+        className="grid min-h-[45%] w-full place-items-center rounded-3xl px-4 text-center font-text font-semibold text-ink-soft"
         style={{
-          gridTemplateColumns: 'repeat(5, 1fr)',
           background:
-            'linear-gradient(180deg, color-mix(in srgb, var(--leaf) 14%, var(--cream)), color-mix(in srgb, var(--clay) 12%, var(--cream)))',
-          border: '1px solid var(--line)',
+            'linear-gradient(180deg, color-mix(in srgb, var(--leaf) 16%, var(--cream)), color-mix(in srgb, var(--clay) 12%, var(--cream)))',
+          border: selected
+            ? '2px dashed color-mix(in srgb, var(--leaf) 55%, transparent)'
+            : '1px solid var(--line)',
+          opacity: selected ? 1 : 0.75,
         }}
       >
-        {Array.from({ length: SLOTS }, (_, slot) => {
-          const item = gardenItemById(garden[String(slot)] ?? '')
-          return (
-            <button
-              key={slot}
-              type="button"
-              onClick={() => (item ? onRemove(slot) : onPlace(slot))}
-              aria-label={item ? `${item.name} — tap to pick up` : 'empty plot'}
-              className="grid aspect-square place-items-center rounded-xl transition-transform active:scale-95"
-              style={{
-                background: item ? 'rgba(255,253,248,0.55)' : 'var(--tint)',
-                border: selected && !item ? '2px dashed color-mix(in srgb, var(--leaf) 55%, transparent)' : '1px solid transparent',
-              }}
-            >
-              {item && (
-                <span aria-hidden="true" style={{ fontSize: 'clamp(24px, 7vw, 34px)', lineHeight: 1 }}>
-                  {item.emoji}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+        {selected ? 'Tap here to plant it 🌱' : 'Pick a tray item, then tap here to plant it'}
+      </button>
+
+      {garden.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {garden.map((p) => {
+            const item = gardenItemById(p.itemId)
+            if (!item) return null
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => onRemove(p.key)}
+                aria-label={`${item.name} — tap to pick up`}
+                className="grid h-12 w-12 place-items-center rounded-2xl transition-transform active:scale-95"
+                style={{
+                  fontSize: 26,
+                  background: 'var(--cream)',
+                  border: '1px solid var(--line)',
+                  boxShadow: 'var(--e1)',
+                }}
+              >
+                <span aria-hidden="true">{item.emoji}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

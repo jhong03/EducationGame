@@ -529,6 +529,28 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   without code changes.
 - **Rasterized PWA icons** (see §4).
 
+#### 🎯 Google Play Store launch (user's plan, 2026-07-05) — TWA/PWA path
+The app is a PWA, so the standard route is a **Trusted Web Activity (TWA)** wrapper
+(via **Bubblewrap** CLI or **PWABuilder**) that ships the installed PWA as an Android
+`.aab`. **Strong position already**: local-only, no accounts, no backend, no analytics,
+no third-party SDKs, no ads, offline-capable — which makes the kids'-app compliance the
+*easy* path. Engineering/store checklist for next session(s):
+1. **Deploy the PWA to stable HTTPS hosting** (a real domain) — required before wrapping.
+2. **Rasterized PNG icons** (192 + 512 **maskable**) — currently SVG-only (§4). Also need
+   a Play **512×512 icon**, **1024×500 feature graphic**, and phone/tablet **screenshots**.
+3. **Wrap with Bubblewrap/PWABuilder** → `.aab`; host **`/.well-known/assetlinks.json`**
+   (Digital Asset Links) so the app verifies the domain and drops the URL bar.
+4. **Play App Signing** + keystore; meet Play's **target API level**.
+5. **Kids'-app policy** — this is a children's education app, so complete Play's
+   **Families policy / "Designed for Families"** setup, **content rating** (IARC → likely
+   Everyone), **target audience = children/mixed**.
+6. **Privacy Policy URL** (REQUIRED) — write one that states the truth: *no data
+   collected, no accounts, no ads, everything on-device*. Wire the **Data Safety** form to
+   match ("no data collected/shared").
+7. Keep it clean: **do NOT add analytics/ads/third-party SDKs** — that's what keeps
+   COPPA/GDPR-K + Families compliance trivial. If monetising later, revisit (the garden's
+   diamonds are earned, not real-money — see the garden entries).
+
 ---
 
 ## 6. How to pick up next session
@@ -1033,3 +1055,26 @@ next session can pick up deliberately. Ship-later legal/product notes are alread
   [`garden3d/appearance.ts`](src/screens/garden3d/appearance.ts) (lint-clean
   component module). **241 tests still green**, build & lint clean. Committed &
   pushed as **`79d3242`**.
+- **2026-07-05 — Garden free-placement + a teaching layer (lessons → practice) +
+  deeper mastery.** Several increments, all verified (**247 tests**, build & lint
+  clean): **(1) Yo-yo model fix** (a stray group rotation had tipped it into a
+  blob). **(2) FREE-PLACEMENT GARDEN** — dropped the fixed 5×6 slot grid; the
+  store's `garden` is now **positioned instances** (`PlacedItem[]` `{key,itemId,
+  x,z}`, persist **v3→v4** migration converts old slot maps to positions), items
+  drop at the exact tapped point with a pointer-following ring, each item is its
+  own hitbox, and a **float layer** (`content/garden.ts` `floatHeight`/`isFloating`
+  — fairy lights + balloon) renders floating items in the air vs on the ground;
+  bigger roam/pan area. **(3) LESSON/CLASS SYSTEM** — `content/lessons.ts` (data:
+  8 illustrated classes for fractions/times-tables/place-value/percents/
+  below-zero/money/time/angles), `components/LessonVisual.tsx` (fraction-bar, dot
+  array, base-ten, hundred-grid, number-line, coins, clock, angle figures),
+  `screens/LessonScreen.tsx` (paged, premium, voiceless). A **📖 "What is this?"**
+  button on the category screen (for lessoned strands) opens the class. **(4)
+  PRACTICE MODE** — `screens/PracticeScreen.tsx`: after a class, "Let's try it!"
+  opens **endless stakes-free practice** (no stars/diamonds/mastery/progress;
+  reveals the answer after 2 misses), then **"I'm ready!"** hands off to the real
+  level. New App routes `lesson` + `practice`. **(5) MASTERY GOALS RAISED** —
+  `masteryGoalFor(band, category)` in math.ts: base **4/5/6** by band with
+  per-chapter overrides (tables/place-value/fractions 6; decimals/percents/ratios
+  7); `MASTERY_OVERRIDE` is the one place to retune. **UNCOMMITTED at time of
+  writing** — see the commit below.

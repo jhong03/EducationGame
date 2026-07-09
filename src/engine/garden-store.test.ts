@@ -62,48 +62,68 @@ describe('garden wallet', () => {
   })
 })
 
-describe('garden plot', () => {
-  it('places owned items, caps at what you own, and frees them on removal', () => {
+describe('garden plot (free positions)', () => {
+  it('drops owned items at free (x,z) spots, caps at what you own, frees on pick-up', () => {
     useGameStore.setState({ owned: { 'plant-rose': 2 } })
-    S().placeItem(0, 'plant-rose')
-    S().placeItem(3, 'plant-rose')
+    S().placeItem('plant-rose', 0, 0)
+    S().placeItem('plant-rose', 1.2, -0.5)
     expect(placedCount(S().garden, 'plant-rose')).toBe(2)
     expect(availableCount(S().owned, S().garden, 'plant-rose')).toBe(0)
 
     // A third can't be placed — no spare copy.
-    S().placeItem(5, 'plant-rose')
+    S().placeItem('plant-rose', -1, 1)
     expect(placedCount(S().garden, 'plant-rose')).toBe(2)
 
-    S().removeItem(0)
+    // Pick one up by its key → available in the tray again.
+    const key = S().garden[0].key
+    S().removeItem(key)
     expect(availableCount(S().owned, S().garden, 'plant-rose')).toBe(1)
   })
 
-  it('placing into an occupied slot swaps the old occupant back to the tray', () => {
+  it('stores each placement as an independent instance with its own position', () => {
     useGameStore.setState({ owned: { 'plant-rose': 1, 'pet-cat': 1 } })
-    S().placeItem(2, 'plant-rose')
-    S().placeItem(2, 'pet-cat') // overwrite slot 2
-    expect(S().garden['2']).toBe('pet-cat')
-    expect(availableCount(S().owned, S().garden, 'plant-rose')).toBe(1) // freed
+    S().placeItem('plant-rose', 0.4, -1.2)
+    S().placeItem('pet-cat', -0.8, 0.6)
+    const garden = S().garden
+    expect(garden).toHaveLength(2)
+    const rose = garden.find((p) => p.itemId === 'plant-rose')
+    expect(rose?.x).toBeCloseTo(0.4)
+    expect(rose?.z).toBeCloseTo(-1.2)
+    expect(new Set(garden.map((p) => p.key)).size).toBe(2) // unique keys
   })
 })
 
-describe('persist migration (v2 → v3)', () => {
+describe('persist migration (v3 → v4)', () => {
   it('an old save gets an empty garden and zeroed wallets', () => {
     const migrated = migratePersistedState({ stars: 7, progress: {} })
     expect(migrated.diamonds).toBe(0)
     expect(migrated.starsSpent).toBe(0)
     expect(migrated.diamondsSpent).toBe(0)
     expect(migrated.owned).toEqual({})
-    expect(migrated.garden).toEqual({})
+    expect(migrated.garden).toEqual([])
   })
 
-  it('drops malformed owned counts and non-string garden slots', () => {
+  it('migrates a v3 slot map to positioned items (dropping non-string slots)', () => {
     const migrated = migratePersistedState({
       owned: { good: 2, zero: 0, neg: -1, notNum: 'x' },
-      garden: { '0': 'pet-cat', '1': 5 },
+      garden: { '0': 'pet-cat', '1': 5, '7': 'plant-rose' },
     })
     expect(migrated.owned).toEqual({ good: 2 })
-    expect(migrated.garden).toEqual({ '0': 'pet-cat' })
+    expect(migrated.garden.map((p) => p.itemId).sort()).toEqual(['pet-cat', 'plant-rose'])
+    expect(
+      migrated.garden.every((p) => Number.isFinite(p.x) && Number.isFinite(p.z) && p.key),
+    ).toBe(true)
+  })
+
+  it('keeps a v4 positioned array, dropping malformed entries', () => {
+    const migrated = migratePersistedState({
+      garden: [
+        { key: 'a', itemId: 'plant-rose', x: 1, z: 2 },
+        { key: 'b', itemId: 'pet-cat', x: 'nope', z: 0 }, // bad x
+        { itemId: 'toy-ball', x: 0, z: 0 }, // no key
+      ],
+    })
+    expect(migrated.garden).toEqual([{ key: 'a', itemId: 'plant-rose', x: 1, z: 2 }])
   })
 })
 
@@ -114,7 +134,7 @@ describe('reset', () => {
       starsSpent: 3,
       diamondsSpent: 1,
       owned: { 'pet-cat': 1 },
-      garden: { '0': 'pet-cat' },
+      garden: [{ key: 'k1', itemId: 'pet-cat', x: 0, z: 0 }],
     })
     S().reset()
     const s = S()
@@ -122,6 +142,6 @@ describe('reset', () => {
     expect(s.starsSpent).toBe(0)
     expect(s.diamondsSpent).toBe(0)
     expect(s.owned).toEqual({})
-    expect(s.garden).toEqual({})
+    expect(s.garden).toEqual([])
   })
 })

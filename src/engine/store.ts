@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { GameState, Level, LevelProgress, PaceId, WalletCurrency } from './types'
+import type {
+  GameState,
+  Level,
+  LevelProgress,
+  PaceId,
+  PlacedItem,
+  WalletCurrency,
+} from './types'
 
 // The engine stores the currency as an opaque id; content/currency.ts owns
 // the list and rendering falls back to the default for unknown ids, so the
@@ -58,10 +65,10 @@ interface GameActions {
    * negative and never touches the lifetime "earned" totals.
    */
   buyItem: (itemId: string, currency: WalletCurrency, price: number) => boolean
-  /** Place an owned (unplaced) item into a plot slot; swaps any occupant out. */
-  placeItem: (slot: number, itemId: string) => void
-  /** Clear a plot slot (the item returns to the tray — nothing is ever lost). */
-  removeItem: (slot: number) => void
+  /** Drop an owned (unplaced) item at a free (x,z) spot in the garden. */
+  placeItem: (itemId: string, x: number, z: number) => void
+  /** Pick a placed item up by its key (returns it to the tray — nothing lost). */
+  removeItem: (key: string) => void
   /** Wipe all progress back to the start (used by the reset control / tests). */
   reset: () => void
 }
@@ -81,7 +88,7 @@ const initialState: GameState = {
   starsSpent: 0,
   diamondsSpent: 0,
   owned: {},
-  garden: {},
+  garden: [],
 }
 
 /** One write path for names: trimmed, capped, empty → null. */
@@ -129,15 +136,52 @@ export function migratePersistedState(persisted: unknown): GameState {
         ([, v]) => typeof v === 'number' && Number.isInteger(v) && v > 0,
       ),
     ),
-    garden: Object.fromEntries(
-      Object.entries(s.garden ?? {}).filter(([, v]) => typeof v === 'string'),
-    ),
+    garden: migrateGarden(s.garden),
   }
 }
 
 /** A persisted non-negative counter, or 0 for anything malformed. */
 function coerceCount(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0
+}
+
+/** A short unique key for a placed item (unique within the garden array). */
+function newPlacedKey(): string {
+  return 'k' + Math.random().toString(36).slice(2, 10)
+}
+
+/**
+ * Garden layout migration. v3 stored a slot-index map (`{slot: itemId}`); v4
+ * stores free positions (`PlacedItem[]`). A v3 map is converted to positions on
+ * the old 5-wide grid so existing gardens keep their layout; a v4 array is kept
+ * (dropping malformed entries); anything else → empty.
+ */
+function migrateGarden(g: unknown): PlacedItem[] {
+  if (Array.isArray(g)) {
+    return g.filter((p): p is PlacedItem => {
+      if (!p || typeof p !== 'object') return false
+      const o = p as Record<string, unknown>
+      return (
+        typeof o.key === 'string' &&
+        typeof o.itemId === 'string' &&
+        typeof o.x === 'number' &&
+        Number.isFinite(o.x) &&
+        typeof o.z === 'number' &&
+        Number.isFinite(o.z)
+      )
+    })
+  }
+  if (g && typeof g === 'object') {
+    return Object.entries(g as Record<string, unknown>)
+      .filter(([, v]) => typeof v === 'string')
+      .map(([slot, itemId]) => {
+        const n = Number(slot)
+        const col = Number.isFinite(n) ? n % 5 : 0
+        const row = Number.isFinite(n) ? Math.floor(n / 5) : 0
+        return { key: 'm' + slot, itemId: itemId as string, x: (col - 2) * 1.15, z: (row - 2.5) * 1.15 }
+      })
+  }
+  return []
 }
 
 function bumpBest(
@@ -238,23 +282,16 @@ export const useGameStore = create<GameStore>()(
         return ok
       },
 
-      placeItem: (slot, itemId) =>
+      placeItem: (itemId, x, z) =>
         set((s) => {
-          const key = String(slot)
-          if (s.garden[key] === itemId) return s // already there
-          // Need a spare (unplaced) copy. Overwriting a slot frees its old
-          // occupant back to the tray (placed counts are recomputed on read).
-          if (availableCount(s.owned, s.garden, itemId) <= 0) return s
-          return { garden: { ...s.garden, [key]: itemId } }
+          if (availableCount(s.owned, s.garden, itemId) <= 0) return s // none spare
+          return { garden: [...s.garden, { key: newPlacedKey(), itemId, x, z }] }
         }),
 
-      removeItem: (slot) =>
+      removeItem: (key) =>
         set((s) => {
-          const key = String(slot)
-          if (s.garden[key] === undefined) return s
-          const garden = { ...s.garden }
-          delete garden[key]
-          return { garden }
+          const garden = s.garden.filter((p) => p.key !== key)
+          return garden.length === s.garden.length ? s : { garden }
         }),
 
       // Reset wipes the CHILD's progress, age AND name (a fresh start is
@@ -270,7 +307,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'number-meadow/v1', // storage key — keep stable so old saves load
-      version: 3, // v3: added the garden economy (diamonds/spent/owned/garden)
+      version: 4, // v4: garden is free positions (PlacedItem[]) not a slot map
       migrate: migratePersistedState,
       // Persist only the earned progress + settings, never action closures.
       partialize: (s): GameState => ({
@@ -339,17 +376,17 @@ export function diamondBalance(s: Pick<GameState, 'diamonds' | 'diamondsSpent'>)
   return Math.max(0, s.diamonds - s.diamondsSpent)
 }
 
-/** How many of an item are currently placed on the plot. */
-export function placedCount(garden: Record<string, string>, itemId: string): number {
+/** How many of an item are currently placed in the garden. */
+export function placedCount(garden: readonly PlacedItem[], itemId: string): number {
   let n = 0
-  for (const id of Object.values(garden)) if (id === itemId) n++
+  for (const p of garden) if (p.itemId === itemId) n++
   return n
 }
 
 /** Owned copies not currently placed — what's waiting in the tray. */
 export function availableCount(
   owned: Record<string, number>,
-  garden: Record<string, string>,
+  garden: readonly PlacedItem[],
   itemId: string,
 ): number {
   return (owned[itemId] ?? 0) - placedCount(garden, itemId)

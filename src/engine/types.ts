@@ -112,7 +112,7 @@ export interface Level {
   icon: string // emoji shown on the level tile
   activity: ActivityType
   params: Record<string, number> // e.g. { max: 5 }
-  masteryGoal: number // correct answers needed to clear (default 3)
+  masteryGoal: number // correct answers needed to clear (scales by band + chapter)
   /**
    * Sprint-mode round length in seconds (content data — defaulted per
    * activity's interaction weight, overridable per level). Sprint unlocks
@@ -934,8 +934,20 @@ export interface GameState {
   diamondsSpent: number
   /** How many of each catalogue item the child has bought (item id → count). */
   owned: Record<string, number>
-  /** The plot layout: grid-slot index (as a string) → placed item id. */
-  garden: Record<string, string>
+  /** Everything placed in the garden — free positions, not a grid (v4). */
+  garden: PlacedItem[]
+}
+
+/**
+ * One placed garden item at a free ground position. `x`/`z` are continuous world
+ * coordinates; the height (y) is derived per item (floating vs on the ground),
+ * so it isn't stored. `key` is a stable unique id for React + removal.
+ */
+export interface PlacedItem {
+  key: string
+  itemId: string
+  x: number
+  z: number
 }
 
 /** The two garden wallets. */

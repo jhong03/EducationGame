@@ -1,17 +1,24 @@
-import { useRef, useState, type ComponentRef } from 'react'
+import { useEffect, useRef, type ComponentRef } from 'react'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { MOUSE, TOUCH, Vector3, type Group } from 'three'
-import { gardenItemById, isLivelyKind, type GardenItem } from '../../content/garden'
+import { MOUSE, TOUCH, Vector3, type Group, type Mesh } from 'three'
+import {
+  gardenItemById,
+  isLivelyKind,
+  floatHeight,
+  type GardenItem,
+} from '../../content/garden'
+import type { PlacedItem } from '../../engine/types'
 import { ItemModel } from './models'
 import { modelScale, isFlyer } from './appearance'
 
 /**
  * Garden3D — the real 3D garden (lazy-loaded; only mounts when WebGL is
  * available). A grass ground, a warm sun with soft shadows, and the child's
- * collection built from procedural low-poly models: plants sit in pots on a
- * grid, pets wander the lawn. Tap the ground to plant a held item; tap a placed
- * item (or a pet) to pick it up.
+ * collection built from procedural low-poly models. Placement is FREE: tap the
+ * ground anywhere to drop a held item at that exact spot (ground items rest on
+ * the lawn, floating items hover); tap a placed item (or a pet) to pick it up.
+ * A gold ring follows the pointer to preview where the drop will land.
  *
  * Camera (PC + touch): left-drag / one finger orbits (adjusts the angle),
  * right-drag / two fingers pans across the lawn, wheel / pinch zooms. Panning
@@ -20,38 +27,21 @@ import { modelScale, isFlyer } from './appearance'
  * Motion honours prefers-reduced-motion: pets hold still.
  */
 
-const COLS = 5
-const ROWS = 6
-const SLOTS = COLS * ROWS
-const SP = 1.15 // grid spacing (world units)
-const CX = (COLS - 1) / 2
-const CZ = (ROWS - 1) / 2
 // Where the camera looks by default; a stable ref so enabling pan doesn't reset
-// the look-at point on every re-render. Pan is clamped near the garden.
+// the look-at point on every re-render.
 const TARGET: [number, number, number] = [0, 0.3, 0]
 const PAN_LIMIT = 3.6
-
-function slotToPos(slot: number): [number, number, number] {
-  const c = slot % COLS
-  const r = Math.floor(slot / COLS)
-  return [(c - CX) * SP, 0, (r - CZ) * SP]
-}
+const PLACE_LIMIT = 3.2 // items drop within this distance of the centre
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n))
 }
 
-function posToSlot(x: number, z: number): number {
-  const c = clamp(Math.round(x / SP + CX), 0, COLS - 1)
-  const r = clamp(Math.round(z / SP + CZ), 0, ROWS - 1)
-  return r * COLS + c
-}
-
 interface Garden3DProps {
-  garden: Record<string, string>
+  garden: PlacedItem[]
   selected: string | null
-  onPlace: (slot: number) => void
-  onRemove: (slot: number) => void
+  onPlace: (x: number, z: number) => void
+  onRemove: (key: string) => void
   reducedMotion: boolean
 }
 
@@ -62,8 +52,8 @@ export default function Garden3D({
   onRemove,
   reducedMotion,
 }: Garden3DProps) {
-  const [hover, setHover] = useState<number | null>(null)
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
+  const ring = useRef<Mesh>(null)
 
   // Keep the panned focus near the garden so it can never be lost off-screen.
   function clampPan() {
@@ -73,26 +63,35 @@ export default function Garden3D({
     c.target.z = clamp(c.target.z, -PAN_LIMIT, PAN_LIMIT)
   }
 
-  // Split the layout into static (grid) items and wandering pets.
-  const entries = Object.entries(garden)
-    .map(([slot, id]) => ({ slot: Number(slot), item: gardenItemById(id) }))
-    .filter((e): e is { slot: number; item: GardenItem } => !!e.item)
-  const statics = entries.filter((e) => !isLivelyKind(e.item.kind))
-  const pets = entries.filter((e) => isLivelyKind(e.item.kind))
+  // Hide the placement ring whenever nothing is held.
+  useEffect(() => {
+    if (!selected && ring.current) ring.current.visible = false
+  }, [selected])
 
+  const placed = garden
+    .map((p) => ({ p, item: gardenItemById(p.itemId) }))
+    .filter((e): e is { p: PlacedItem; item: GardenItem } => !!e.item)
+  const statics = placed.filter((e) => !isLivelyKind(e.item.kind))
+  const pets = placed.filter((e) => isLivelyKind(e.item.kind))
+
+  // Follow the pointer with the preview ring — pure ref writes, no re-renders.
   function groundMove(e: ThreeEvent<PointerEvent>) {
-    if (!selected) return
-    const slot = posToSlot(e.point.x, e.point.z)
-    setHover((h) => (h === slot ? h : slot))
+    if (!selected || !ring.current) return
+    ring.current.position.set(
+      clamp(e.point.x, -PLACE_LIMIT, PLACE_LIMIT),
+      0.03,
+      clamp(e.point.z, -PLACE_LIMIT, PLACE_LIMIT),
+    )
+    ring.current.visible = true
   }
 
   function groundTap(e: ThreeEvent<MouseEvent>) {
-    // Ignore camera drags — only a genuine tap plants.
-    if (e.delta > 6 || !selected) return
-    onPlace(posToSlot(e.point.x, e.point.z))
+    if (e.delta > 6 || !selected) return // ignore camera drags — a tap plants
+    onPlace(
+      clamp(e.point.x, -PLACE_LIMIT, PLACE_LIMIT),
+      clamp(e.point.z, -PLACE_LIMIT, PLACE_LIMIT),
+    )
   }
-
-  const hoverFree = hover !== null && garden[String(hover)] === undefined
 
   return (
     <Canvas
@@ -102,7 +101,7 @@ export default function Garden3D({
       style={{ touchAction: 'none' }}
     >
       <color attach="background" args={['#e7efe7']} />
-      <fog attach="fog" args={['#e7efe7', 13, 24]} />
+      <fog attach="fog" args={['#e7efe7', 14, 26]} />
 
       <hemisphereLight args={['#eaf3ff', '#6f8a5a', 0.7]} />
       <ambientLight intensity={0.35} />
@@ -125,15 +124,17 @@ export default function Garden3D({
         rotation-x={-Math.PI / 2}
         receiveShadow
         onPointerMove={groundMove}
-        onPointerOut={() => setHover(null)}
+        onPointerOut={() => {
+          if (ring.current) ring.current.visible = false
+        }}
         onClick={groundTap}
       >
-        <planeGeometry args={[16, 16]} />
+        <planeGeometry args={[18, 18]} />
         <meshStandardMaterial color="#8bbb64" />
       </mesh>
-      {/* A mown garden bed under the grid, for a tended look. */}
+      {/* A mown garden bed for a tended look. */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, 0]} receiveShadow>
-        <circleGeometry args={[4.4, 40]} />
+        <circleGeometry args={[4.6, 40]} />
         <meshStandardMaterial color="#7cae57" />
       </mesh>
 
@@ -145,25 +146,23 @@ export default function Garden3D({
         </mesh>
       ))}
 
-      {/* Placement target highlight (only while holding a plant/pet). */}
-      {selected && hoverFree && hover !== null && (
-        <mesh rotation-x={-Math.PI / 2} position={setY(slotToPos(hover), 0.03)}>
-          <ringGeometry args={[0.34, 0.5, 24]} />
-          <meshBasicMaterial color="#f0c34a" transparent opacity={0.85} />
-        </mesh>
-      )}
+      {/* Placement preview ring — positioned imperatively as the pointer moves. */}
+      <mesh ref={ring} rotation-x={-Math.PI / 2} visible={false}>
+        <ringGeometry args={[0.26, 0.4, 28]} />
+        <meshBasicMaterial color="#f0c34a" transparent opacity={0.85} />
+      </mesh>
 
-      {/* Static items (plants in pots, toys, decorations, buildings) — scaled
-          to their real-world size relative to each other. */}
-      {statics.map(({ slot, item }) => (
+      {/* Static items (plants/toys/decor/buildings) at their placed (x,z); ones
+          that float sit at their air height, the rest rest on the ground. */}
+      {statics.map(({ p, item }) => (
         <group
-          key={slot}
-          position={slotToPos(slot)}
+          key={p.key}
+          position={[p.x, floatHeight(item), p.z]}
           scale={modelScale(item)}
           onClick={(e) => {
             e.stopPropagation()
             if (e.delta > 6) return
-            onRemove(slot)
+            onRemove(p.key)
           }}
         >
           <ItemModel item={item} reducedMotion={reducedMotion} />
@@ -171,22 +170,22 @@ export default function Garden3D({
       ))}
 
       {/* Pets: butterflies/bees flutter through the air, everyone else strolls. */}
-      {pets.map(({ slot, item }) =>
+      {pets.map(({ p, item }) =>
         isFlyer(item) ? (
           <FlyingPet
-            key={slot}
+            key={p.key}
             item={item}
-            start={slotToPos(slot)}
+            start={[p.x, 0, p.z]}
             reducedMotion={reducedMotion}
-            onRemove={() => onRemove(slot)}
+            onRemove={() => onRemove(p.key)}
           />
         ) : (
           <WanderingPet
-            key={slot}
+            key={p.key}
             item={item}
-            start={slotToPos(slot)}
+            start={[p.x, 0, p.z]}
             reducedMotion={reducedMotion}
-            onRemove={() => onRemove(slot)}
+            onRemove={() => onRemove(p.key)}
           />
         ),
       )}
@@ -213,10 +212,6 @@ export default function Garden3D({
       />
     </Canvas>
   )
-}
-
-function setY(p: [number, number, number], y: number): [number, number, number] {
-  return [p[0], y, p[2]]
 }
 
 const BOUND_X = 2.7
@@ -353,16 +348,14 @@ function FlyingPet({
 
 // A handful of decorative grass tufts scattered off the tended bed.
 const TUFTS: [number, number][] = [
-  [-4.2, -3.6],
-  [4.1, -3.2],
-  [-3.9, 3.4],
-  [4.3, 3.1],
-  [-4.6, 0.4],
-  [4.6, -0.5],
-  [0.5, -4.4],
-  [-1.2, 4.4],
-  [2.4, 4.2],
-  [-3.2, -4.1],
+  [-4.4, -3.8],
+  [4.3, -3.4],
+  [-4.1, 3.6],
+  [4.5, 3.3],
+  [-4.8, 0.4],
+  [4.8, -0.5],
+  [0.5, -4.6],
+  [-1.2, 4.6],
+  [2.4, 4.4],
+  [-3.4, -4.3],
 ]
-
-export { SLOTS }

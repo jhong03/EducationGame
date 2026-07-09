@@ -118,7 +118,7 @@ describe('full play loop', () => {
     click(node)
 
     // On the play screen: answer correctly to the mastery goal (3).
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const two = buttonByAria('2')
       expect(two, `answer button present on rep ${i}`).not.toBeNull()
       click(two)
@@ -131,7 +131,7 @@ describe('full play loop', () => {
 
     // Store reflects the win, and the next level in the category derives open.
     const state = useGameStore.getState()
-    expect(state.stars).toBe(3)
+    expect(state.stars).toBe(4)
     expect(state.progress['math-early-1'].cleared).toBe(true)
     const counting = levelsInCategory('counting')
     expect(isLevelUnlocked(counting[1], counting, state.progress)).toBe(true)
@@ -141,7 +141,7 @@ describe('full play loop', () => {
     // mastering it and checking level 2's progress record.
     click(buttonByText('Next level'))
     expect(buttonByAria('Back to the levels')).not.toBeNull()
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       click(buttonByAria('2'))
       advance(1200)
     }
@@ -159,7 +159,7 @@ describe('full play loop', () => {
 
     // Clear level 1, then take the "Pick a level" path from the cleared screen.
     click(buttonByAria('Count to 3'))
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       click(buttonByAria('2'))
       advance(1200)
     }
@@ -203,7 +203,7 @@ describe('full play loop', () => {
     })
     click(categoryCard('More or Less'))
     click(buttonByAria('Bigger number'))
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       click(buttonByAria('2'))
       advance(1200)
     }
@@ -488,7 +488,7 @@ describe('full play loop', () => {
   it('first mastery mints a diamond, shown on the cleared screen', () => {
     click(categoryCard('Counting'))
     click(buttonByAria('Count to 3'))
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       click(buttonByAria('2'))
       advance(1200)
     }
@@ -511,5 +511,36 @@ describe('full play loop', () => {
     expect(useGameStore.getState().owned['plant-blossom']).toBe(1)
     expect(useGameStore.getState().starsSpent).toBe(5)
     expect(useGameStore.getState().stars).toBe(50)
+  })
+
+  it('a topic class teaches the concept, then hands off to practice', () => {
+    act(() => {
+      useGameStore.setState({ age: 9 }) // mid band — Fractions has a lesson
+    })
+    click(categoryCard('Fractions'))
+
+    // The "what is this?" class is offered on the category screen.
+    const learn = buttonByAria('Learn what Fractions is')
+    expect(learn).not.toBeNull()
+    click(learn)
+
+    // The class explains the idea, step by step.
+    expect(container.textContent).toContain('part of a whole')
+    expect(container.textContent).toContain('Step 1 of 3')
+    click(buttonByText('Next ›')) // → step 2
+    click(buttonByText('Next ›')) // → step 3 (last)
+
+    // "Let's try it!" opens FREE PRACTICE — answers there don't count.
+    click(buttonByText("Let's try it! ✏️"))
+    expect(container.textContent).toContain('How many apples?')
+    click(buttonByAria('2')) // correct, but practice is stakes-free
+    advance(1100)
+    expect(useGameStore.getState().stars).toBe(0)
+
+    // Ready for the real thing → a real level, where answers DO earn.
+    click(buttonByAria("I'm ready to play for real"))
+    click(buttonByAria('2'))
+    advance(50)
+    expect(useGameStore.getState().stars).toBeGreaterThan(0)
   })
 })

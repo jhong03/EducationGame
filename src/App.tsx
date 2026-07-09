@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useGameStore } from './engine/store'
+import { useGameStore, isLevelUnlocked, hasCleared } from './engine/store'
 import { audio } from './audio/AudioManager'
-import { categoryById, levelById, nextLevelAfter } from './content/math'
+import {
+  categoryById,
+  levelById,
+  nextLevelAfter,
+  levelsInCategoryForAge,
+} from './content/math'
+import { lessonForCategory } from './content/lessons'
 import { bandForAge } from './engine/band'
 import { placementPlanFor } from './content/placement'
 import AgeScreen from './screens/AgeScreen'
@@ -9,6 +15,8 @@ import NameScreen from './screens/NameScreen'
 import PlacementScreen from './screens/PlacementScreen'
 import Home from './screens/Home'
 import CategoryScreen from './screens/CategoryScreen'
+import LessonScreen from './screens/LessonScreen'
+import PracticeScreen from './screens/PracticeScreen'
 import PlayScreen from './screens/PlayScreen'
 import SprintScreen from './screens/SprintScreen'
 import ClearedScreen from './screens/ClearedScreen'
@@ -20,6 +28,8 @@ type Route =
   | { screen: 'name' }
   | { screen: 'placement'; age: number }
   | { screen: 'category'; categoryId: string }
+  | { screen: 'lesson'; categoryId: string }
+  | { screen: 'practice'; categoryId: string }
   | { screen: 'play'; levelId: string }
   | { screen: 'sprint'; levelId: string }
   | { screen: 'cleared'; levelId: string; earnedDiamonds: number }
@@ -118,6 +128,7 @@ export default function App() {
         category={category}
         onSelectLevel={(levelId) => setRoute({ screen: 'play', levelId })}
         onSelectSprint={(levelId) => setRoute({ screen: 'sprint', levelId })}
+        onLearn={() => setRoute({ screen: 'lesson', categoryId: category.id })}
         onBack={() => setRoute({ screen: 'home' })}
       />
     )
@@ -179,6 +190,42 @@ export default function App() {
               : { screen: 'home' },
           )
         }
+      />
+    )
+  }
+
+  if (route.screen === 'lesson') {
+    const category = categoryById(route.categoryId)
+    const lesson = category ? lessonForCategory(category.id) : undefined
+    if (!category || !lesson) return home
+    return (
+      <LessonScreen
+        lesson={lesson}
+        icon={category.icon}
+        onBack={() => setRoute({ screen: 'category', categoryId: category.id })}
+        // After the class, try it out freely first — practice, not the real levels.
+        onDone={() => setRoute({ screen: 'practice', categoryId: category.id })}
+      />
+    )
+  }
+
+  if (route.screen === 'practice') {
+    const category = categoryById(route.categoryId)
+    if (!category) return home
+    // Practise the level they're about to face for real (first unfinished, or
+    // the first if all are done) — stakes-free until they tap "I'm ready!".
+    const levels = levelsInCategoryForAge(category.id, age)
+    const progress = useGameStore.getState().progress
+    const target =
+      levels.find((l) => isLevelUnlocked(l, levels, progress) && !hasCleared(progress, l.id)) ??
+      levels[0]
+    if (!target) return home
+    return (
+      <PracticeScreen
+        key={target.id}
+        level={target}
+        onReady={() => setRoute({ screen: 'play', levelId: target.id })}
+        onExit={() => setRoute({ screen: 'category', categoryId: category.id })}
       />
     )
   }

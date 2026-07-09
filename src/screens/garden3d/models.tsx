@@ -669,21 +669,33 @@ function ToyModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean 
         </group>
       )
     case 'disc': {
-      // Yo-yo: two discs on an axle, resting, with a string.
+      // Yo-yo: two round halves on a short axle, standing upright, round faces
+      // toward the viewer, with a string running up to a finger loop.
+      const halfA = a.color
+      const halfB = '#5a3fd0'
       return (
-        <group rotation={[0, 0, Math.PI / 2]} position={[0, 0.18, 0]}>
-          {[-0.07, 0.07].map((y, i) => (
-            <mesh key={i} castShadow position={[y, 0, 0]}>
-              <cylinderGeometry args={[0.17, 0.17, 0.06, 20]} />
-              {M({ color: i === 0 ? a.color : '#5a3fd0' })}
-            </mesh>
-          ))}
-          <mesh>
-            <cylinderGeometry args={[0.05, 0.05, 0.14, 10]} />
+        <group>
+          {/* front + back discs (faces point ±z); a narrow string groove between */}
+          <mesh castShadow position={[0, 0.15, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.15, 0.15, 0.045, 22]} />
+            {M({ color: halfA })}
+          </mesh>
+          <mesh castShadow position={[0, 0.15, -0.03]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.15, 0.15, 0.045, 22]} />
+            {M({ color: halfB })}
+          </mesh>
+          {/* axle in the groove */}
+          <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.045, 0.045, 0.02, 12]} />
+            {M({ color: '#d8d0e8' })}
+          </mesh>
+          {/* string up to a little finger loop */}
+          <mesh position={[0.03, 0.36, 0]} rotation={[0, 0, -0.28]}>
+            <cylinderGeometry args={[0.004, 0.004, 0.18, 4]} />
             {M({ color: '#efe7ff' })}
           </mesh>
-          <mesh position={[0.28, 0, 0]}>
-            <cylinderGeometry args={[0.004, 0.004, 0.3, 4]} />
+          <mesh position={[0.08, 0.45, 0]}>
+            <torusGeometry args={[0.028, 0.006, 6, 14]} />
             {M({ color: '#efe7ff' })}
           </mesh>
         </group>

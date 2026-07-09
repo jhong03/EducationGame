@@ -40,7 +40,24 @@ export const MATH_SPINE: Record<Band, readonly string[]> = {
   ],
 } as const
 
-const DEFAULT_MASTERY_GOAL = 3
+/**
+ * How many correct answers clear a level (the mastery goal). It scales by band
+ * — older children do a few more reps — with per-chapter overrides for the
+ * toughest fluency/abstract strands. To retune a chapter, edit MASTERY_OVERRIDE;
+ * a level may still pass its own masteryGoal to override everything.
+ */
+const MASTERY_BASE: Record<Band, number> = { early: 4, mid: 5, upper: 6 }
+const MASTERY_OVERRIDE: Record<string, number> = {
+  'place-value': 6,
+  'times-tables': 6,
+  fractions: 6,
+  'decimals-lab': 7,
+  percents: 7,
+  ratios: 7,
+}
+function masteryGoalFor(band: Band, categoryId: string): number {
+  return MASTERY_OVERRIDE[categoryId] ?? MASTERY_BASE[band]
+}
 
 /**
  * Sprint round lengths (seconds) by activity — the "suitable timeframe" per
@@ -122,7 +139,7 @@ function makeLevel(
   icon: string,
   activity: ActivityType,
   params: Record<string, number>,
-  masteryGoal = DEFAULT_MASTERY_GOAL,
+  masteryGoal?: number,
   minAge?: number, // age-tier rungs sit at the ladder TOP (see Level.minAge)
 ): Level {
   return {
@@ -135,7 +152,7 @@ function makeLevel(
     icon,
     activity,
     params,
-    masteryGoal,
+    masteryGoal: masteryGoal ?? masteryGoalFor(band, categoryId),
     sprintSeconds: sprintSecondsFor(activity),
     ...(minAge !== undefined ? { minAge } : {}),
   }

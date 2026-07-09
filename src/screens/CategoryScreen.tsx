@@ -7,6 +7,7 @@ import {
   categorySprintScore,
 } from '../engine/store'
 import { levelsInCategoryForAge } from '../content/math'
+import { hasLesson } from '../content/lessons'
 import { audio } from '../audio/AudioManager'
 import MuteButton from '../components/MuteButton'
 import Twinkle from '../components/Twinkle'
@@ -24,6 +25,7 @@ interface CategoryScreenProps {
   category: Category
   onSelectLevel: (levelId: string) => void
   onSelectSprint: (levelId: string) => void
+  onLearn: () => void
   onBack: () => void
 }
 
@@ -31,6 +33,7 @@ export default function CategoryScreen({
   category,
   onSelectLevel,
   onSelectSprint,
+  onLearn,
   onBack,
 }: CategoryScreenProps) {
   const progress = useGameStore((s) => s.progress)
@@ -100,6 +103,50 @@ export default function CategoryScreen({
 
       {/* Level tiles */}
       <main className="safe-pb z-10 flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto px-6 py-4">
+        {/* "What is this?" class — for the harder / real-world strands. */}
+        {hasLesson(category.id) && (
+          <button
+            type="button"
+            onClick={() => {
+              audio.unlock()
+              audio.sfx('pop')
+              onLearn()
+            }}
+            aria-label={`Learn what ${category.name} is`}
+            className="flex w-full max-w-md items-center gap-3 rounded-3xl px-4 py-3 text-left transition-all active:translate-y-px"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--grape) 16%, var(--cream)), color-mix(in srgb, var(--sun) 14%, var(--cream)))',
+              border: '1px solid var(--line)',
+              boxShadow: 'var(--e2)',
+            }}
+          >
+            <span
+              className="grid shrink-0 place-items-center rounded-2xl bg-cream"
+              style={{ width: 48, height: 48, fontSize: 24, boxShadow: 'var(--e1)' }}
+              aria-hidden="true"
+            >
+              📖
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span
+                className="font-bold text-ink"
+                style={{ fontSize: 'clamp(16px, 4.4vw, 19px)' }}
+              >
+                {levels.some((l) => hasCleared(progress, l.id))
+                  ? 'What is this?'
+                  : 'New here? Learn it first'}
+              </span>
+              <span className="font-text font-semibold text-ink-soft" style={{ fontSize: 13 }}>
+                A quick class on {category.name}
+              </span>
+            </span>
+            <span aria-hidden="true" className="shrink-0 text-ink-faint" style={{ fontSize: 22 }}>
+              ›
+            </span>
+          </button>
+        )}
+
         <div className="grid w-full max-w-md grid-cols-2 justify-items-center gap-3.5">
           {levels.map((level) => {
             const unlocked = isLevelUnlocked(level, levels, progress)
