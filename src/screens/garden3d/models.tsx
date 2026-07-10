@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard } from '@react-three/drei'
-import { AdditiveBlending, DoubleSide, Shape, ShapeGeometry } from 'three'
+import { AdditiveBlending, DoubleSide, ExtrudeGeometry, Shape, ShapeGeometry } from 'three'
 import type { Group, Mesh, MeshBasicMaterial } from 'three'
 import type { GardenItem } from '../../content/garden'
 import { appearanceFor, type Appearance, type Ears } from './appearance'
@@ -67,23 +67,157 @@ function Bloom({ color }: { color: string }) {
 
 function PlantTop({ a }: { a: Appearance }) {
   switch (a.variant) {
-    case 'tree':
+    case 'tulip': {
+      // The classic tulip: a closed cup with a pointed petal crown on a single
+      // stem, flanked by the long sweeping base leaves.
+      const petal = a.accent ?? '#ff6b6b'
       return (
         <group position={[0, 0.36, 0]}>
-          <mesh castShadow position={[0, 0.18, 0]}>
-            <cylinderGeometry args={[0.07, 0.09, 0.36, 8]} />
-            {M({ color: a.accent ?? '#8a5a3c' })}
+          {/* stem */}
+          <mesh castShadow position={[0, 0.2, 0]}>
+            <cylinderGeometry args={[0.028, 0.038, 0.4, 6]} />
+            {M({ color: '#5f9a48' })}
           </mesh>
-          <mesh castShadow position={[0, 0.5, 0]}>
-            <icosahedronGeometry args={[0.3, 0]} />
-            {M({ color: a.color })}
+          {/* long tulip leaves sweeping up from the base */}
+          {[-1, 1].map((s) => (
+            <mesh
+              key={s}
+              castShadow
+              position={[s * 0.08, 0.15, 0]}
+              rotation={[0, 0, s * 0.55]}
+              scale={[0.28, 1, 0.42]}
+            >
+              <sphereGeometry args={[0.15, 8, 8]} />
+              {M({ color: a.color })}
+            </mesh>
+          ))}
+          {/* the closed cup */}
+          <mesh castShadow position={[0, 0.46, 0]} scale={[0.82, 1.05, 0.82]}>
+            <sphereGeometry args={[0.11, 10, 10]} />
+            {M({ color: petal })}
           </mesh>
-          <mesh castShadow position={[0.16, 0.62, 0.05]}>
-            <icosahedronGeometry args={[0.18, 0]} />
-            {M({ color: a.color })}
-          </mesh>
+          {/* pointed petal tips forming the crown */}
+          {[0, 1, 2].map((i) => {
+            const t = (i / 3) * Math.PI * 2
+            return (
+              <mesh
+                key={i}
+                castShadow
+                position={[Math.cos(t) * 0.055, 0.555, Math.sin(t) * 0.055]}
+              >
+                <coneGeometry args={[0.05, 0.1, 6]} />
+                {M({ color: petal })}
+              </mesh>
+            )
+          })}
         </group>
       )
+    }
+    case 'rose': {
+      // A rose: layered petals cupping into a central bud (no open centre),
+      // on a thorned stem with a leaf.
+      const outer = '#a8232f' // deep rose red, darkest outside…
+      const mid = '#c22836'
+      const bud = '#d3313f' // …warming toward the centre
+      return (
+        <group position={[0, 0.36, 0]}>
+          {/* stem */}
+          <mesh castShadow position={[0, 0.24, 0]}>
+            <cylinderGeometry args={[0.026, 0.036, 0.48, 6]} />
+            {M({ color: a.color })}
+          </mesh>
+          {/* thorns */}
+          {[0.14, 0.28].map((y, i) => (
+            <mesh
+              key={i}
+              castShadow
+              position={[(i % 2 ? -1 : 1) * 0.035, y, 0]}
+              rotation={[0, 0, (i % 2 ? 1 : -1) * (Math.PI / 2.4)]}
+            >
+              <coneGeometry args={[0.012, 0.045, 4]} />
+              {M({ color: '#4c7c3a' })}
+            </mesh>
+          ))}
+          {/* leaf */}
+          <mesh
+            castShadow
+            position={[0.07, 0.2, 0.02]}
+            rotation={[0, 0.3, -0.7]}
+            scale={[0.55, 0.3, 0.4]}
+          >
+            <sphereGeometry args={[0.11, 8, 8]} />
+            {M({ color: a.color })}
+          </mesh>
+          {/* The head: three spiralling whorls of FLAT cupped petals (thin
+              radially, tall + wide tangentially — sheets, not balls), the
+              outer whorl opened outward, wrapping to a tight spiral centre. */}
+          <group position={[0, 0.53, 0]}>
+            {/* green sepal cup under the bloom */}
+            <mesh castShadow position={[0, -0.03, 0]} rotation={[Math.PI, 0, 0]}>
+              <coneGeometry args={[0.062, 0.07, 6]} />
+              {M({ color: a.color })}
+            </mesh>
+            {/* outer whorl — 6 opened petals */}
+            {Array.from({ length: 6 }, (_, i) => {
+              const t = (i / 6) * Math.PI * 2
+              return (
+                <group key={`o${i}`} rotation={[0, -t, 0]}>
+                  <mesh
+                    castShadow
+                    position={[0.07, 0.02, 0]}
+                    rotation={[0, 0, -0.42]}
+                    scale={[0.24, 0.95, 1]}
+                  >
+                    <sphereGeometry args={[0.075, 8, 8]} />
+                    {M({ color: outer })}
+                  </mesh>
+                </group>
+              )
+            })}
+            {/* middle whorl — 4 petals, more upright, spiral-offset */}
+            {Array.from({ length: 4 }, (_, i) => {
+              const t = (i / 4) * Math.PI * 2 + 0.55
+              return (
+                <group key={`m${i}`} rotation={[0, -t, 0]}>
+                  <mesh
+                    castShadow
+                    position={[0.042, 0.05, 0]}
+                    rotation={[0, 0, -0.16]}
+                    scale={[0.22, 1, 0.9]}
+                  >
+                    <sphereGeometry args={[0.06, 8, 8]} />
+                    {M({ color: mid })}
+                  </mesh>
+                </group>
+              )
+            })}
+            {/* inner whorl — 3 tight petals wrapping the centre */}
+            {Array.from({ length: 3 }, (_, i) => {
+              const t = (i / 3) * Math.PI * 2 + 1.1
+              return (
+                <group key={`i${i}`} rotation={[0, -t, 0]}>
+                  <mesh
+                    castShadow
+                    position={[0.02, 0.075, 0]}
+                    scale={[0.22, 1, 0.75]}
+                  >
+                    <sphereGeometry args={[0.048, 8, 8]} />
+                    {M({ color: bud })}
+                  </mesh>
+                </group>
+              )
+            })}
+            {/* the spiral heart */}
+            <mesh position={[0, 0.095, 0]}>
+              <cylinderGeometry args={[0.016, 0.02, 0.045, 8]} />
+              {M({ color: '#8f1c26' })}
+            </mesh>
+          </group>
+        </group>
+      )
+    }
+    // NB: 'tree' never reaches PlantTop — trees plant straight into the
+    // ground (TreeModel), not into a pot.
     case 'cactus':
       return (
         <group position={[0, 0.36, 0]}>
@@ -103,6 +237,70 @@ function PlantTop({ a }: { a: Appearance }) {
           )}
         </group>
       )
+    case 'fern': {
+      // A rosette of long, flattened frond blades arching out from a central
+      // crown — outer ring leaning far out with drooping lighter tips, inner
+      // ring more upright, one young vertical frond in the middle.
+      const green = a.color
+      const light = '#63b168'
+      return (
+        <group position={[0, 0.36, 0]}>
+          {/* crown */}
+          <mesh castShadow position={[0, 0.03, 0]}>
+            <sphereGeometry args={[0.06, 8, 6]} />
+            {M({ color: '#3c7a45' })}
+          </mesh>
+          {/* outer ring: blades pitched ~50° out, each with a droopier tip */}
+          {Array.from({ length: 7 }, (_, i) => {
+            const theta = (i / 7) * Math.PI * 2
+            return (
+              <group key={`o${i}`} rotation={[0, theta, 0]}>
+                <mesh
+                  castShadow
+                  position={[0.117, 0.125, 0]}
+                  rotation={[0, 0, -0.9]}
+                  scale={[1, 1, 0.32]}
+                >
+                  <coneGeometry args={[0.055, 0.3, 5]} />
+                  {M({ color: green })}
+                </mesh>
+                <mesh
+                  castShadow
+                  position={[0.305, 0.222, 0]}
+                  rotation={[0, 0, -1.5]}
+                  scale={[1, 1, 0.3]}
+                >
+                  <coneGeometry args={[0.035, 0.14, 5]} />
+                  {M({ color: light })}
+                </mesh>
+              </group>
+            )
+          })}
+          {/* inner ring: shorter, more upright blades */}
+          {Array.from({ length: 4 }, (_, i) => {
+            const theta = (i / 4) * Math.PI * 2 + 0.4
+            return (
+              <group key={`n${i}`} rotation={[0, theta, 0]}>
+                <mesh
+                  castShadow
+                  position={[0.05, 0.16, 0]}
+                  rotation={[0, 0, -0.35]}
+                  scale={[1, 1, 0.32]}
+                >
+                  <coneGeometry args={[0.05, 0.28, 5]} />
+                  {M({ color: light })}
+                </mesh>
+              </group>
+            )
+          })}
+          {/* a young frond unfurling straight up in the middle */}
+          <mesh castShadow position={[0, 0.17, 0]} scale={[1, 1, 0.32]}>
+            <coneGeometry args={[0.04, 0.26, 5]} />
+            {M({ color: green })}
+          </mesh>
+        </group>
+      )
+    }
     case 'bush':
       return (
         <group position={[0, 0.42, 0]}>
@@ -119,17 +317,51 @@ function PlantTop({ a }: { a: Appearance }) {
           ))}
         </group>
       )
-    case 'stalk':
+    case 'stalk': {
+      // Wheat: a sheaf of thin golden stalks fanning gently outward, each
+      // topped with a grain ear (kernels along the head + a bristly awn).
+      const stem = '#cdb45e'
+      const ear = a.color
+      const kernel = '#d4ab4a'
+      const STALKS = [
+        { x: 0, z: 0, dir: 0, lean: 0.02, h: 0.46 },
+        { x: 0.07, z: 0.03, dir: 0.4, lean: 0.16, h: 0.4 },
+        { x: -0.06, z: 0.05, dir: 2.4, lean: 0.18, h: 0.42 },
+        { x: 0.05, z: -0.06, dir: -0.8, lean: 0.15, h: 0.37 },
+        { x: -0.05, z: -0.05, dir: -2.4, lean: 0.17, h: 0.39 },
+        { x: 0.01, z: 0.08, dir: 1.5, lean: 0.14, h: 0.35 },
+      ] as const
       return (
-        <group position={[0, 0.38, 0]}>
-          {[-0.08, 0, 0.08].map((x, i) => (
-            <mesh key={i} castShadow position={[x, 0.22, 0]} rotation={[0, 0, x * 1.5]}>
-              <coneGeometry args={[0.05, 0.5, 6]} />
-              {M({ color: a.color })}
-            </mesh>
+        <group position={[0, 0.36, 0]}>
+          {STALKS.map(({ x, z, dir, lean, h }, i) => (
+            <group key={i} position={[x, 0, z]} rotation={[0, dir, lean]}>
+              {/* stem */}
+              <mesh castShadow position={[0, h / 2, 0]}>
+                <cylinderGeometry args={[0.008, 0.011, h, 5]} />
+                {M({ color: stem })}
+              </mesh>
+              {/* the grain ear */}
+              <mesh castShadow position={[0, h + 0.045, 0]}>
+                <capsuleGeometry args={[0.026, 0.07, 3, 6]} />
+                {M({ color: ear })}
+              </mesh>
+              {/* kernels bulging along the ear's sides */}
+              {[-0.024, 0.024].map((kx, j) => (
+                <mesh key={j} position={[kx, h + 0.035 + j * 0.025, 0]}>
+                  <sphereGeometry args={[0.016, 6, 6]} />
+                  {M({ color: kernel })}
+                </mesh>
+              ))}
+              {/* awn — the bristle at the tip */}
+              <mesh position={[0, h + 0.13, 0]}>
+                <coneGeometry args={[0.005, 0.07, 4]} />
+                {M({ color: ear })}
+              </mesh>
+            </group>
           ))}
         </group>
       )
+    }
     case 'mushroom':
       return (
         <group position={[0, 0.36, 0]}>
@@ -141,47 +373,140 @@ function PlantTop({ a }: { a: Appearance }) {
             <sphereGeometry args={[0.2, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
             {M({ color: a.color })}
           </mesh>
+          {/* toadstool spots, scattered on the cap dome (r=0.2 from [0,0.34]) */}
+          {(
+            [
+              [0.0, 0.15], // near the top
+              [1.1, 0.65],
+              [2.5, 0.8],
+              [3.6, 0.55],
+              [4.7, 0.85],
+              [5.6, 0.45],
+            ] as const
+          ).map(([theta, phi], i) => (
+            <mesh
+              key={i}
+              position={[
+                Math.sin(phi) * Math.cos(theta) * 0.19,
+                0.34 + Math.cos(phi) * 0.19,
+                Math.sin(phi) * Math.sin(theta) * 0.19,
+              ]}
+            >
+              <sphereGeometry args={[i % 2 ? 0.026 : 0.034, 8, 6]} />
+              {M({ color: '#fdf8ec' })}
+            </mesh>
+          ))}
         </group>
       )
-    case 'lotus':
+    case 'lotus': {
+      // A lotus: pointed petals in layered whorls cupping UP around a yellow
+      // seed pod, the bloom resting on a green lily pad.
+      const outerPink = '#ffb7d3'
+      const midPink = a.color
+      const innerPink = '#f987b4'
+      const whorl = (
+        n: number,
+        offset: number,
+        r: number,
+        y: number,
+        lean: number,
+        len: number,
+        color: string,
+        key: string,
+      ) =>
+        Array.from({ length: n }, (_, i) => {
+          const t = (i / n) * Math.PI * 2 + offset
+          return (
+            <group key={`${key}${i}`} rotation={[0, -t, 0]}>
+              <mesh
+                castShadow
+                position={[r, y, 0]}
+                rotation={[0, 0, -lean]}
+                scale={[1, 1, 0.38]}
+              >
+                <coneGeometry args={[0.045, len, 5]} />
+                {M({ color })}
+              </mesh>
+            </group>
+          )
+        })
       return (
         <group position={[0, 0.36, 0]}>
-          {[0, 1, 2, 3, 4, 5].map((i) => {
-            const t = (i / 6) * Math.PI * 2
-            return (
-              <mesh
-                key={i}
-                castShadow
-                position={[Math.cos(t) * 0.13, 0.02, Math.sin(t) * 0.13]}
-                rotation={[Math.PI / 3, -t, 0]}
-              >
-                <coneGeometry args={[0.07, 0.22, 6]} />
-                {M({ color: a.color })}
-              </mesh>
-            )
-          })}
-          <mesh position={[0, 0.05, 0]}>
-            <sphereGeometry args={[0.07, 8, 8]} />
+          {/* lily pad */}
+          <mesh castShadow position={[0, 0.015, 0]}>
+            <cylinderGeometry args={[0.17, 0.15, 0.03, 14]} />
+            {M({ color: '#4e8f4a' })}
+          </mesh>
+          {/* outer whorl — opened wide */}
+          {whorl(8, 0, 0.095, 0.07, 0.95, 0.16, outerPink, 'o')}
+          {/* middle whorl — half open */}
+          {whorl(6, 0.4, 0.06, 0.1, 0.55, 0.15, midPink, 'm')}
+          {/* inner whorl — nearly upright */}
+          {whorl(4, 0.9, 0.03, 0.12, 0.22, 0.13, innerPink, 'i')}
+          {/* yellow seed pod at the heart */}
+          <mesh castShadow position={[0, 0.1, 0]}>
+            <cylinderGeometry args={[0.032, 0.04, 0.05, 10]} />
             {M({ color: a.accent ?? '#ffe08a' })}
           </mesh>
         </group>
       )
-    case 'tall-flower':
+    }
+    case 'tall-flower': {
+      // Sunflower: a tall stalk with leaves, topped by a big flat seed disc
+      // ringed by many flat pointed petals, the whole head tilted sunward.
+      const petal = a.color
+      const seed = a.accent ?? '#7a4a2a'
       return (
         <group position={[0, 0.36, 0]}>
+          {/* stalk */}
           <mesh castShadow position={[0, 0.34, 0]}>
             <cylinderGeometry args={[0.035, 0.045, 0.68, 6]} />
             {M({ color: '#5f9a48' })}
           </mesh>
-          <group position={[0, 0.74, 0]}>
-            <Bloom color={a.color} />
-            <mesh position={[0, 0.02, 0]}>
-              <sphereGeometry args={[0.1, 8, 8]} />
-              {M({ color: a.accent ?? '#7a4a2a' })}
+          {/* leaves on the stalk */}
+          {[-1, 1].map((s) => (
+            <mesh
+              key={s}
+              castShadow
+              position={[s * 0.1, 0.34 + (s > 0 ? 0.08 : 0), 0]}
+              rotation={[0, 0, s * 0.8]}
+              scale={[0.55, 0.28, 0.4]}
+            >
+              <sphereGeometry args={[0.14, 8, 8]} />
+              {M({ color: '#5f9a48' })}
+            </mesh>
+          ))}
+          {/* the head, tilted up toward the sun */}
+          <group position={[0, 0.74, 0]} rotation={[0.6, 0, 0]}>
+            {/* ring of flat pointed petals */}
+            {Array.from({ length: 12 }, (_, i) => {
+              const t = (i / 12) * Math.PI * 2
+              return (
+                <mesh
+                  key={i}
+                  castShadow
+                  position={[Math.sin(t) * 0.13, Math.cos(t) * 0.13, 0]}
+                  rotation={[0, 0, -t]}
+                  scale={[1, 1, 0.3]}
+                >
+                  <coneGeometry args={[0.034, 0.11, 4]} />
+                  {M({ color: i % 2 ? petal : '#f4c33d' })}
+                </mesh>
+              )
+            })}
+            {/* seed disc + darker centre */}
+            <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.095, 0.095, 0.045, 16]} />
+              {M({ color: seed })}
+            </mesh>
+            <mesh position={[0, 0, 0.024]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.055, 0.055, 0.01, 12]} />
+              {M({ color: '#5e381f' })}
             </mesh>
           </group>
         </group>
       )
+    }
     case 'flower':
     default:
       return (
@@ -198,7 +523,64 @@ function PlantTop({ a }: { a: Appearance }) {
   }
 }
 
+/** A tree, planted straight into the lawn (NO pot): grassy mound, root
+ *  flares, a proper trunk with a branch stub, and a clustered canopy. */
+function TreeModel({ a }: { a: Appearance }) {
+  const leaf = a.color
+  const dark = '#4f8f50'
+  const wood = a.accent ?? '#8a5a3c'
+  return (
+    <group>
+      {/* grassy mound where it meets the lawn */}
+      <mesh castShadow position={[0, 0.02, 0]} scale={[1, 0.35, 1]}>
+        <sphereGeometry args={[0.17, 10, 8]} />
+        {M({ color: '#6f9f4e' })}
+      </mesh>
+      {/* root flares */}
+      {[0.5, 2.6, 4.4].map((t, i) => (
+        <mesh
+          key={i}
+          castShadow
+          position={[Math.cos(t) * 0.085, 0.06, Math.sin(t) * 0.085]}
+          rotation={[0, -t, 0.55]}
+        >
+          <coneGeometry args={[0.035, 0.13, 5]} />
+          {M({ color: wood })}
+        </mesh>
+      ))}
+      {/* trunk + a branch stub */}
+      <mesh castShadow position={[0, 0.28, 0]}>
+        <cylinderGeometry args={[0.06, 0.095, 0.56, 8]} />
+        {M({ color: wood })}
+      </mesh>
+      <mesh castShadow position={[0.1, 0.45, 0]} rotation={[0, 0, -0.9]}>
+        <cylinderGeometry args={[0.02, 0.032, 0.15, 6]} />
+        {M({ color: wood })}
+      </mesh>
+      {/* canopy — a cluster of leafy masses in two greens */}
+      <mesh castShadow position={[0, 0.78, 0]}>
+        <icosahedronGeometry args={[0.32, 0]} />
+        {M({ color: leaf })}
+      </mesh>
+      <mesh castShadow position={[0.21, 0.66, 0.08]}>
+        <icosahedronGeometry args={[0.2, 0]} />
+        {M({ color: leaf })}
+      </mesh>
+      <mesh castShadow position={[-0.19, 0.68, -0.06]}>
+        <icosahedronGeometry args={[0.18, 0]} />
+        {M({ color: dark })}
+      </mesh>
+      <mesh castShadow position={[0.02, 0.62, -0.18]}>
+        <icosahedronGeometry args={[0.16, 0]} />
+        {M({ color: dark })}
+      </mesh>
+    </group>
+  )
+}
+
 function PlantModel({ a }: { a: Appearance }) {
+  // Trees grow from the ground; everything else lives in a terracotta pot.
+  if (a.variant === 'tree') return <TreeModel a={a} />
   return (
     <group>
       <Pot />
@@ -321,38 +703,45 @@ function SpikyModel({ a }: { a: Appearance }) {
           </group>
         </group>
       ))}
-      {/* pale face poking out the front */}
-      <mesh castShadow position={[0, 0.16, 0.2]} scale={[1, 0.95, 1.12]}>
-        <sphereGeometry args={[0.15, 14, 12]} />
+      {/* pale face poking out the front — smaller, sitting higher */}
+      <mesh castShadow position={[0, 0.18, 0.2]} scale={[1, 0.95, 1.12]}>
+        <sphereGeometry args={[0.13, 14, 12]} />
         {M({ color: skin })}
       </mesh>
-      {/* pointy snout + nose */}
-      <mesh castShadow position={[0, 0.13, 0.34]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.055, 0.14, 8]} />
+      {/* pointy snout + nose, level with the face */}
+      <mesh castShadow position={[0, 0.16, 0.33]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.048, 0.12, 8]} />
         {M({ color: skin })}
       </mesh>
-      <mesh position={[0, 0.12, 0.41]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+      <mesh position={[0, 0.155, 0.395]}>
+        <sphereGeometry args={[0.028, 8, 8]} />
         {M({ color: '#2a2320' })}
       </mesh>
-      {/* eyes */}
-      {[-0.07, 0.07].map((x, i) => (
-        <mesh key={i} position={[x, 0.2, 0.28]}>
-          <sphereGeometry args={[0.024, 8, 8]} />
+      {/* eyes — ON the face's surface (r=0.13 from [0,0.18,0.2]) */}
+      {[-0.06, 0.06].map((x, i) => (
+        <mesh key={i} position={[x, 0.225, 0.305]}>
+          <sphereGeometry args={[0.021, 8, 8]} />
           {M({ color: '#2a2320' })}
         </mesh>
       ))}
       {/* little round ears */}
-      {[-0.1, 0.1].map((x, i) => (
-        <mesh key={i} castShadow position={[x, 0.29, 0.14]}>
-          <sphereGeometry args={[0.04, 8, 8]} />
+      {[-0.095, 0.095].map((x, i) => (
+        <mesh key={i} castShadow position={[x, 0.29, 0.15]}>
+          <sphereGeometry args={[0.035, 8, 8]} />
           {M({ color: skin })}
         </mesh>
       ))}
-      {/* little feet */}
-      {[-0.09, 0.09].map((x, i) => (
-        <mesh key={i} castShadow position={[x, 0.03, 0.1]}>
-          <sphereGeometry args={[0.045, 8, 8]} />
+      {/* four small feet peeking out under the body */}
+      {(
+        [
+          [-0.08, 0.13],
+          [0.08, 0.13],
+          [-0.09, -0.03],
+          [0.09, -0.03],
+        ] as const
+      ).map(([x, z], i) => (
+        <mesh key={i} castShadow position={[x, 0.025, z]}>
+          <sphereGeometry args={[0.032, 8, 6]} />
           {M({ color: skin })}
         </mesh>
       ))}
@@ -360,48 +749,271 @@ function SpikyModel({ a }: { a: Appearance }) {
   )
 }
 
-/** Turtle. */
+/** Turtle — a patterned shell over a belly plate, head OUT on a neck, four
+ *  splayed crawling legs and a stubby tail. Authored facing +z. */
 function ShellModel({ a }: { a: Appearance }) {
+  const skin = a.color
+  const shell = a.accent ?? '#4a7a3a'
+  const plate = '#3c6531'
   return (
     <group>
-      <mesh castShadow position={[0, 0.18, 0]}>
-        <sphereGeometry args={[0.26, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        {M({ color: a.accent ?? '#4a7a3a' })}
+      {/* belly plate (plastron) */}
+      <mesh castShadow position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[0.185, 0.165, 0.06, 14]} />
+        {M({ color: '#cbb97e' })}
       </mesh>
-      <mesh castShadow position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[0.26, 0.26, 0.1, 12]} />
-        {M({ color: a.color })}
+      {/* the shell dome */}
+      <mesh castShadow position={[0, 0.09, 0]} scale={[1, 0.72, 1.05]}>
+        <sphereGeometry args={[0.2, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        {M({ color: shell })}
       </mesh>
-      <mesh castShadow position={[0, 0.14, 0.28]}>
-        <sphereGeometry args={[0.1, 10, 8]} />
-        {M({ color: a.color })}
+      {/* shell plates: one on top, four around the slope */}
+      <mesh position={[0, 0.225, 0]} scale={[1, 0.3, 1]}>
+        <sphereGeometry args={[0.07, 8, 6]} />
+        {M({ color: plate })}
       </mesh>
-      {[-0.16, 0.16].map((x, i) => (
-        <mesh key={i} castShadow position={[x, 0.06, 0.2]}>
-          <capsuleGeometry args={[0.04, 0.08, 3, 6]} />
-          {M({ color: a.color })}
+      {[0.8, 2.4, 3.9, 5.5].map((t, i) => (
+        <mesh
+          key={i}
+          position={[Math.cos(t) * 0.115, 0.16, Math.sin(t) * 0.12]}
+          scale={[1, 0.35, 1]}
+          rotation={[Math.sin(t) * 0.5, 0, Math.cos(t) * -0.5]}
+        >
+          <sphereGeometry args={[0.055, 8, 6]} />
+          {M({ color: plate })}
         </mesh>
+      ))}
+      {/* neck + head, poking out the front */}
+      <mesh castShadow position={[0, 0.1, 0.18]} rotation={[1.25, 0, 0]}>
+        <capsuleGeometry args={[0.036, 0.09, 3, 8]} />
+        {M({ color: skin })}
+      </mesh>
+      <mesh castShadow position={[0, 0.14, 0.26]}>
+        <sphereGeometry args={[0.065, 12, 10]} />
+        {M({ color: skin })}
+      </mesh>
+      {/* eyes */}
+      {[-0.028, 0.028].map((x, i) => (
+        <mesh key={i} position={[x, 0.165, 0.31]}>
+          <sphereGeometry args={[0.014, 6, 6]} />
+          {M({ color: '#2a2320' })}
+        </mesh>
+      ))}
+      {/* four legs splayed diagonally, mid-crawl */}
+      {(
+        [
+          [0.15, 0.11, 0.55, -0.75],
+          [-0.15, 0.11, 0.55, 0.75],
+          [0.15, -0.11, -0.55, -0.75],
+          [-0.15, -0.11, -0.55, 0.75],
+        ] as const
+      ).map(([x, z, rx, rz], i) => (
+        <mesh key={i} castShadow position={[x, 0.05, z]} rotation={[rx, 0, rz]}>
+          <capsuleGeometry args={[0.032, 0.07, 3, 6]} />
+          {M({ color: skin })}
+        </mesh>
+      ))}
+      {/* stubby tail */}
+      <mesh castShadow position={[0, 0.06, -0.19]} rotation={[-1.9, 0, 0]}>
+        <coneGeometry args={[0.022, 0.06, 5]} />
+        {M({ color: skin })}
+      </mesh>
+    </group>
+  )
+}
+
+/** The pastel gradient the unicorn's mane + tail flow through. */
+const UNICORN_MANE = ['#ffb4d9', '#d9b4ff', '#b4d0ff', '#b4f0e0', '#fff0b4']
+
+/**
+ * Unicorn — the garden's most precious pet, built like a real (tiny) horse:
+ * pearl coat, proud arched neck with a cascading pastel mane, golden spiral
+ * horn, golden hooves (one foreleg raised mid-prance), a flowing rainbow tail —
+ * and magic star-sparkles twinkling around it. Authored facing +z.
+ */
+function UnicornModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean }) {
+  const coat = a.color
+  const gold = '#f0c34a'
+  const sparkles = useRef<(Mesh | null)[]>([])
+  useFrame((s) => {
+    if (reducedMotion) return
+    const t = s.clock.elapsedTime
+    sparkles.current.forEach((m, i) => {
+      if (!m) return
+      const tw = Math.pow(0.5 + 0.5 * Math.sin(t * 2.8 + i * 1.9), 2)
+      ;(m.material as MeshBasicMaterial).opacity = 0.25 + 0.75 * tw
+      m.scale.setScalar(0.55 + 0.55 * tw)
+      m.rotation.z += 0.012
+      m.position.y = SPARKLES[i][1] + Math.sin(t * 1.1 + i * 2.1) * 0.04
+    })
+  })
+  return (
+    <group>
+      {/* body — a horse barrel, horizontal */}
+      <mesh castShadow position={[0, 0.28, -0.02]} rotation={[Math.PI / 2, 0, 0]}>
+        <capsuleGeometry args={[0.11, 0.2, 4, 12]} />
+        {M({ color: coat })}
+      </mesh>
+      {/* chest + haunches fill the silhouette */}
+      <mesh castShadow position={[0, 0.29, 0.1]}>
+        <sphereGeometry args={[0.1, 12, 10]} />
+        {M({ color: coat })}
+      </mesh>
+      <mesh castShadow position={[0, 0.29, -0.15]} scale={[1.1, 1, 1]}>
+        <sphereGeometry args={[0.1, 12, 10]} />
+        {M({ color: coat })}
+      </mesh>
+      {/* proud arched neck, rising up-forward */}
+      <mesh castShadow position={[0, 0.42, 0.13]} rotation={[0.35, 0, 0]}>
+        <capsuleGeometry args={[0.055, 0.15, 4, 10]} />
+        {M({ color: coat })}
+      </mesh>
+      {/* head held high, muzzle reaching forward-down */}
+      <mesh castShadow position={[0, 0.54, 0.18]}>
+        <sphereGeometry args={[0.085, 12, 10]} />
+        {M({ color: coat })}
+      </mesh>
+      <mesh castShadow position={[0, 0.51, 0.27]} rotation={[1.2, 0, 0]}>
+        <capsuleGeometry args={[0.042, 0.08, 3, 8]} />
+        {M({ color: coat })}
+      </mesh>
+      {/* eyes — ON the head surface (r=0.085 from [0,0.54,0.18]) */}
+      {[-0.06, 0.06].map((x, i) => (
+        <mesh key={i} position={[x, 0.565, 0.24]}>
+          <sphereGeometry args={[0.017, 8, 6]} />
+          {M({ color: '#2a2320' })}
+        </mesh>
+      ))}
+      {/* pink muzzle tip */}
+      <mesh position={[0, 0.475, 0.315]}>
+        <sphereGeometry args={[0.024, 8, 6]} />
+        {M({ color: '#f0b6c8' })}
+      </mesh>
+      {/* ears */}
+      {[-0.045, 0.045].map((x, i) => (
+        <mesh key={i} castShadow position={[x, 0.635, 0.15]} rotation={[0.1, 0, x * 4]}>
+          <coneGeometry args={[0.022, 0.06, 5]} />
+          {M({ color: coat })}
+        </mesh>
+      ))}
+      {/* the golden spiral horn — tapered, ringed, softly glowing */}
+      <group position={[0, 0.61, 0.2]} rotation={[0.45, 0, 0]}>
+        <mesh castShadow position={[0, 0.085, 0]}>
+          <coneGeometry args={[0.028, 0.18, 8]} />
+          <meshStandardMaterial
+            color={gold}
+            emissive={gold}
+            emissiveIntensity={0.35}
+            flatShading
+            roughness={0.4}
+          />
+        </mesh>
+        {/* spiral grooves */}
+        {[
+          [0.045, 0.021],
+          [0.095, 0.015],
+          [0.14, 0.009],
+        ].map(([y, r], i) => (
+          <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[r, 0.005, 6, 12]} />
+            {M({ color: '#d9a92c' })}
+          </mesh>
+        ))}
+      </group>
+      {/* the mane — a pastel cascade down the back of the neck + forelock */}
+      {(
+        [
+          [0.015, 0.655, 0.13, 0.042],
+          [-0.02, 0.615, 0.075, 0.046],
+          [0.02, 0.565, 0.03, 0.048],
+          [-0.015, 0.5, -0.005, 0.046],
+          [0.01, 0.43, -0.03, 0.042],
+        ] as const
+      ).map(([x, y, z, r], i) => (
+        <mesh key={i} castShadow position={[x, y, z]}>
+          <sphereGeometry args={[r, 8, 8]} />
+          {M({ color: UNICORN_MANE[i % UNICORN_MANE.length] })}
+        </mesh>
+      ))}
+      {/* forelock peeking under the horn */}
+      <mesh castShadow position={[0, 0.64, 0.21]}>
+        <sphereGeometry args={[0.032, 8, 6]} />
+        {M({ color: UNICORN_MANE[0] })}
+      </mesh>
+      {/* slender legs — the left foreleg raised mid-prance */}
+      <mesh castShadow position={[-0.065, 0.17, 0.14]} rotation={[-0.7, 0, 0]}>
+        <capsuleGeometry args={[0.024, 0.11, 3, 8]} />
+        {M({ color: coat })}
+      </mesh>
+      <mesh castShadow position={[-0.065, 0.115, 0.195]}>
+        <cylinderGeometry args={[0.027, 0.025, 0.026, 8]} />
+        {M({ color: gold })}
+      </mesh>
+      {(
+        [
+          [0.065, 0.1],
+          [-0.065, -0.14],
+          [0.065, -0.14],
+        ] as const
+      ).map(([x, z], i) => (
+        <group key={i}>
+          <mesh castShadow position={[x, 0.12, z]}>
+            <capsuleGeometry args={[0.024, 0.14, 3, 8]} />
+            {M({ color: coat })}
+          </mesh>
+          <mesh castShadow position={[x, 0.016, z]}>
+            <cylinderGeometry args={[0.027, 0.025, 0.03, 8]} />
+            {M({ color: gold })}
+          </mesh>
+        </group>
+      ))}
+      {/* the tail — a rainbow cascade sweeping down and back */}
+      {(
+        [
+          [0, 0.36, -0.26, 0.05],
+          [0.02, 0.29, -0.31, 0.046],
+          [-0.015, 0.21, -0.345, 0.04],
+          [0.01, 0.13, -0.37, 0.034],
+        ] as const
+      ).map(([x, y, z, r], i) => (
+        <mesh key={i} castShadow position={[x, y, z]}>
+          <sphereGeometry args={[r, 8, 8]} />
+          {M({ color: UNICORN_MANE[(i + 1) % UNICORN_MANE.length] })}
+        </mesh>
+      ))}
+      {/* magic — billboarded star-sparkles twinkling around the unicorn */}
+      {SPARKLES.map(([x, y, z, c], i) => (
+        <Billboard key={i} position={[x, y, z]}>
+          <mesh
+            ref={(m) => {
+              sparkles.current[i] = m
+            }}
+            geometry={STAR_GEOM}
+            scale={0.8}
+          >
+            <meshBasicMaterial
+              color={c}
+              transparent
+              opacity={0.8}
+              depthWrite={false}
+              blending={AdditiveBlending}
+              side={DoubleSide}
+              toneMapped={false}
+            />
+          </mesh>
+        </Billboard>
       ))}
     </group>
   )
 }
 
-/** Unicorn. */
-function HornedModel({ a }: { a: Appearance }) {
-  return (
-    <group>
-      <CritterModel a={{ ...a, ears: 'pointy', accent: a.color }} />
-      <mesh castShadow position={[0, 0.68, 0.12]} rotation={[0.3, 0, 0]}>
-        <coneGeometry args={[0.04, 0.2, 6]} />
-        {M({ color: '#ffe08a' })}
-      </mesh>
-      <mesh castShadow position={[0, 0.52, -0.12]}>
-        <sphereGeometry args={[0.12, 10, 8]} />
-        {M({ color: a.accent ?? '#c9a0ff' })}
-      </mesh>
-    </group>
-  )
-}
+/** Where the unicorn's sparkles float (x, y, z, colour). */
+const SPARKLES: readonly [number, number, number, string][] = [
+  [0.26, 0.52, 0.12, '#ffe08a'],
+  [-0.24, 0.68, -0.04, '#ffd0e6'],
+  [0.16, 0.78, -0.16, '#d9b4ff'],
+  [-0.2, 0.36, 0.22, '#b4f0e0'],
+]
 
 /** Butterfly — big patterned wings that flap; carried aloft by FlyingPet. */
 function FlyerModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean }) {
@@ -460,7 +1072,8 @@ function BeeModel({ reducedMotion }: { reducedMotion: boolean }) {
     wings.current.rotation.z = Math.sin(s.clock.elapsedTime * 40) * 0.4
   })
   return (
-    <group position={[0, 0.3, 0]}>
+    // Authored facing +x; turned to the +z travel convention (fly nose-first).
+    <group position={[0, 0.3, 0]} rotation={[0, -Math.PI / 2, 0]}>
       {/* body */}
       <mesh castShadow>
         <sphereGeometry args={[0.16, 12, 10]} />
@@ -537,10 +1150,10 @@ function ChickModel({ a }: { a: Appearance }) {
         <coneGeometry args={[0.05, 0.13, 4]} />
         {M({ color: o })}
       </mesh>
-      {/* eyes */}
-      {[-0.07, 0.07].map((x, i) => (
-        <mesh key={i} position={[x, 0.55, 0.16]}>
-          <sphereGeometry args={[0.028, 8, 8]} />
+      {/* eyes — ON the head's surface (head r=0.19 from [0,0.5,0.04]) */}
+      {[-0.075, 0.075].map((x, i) => (
+        <mesh key={i} position={[x, 0.545, 0.21]}>
+          <sphereGeometry args={[0.032, 8, 8]} />
           {M({ color: '#2a2320' })}
         </mesh>
       ))}
@@ -566,8 +1179,406 @@ function ChickModel({ a }: { a: Appearance }) {
   )
 }
 
+/** Bunny — on all fours: plump body, big haunches, tall ears, puff tail.
+ *  Authored facing +x; the wrapper turns it to the +z travel convention the
+ *  wander animation steers by (so it hops nose-first, not sideways). */
+function BunnyModel({ a }: { a: Appearance }) {
+  const fur = a.color
+  const pink = a.accent ?? '#ffb4c8'
+  return (
+    <group rotation={[0, -Math.PI / 2, 0]}>
+      {/* plump horizontal body */}
+      <mesh castShadow position={[-0.02, 0.19, 0]} scale={[1.25, 0.92, 0.95]}>
+        <sphereGeometry args={[0.19, 14, 12]} />
+        {M({ color: fur })}
+      </mesh>
+      {/* big hind haunches */}
+      {[-0.09, 0.09].map((z, i) => (
+        <mesh key={i} castShadow position={[-0.14, 0.14, z]}>
+          <sphereGeometry args={[0.095, 12, 10]} />
+          {M({ color: fur })}
+        </mesh>
+      ))}
+      {/* hind feet, stretched forward along the ground */}
+      {[-0.09, 0.09].map((z, i) => (
+        <mesh key={i} castShadow position={[-0.1, 0.035, z]} rotation={[0, 0, Math.PI / 2]}>
+          <capsuleGeometry args={[0.032, 0.08, 3, 6]} />
+          {M({ color: fur })}
+        </mesh>
+      ))}
+      {/* front legs */}
+      {[-0.06, 0.06].map((z, i) => (
+        <mesh key={i} castShadow position={[0.13, 0.07, z]}>
+          <capsuleGeometry args={[0.026, 0.08, 3, 6]} />
+          {M({ color: fur })}
+        </mesh>
+      ))}
+      {/* head, low at the front (sniffing height) */}
+      <mesh castShadow position={[0.2, 0.28, 0]}>
+        <sphereGeometry args={[0.13, 14, 12]} />
+        {M({ color: fur })}
+      </mesh>
+      {/* tall ears, tilted slightly back — with pink inner faces */}
+      {[-0.05, 0.05].map((z, i) => (
+        <group key={i} position={[0.16, 0.44, z]} rotation={[0, 0, 0.22]}>
+          <mesh castShadow>
+            <capsuleGeometry args={[0.032, 0.17, 3, 6]} />
+            {M({ color: fur })}
+          </mesh>
+          <mesh position={[0.02, 0.01, 0]} scale={[0.5, 0.75, 0.6]}>
+            <capsuleGeometry args={[0.03, 0.15, 3, 6]} />
+            {M({ color: pink })}
+          </mesh>
+        </group>
+      ))}
+      {/* eyes */}
+      {[-0.055, 0.055].map((z, i) => (
+        <mesh key={i} position={[0.3, 0.31, z]}>
+          <sphereGeometry args={[0.024, 8, 8]} />
+          {M({ color: '#2a2320' })}
+        </mesh>
+      ))}
+      {/* pink nose */}
+      <mesh position={[0.33, 0.27, 0]}>
+        <sphereGeometry args={[0.022, 8, 8]} />
+        {M({ color: pink })}
+      </mesh>
+      {/* puff tail */}
+      <mesh castShadow position={[-0.23, 0.22, 0]}>
+        <sphereGeometry args={[0.055, 10, 8]} />
+        {M({ color: '#ffffff' })}
+      </mesh>
+    </group>
+  )
+}
+
+/** Frog — squat and neckless, bulging eyes on TOP, wide mouth, folded
+ *  haunches, webbed feet. Authored facing +z (hops nose-first). */
+function FrogModel({ a }: { a: Appearance }) {
+  const skin = a.color
+  const belly = a.accent ?? '#e7f3cf'
+  return (
+    <group>
+      {/* squat, wide body (head and body are one — frogs have no neck) */}
+      <mesh castShadow position={[0, 0.14, 0]} scale={[1.15, 0.8, 1.1]}>
+        <sphereGeometry args={[0.17, 14, 12]} />
+        {M({ color: skin })}
+      </mesh>
+      {/* lighter belly/chin patch */}
+      <mesh position={[0, 0.1, 0.09]} scale={[0.85, 0.6, 0.55]}>
+        <sphereGeometry args={[0.13, 10, 8]} />
+        {M({ color: belly })}
+      </mesh>
+      {/* bulging eyes on TOP: green bump → white eye → pupil */}
+      {[-0.08, 0.08].map((x, i) => (
+        <group key={i}>
+          <mesh castShadow position={[x, 0.26, 0.05]}>
+            <sphereGeometry args={[0.055, 10, 8]} />
+            {M({ color: skin })}
+          </mesh>
+          <mesh position={[x, 0.28, 0.085]}>
+            <sphereGeometry args={[0.036, 10, 8]} />
+            {M({ color: '#f7f5ee' })}
+          </mesh>
+          <mesh position={[x, 0.285, 0.115]}>
+            <sphereGeometry args={[0.018, 8, 6]} />
+            {M({ color: '#2a2320' })}
+          </mesh>
+        </group>
+      ))}
+      {/* nostrils */}
+      {[-0.028, 0.028].map((x, i) => (
+        <mesh key={i} position={[x, 0.2, 0.185]}>
+          <sphereGeometry args={[0.008, 6, 6]} />
+          {M({ color: '#3c6e33' })}
+        </mesh>
+      ))}
+      {/* the wide mouth line */}
+      <mesh position={[0, 0.12, 0.17]} rotation={[0, 0, Math.PI / 2]}>
+        <capsuleGeometry args={[0.008, 0.13, 3, 6]} />
+        {M({ color: '#3c6e33' })}
+      </mesh>
+      {/* big folded hind haunches + webbed feet splayed forward */}
+      {[-0.145, 0.145].map((x, i) => (
+        <group key={i}>
+          <mesh castShadow position={[x, 0.09, -0.04]}>
+            <sphereGeometry args={[0.075, 10, 8]} />
+            {M({ color: skin })}
+          </mesh>
+          <mesh castShadow position={[x, 0.02, 0.05]} scale={[0.55, 0.28, 1]}>
+            <sphereGeometry args={[0.09, 8, 6]} />
+            {M({ color: skin })}
+          </mesh>
+        </group>
+      ))}
+      {/* little front legs down from the chest */}
+      {[-0.07, 0.07].map((x, i) => (
+        <group key={i}>
+          <mesh castShadow position={[x, 0.06, 0.12]}>
+            <capsuleGeometry args={[0.02, 0.06, 3, 6]} />
+            {M({ color: skin })}
+          </mesh>
+          <mesh castShadow position={[x, 0.015, 0.14]} scale={[0.6, 0.3, 1]}>
+            <sphereGeometry args={[0.05, 8, 6]} />
+            {M({ color: skin })}
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+/** Four-legged pets (cat / puppy / fox) — a shared quadruped: horizontal body,
+ *  head forward with muzzle + nose, four legs, and per-animal ears + tail.
+ *  Authored facing +z (walks nose-first). */
+function QuadModel({ a }: { a: Appearance }) {
+  const fur = a.color
+  const cream = a.accent ?? '#f5ead5'
+  // The stub-tailed quad is the DOG: floppy hanging ears, a longer snout and a
+  // red collar keep it from reading as a bear cub.
+  const dog = a.tail === 'stub'
+  // The bushy-tailed quad is the FOX: big dark-tipped ears, a long pointed
+  // snout, white cheeks, black-sock legs and a huge horizontal brush tail.
+  const fox = a.tail === 'bushy'
+  const legColor = fox ? '#4a3a2c' : fur
+  return (
+    <group>
+      {/* horizontal body */}
+      <mesh castShadow position={[0, 0.17, -0.02]} rotation={[Math.PI / 2, 0, 0]}>
+        <capsuleGeometry args={[0.105, 0.16, 4, 10]} />
+        {M({ color: fur })}
+      </mesh>
+      {/* chest patch */}
+      <mesh position={[0, 0.15, 0.1]} scale={[0.7, 0.7, 0.5]}>
+        <sphereGeometry args={[0.09, 8, 8]} />
+        {M({ color: cream })}
+      </mesh>
+      {/* head, forward and up */}
+      <mesh castShadow position={[0, 0.3, 0.12]}>
+        <sphereGeometry args={[0.115, 12, 10]} />
+        {M({ color: fur })}
+      </mesh>
+      {/* muzzle + nose — the dog's snout protrudes; the fox's is a long point */}
+      {fox ? (
+        <>
+          <mesh castShadow position={[0, 0.27, 0.235]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.042, 0.13, 8]} />
+            {M({ color: cream })}
+          </mesh>
+          {/* white cheek tufts */}
+          {[-0.085, 0.085].map((x, i) => (
+            <mesh key={i} position={[x, 0.275, 0.16]} scale={[0.6, 0.8, 0.7]}>
+              <sphereGeometry args={[0.055, 8, 8]} />
+              {M({ color: cream })}
+            </mesh>
+          ))}
+        </>
+      ) : (
+        <mesh
+          castShadow
+          position={[0, dog ? 0.265 : 0.27, dog ? 0.225 : 0.21]}
+          scale={dog ? [1, 0.75, 1.35] : [1.1, 0.8, 0.9]}
+        >
+          <sphereGeometry args={[0.05, 8, 8]} />
+          {M({ color: cream })}
+        </mesh>
+      )}
+      <mesh position={[0, fox ? 0.27 : 0.285, fox ? 0.305 : dog ? 0.29 : 0.255]}>
+        <sphereGeometry args={[0.016, 6, 6]} />
+        {M({ color: '#2a2320' })}
+      </mesh>
+      {/* eyes */}
+      {[-0.052, 0.052].map((x, i) => (
+        <mesh key={i} position={[x, 0.33, 0.215]}>
+          <sphereGeometry args={[0.02, 8, 6]} />
+          {M({ color: '#2a2320' })}
+        </mesh>
+      ))}
+      {/* collar — the "somebody's pet" tell */}
+      {dog && (
+        <mesh position={[0, 0.245, 0.07]} rotation={[1.05, 0, 0]}>
+          <torusGeometry args={[0.082, 0.014, 8, 16]} />
+          {M({ color: '#d64550' })}
+        </mesh>
+      )}
+      {/* ears — the dog's FLOP down the sides; others get pointy cones */}
+      {a.ears === 'round'
+        ? [-1, 1].map((s) => (
+            <mesh
+              key={s}
+              castShadow
+              position={[s * 0.105, 0.31, 0.1]}
+              rotation={[0, 0, s * 0.3]}
+              scale={[0.32, 1.15, 0.55]}
+            >
+              <sphereGeometry args={[0.058, 8, 8]} />
+              {M({ color: fur })}
+            </mesh>
+          ))
+        : [-0.07, 0.07].map((x, i) => (
+            <group key={i}>
+              {/* the fox's ears are much bigger, with dark tips */}
+              <mesh
+                castShadow
+                position={[x, fox ? 0.44 : 0.42, 0.09]}
+                rotation={[0, 0, x * 3]}
+              >
+                <coneGeometry args={fox ? [0.05, 0.13, 4] : [0.035, 0.09, 4]} />
+                {M({ color: fur })}
+              </mesh>
+              {fox && (
+                <mesh position={[x * 0.8, 0.505, 0.09]} rotation={[0, 0, x * 3]}>
+                  <coneGeometry args={[0.022, 0.05, 4]} />
+                  {M({ color: '#3a2d22' })}
+                </mesh>
+              )}
+            </group>
+          ))}
+      {/* four legs */}
+      {(
+        [
+          [-0.06, 0.09],
+          [0.06, 0.09],
+          [-0.06, -0.11],
+          [0.06, -0.11],
+        ] as const
+      ).map(([x, z], i) => (
+        <mesh key={i} castShadow position={[x, 0.055, z]}>
+          <capsuleGeometry args={[0.024, 0.08, 3, 6]} />
+          {M({ color: legColor })}
+        </mesh>
+      ))}
+      {/* tail, per animal */}
+      {a.tail === 'curl' && (
+        <group>
+          <mesh castShadow position={[0, 0.26, -0.19]} rotation={[-0.45, 0, 0]}>
+            <capsuleGeometry args={[0.02, 0.13, 3, 6]} />
+            {M({ color: fur })}
+          </mesh>
+          <mesh castShadow position={[0, 0.345, -0.215]}>
+            <sphereGeometry args={[0.026, 8, 6]} />
+            {M({ color: cream })}
+          </mesh>
+        </group>
+      )}
+      {a.tail === 'stub' && (
+        <group>
+          {/* a happy upright wag-tail with a cream tip */}
+          <mesh castShadow position={[0, 0.25, -0.16]} rotation={[-0.55, 0, 0]}>
+            <capsuleGeometry args={[0.02, 0.09, 3, 6]} />
+            {M({ color: fur })}
+          </mesh>
+          <mesh castShadow position={[0, 0.31, -0.19]}>
+            <sphereGeometry args={[0.024, 8, 6]} />
+            {M({ color: cream })}
+          </mesh>
+        </group>
+      )}
+      {a.tail === 'bushy' && (
+        <group>
+          {/* the brush: big, nearly horizontal, sweeping back */}
+          <mesh
+            castShadow
+            position={[0, 0.17, -0.27]}
+            rotation={[-1.35, 0, 0]}
+          >
+            <capsuleGeometry args={[0.055, 0.19, 4, 8]} />
+            {M({ color: fur })}
+          </mesh>
+          <mesh castShadow position={[0, 0.21, -0.4]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            {M({ color: cream })}
+          </mesh>
+        </group>
+      )}
+    </group>
+  )
+}
+
+/** Panda — sitting (as pandas do), with the REAL markings: black eye patches,
+ *  ears, arms and legs on a white body. Authored facing +z. */
+function PandaModel({ a }: { a: Appearance }) {
+  const white = a.color
+  const black = a.accent ?? '#2e2a28'
+  return (
+    <group>
+      {/* sitting body */}
+      <mesh castShadow position={[0, 0.24, 0]}>
+        <sphereGeometry args={[0.24, 14, 12]} />
+        {M({ color: white })}
+      </mesh>
+      {/* black arms hugging round the shoulders */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          castShadow
+          position={[s * 0.17, 0.3, 0.05]}
+          rotation={[0.2, 0, s * 0.55]}
+        >
+          <capsuleGeometry args={[0.055, 0.13, 3, 8]} />
+          {M({ color: black })}
+        </mesh>
+      ))}
+      {/* black legs splayed out in front (the classic slump) */}
+      {[-0.11, 0.11].map((x, i) => (
+        <mesh key={i} castShadow position={[x, 0.08, 0.14]}>
+          <sphereGeometry args={[0.075, 10, 8]} />
+          {M({ color: black })}
+        </mesh>
+      ))}
+      {/* head */}
+      <mesh castShadow position={[0, 0.5, 0.04]}>
+        <sphereGeometry args={[0.18, 14, 12]} />
+        {M({ color: white })}
+      </mesh>
+      {/* black round ears */}
+      {[-0.13, 0.13].map((x, i) => (
+        <mesh key={i} castShadow position={[x, 0.63, 0.01]}>
+          <sphereGeometry args={[0.06, 10, 8]} />
+          {M({ color: black })}
+        </mesh>
+      ))}
+      {/* the iconic slanted black eye patches, with white pupils — placed ON
+          the head surface (head r=0.18 from [0,0.5,0.04]; |offset| ≈ 0.182) */}
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          <mesh
+            position={[s * 0.075, 0.545, 0.2]}
+            rotation={[0, 0, s * 0.45]}
+            scale={[0.72, 1.1, 0.45]}
+          >
+            <sphereGeometry args={[0.048, 10, 8]} />
+            {M({ color: black })}
+          </mesh>
+          <mesh position={[s * 0.072, 0.54, 0.228]}>
+            <sphereGeometry args={[0.013, 6, 6]} />
+            {M({ color: '#f7f5ee' })}
+          </mesh>
+        </group>
+      ))}
+      {/* muzzle + black nose */}
+      <mesh castShadow position={[0, 0.46, 0.16]} scale={[1, 0.85, 0.8]}>
+        <sphereGeometry args={[0.055, 10, 8]} />
+        {M({ color: white })}
+      </mesh>
+      <mesh position={[0, 0.468, 0.226]}>
+        <sphereGeometry args={[0.02, 8, 6]} />
+        {M({ color: black })}
+      </mesh>
+    </group>
+  )
+}
+
 function PetModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean }) {
   switch (a.variant) {
+    case 'bunny':
+      return <BunnyModel a={a} />
+    case 'panda':
+      return <PandaModel a={a} />
+    case 'quad':
+      return <QuadModel a={a} />
+    case 'frog':
+      return <FrogModel a={a} />
     case 'chick':
       return <ChickModel a={a} />
     case 'flyer':
@@ -577,7 +1588,7 @@ function PetModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean 
     case 'shell':
       return <ShellModel a={a} />
     case 'horned':
-      return <HornedModel a={a} />
+      return <UnicornModel a={a} reducedMotion={reducedMotion} />
     case 'spiky':
       return <SpikyModel a={a} />
     default:
@@ -906,6 +1917,16 @@ function starShape(spikes: number, outer: number, inner: number): Shape {
 }
 const STAR_GEOM = new ShapeGeometry(starShape(4, 0.08, 0.03))
 
+/** A chunky 5-point star extruded in 3D — the Twinkle statue's silhouette. */
+const TWINKLE_STATUE_GEOM = new ExtrudeGeometry(starShape(5, 0.23, 0.115), {
+  depth: 0.08,
+  bevelEnabled: true,
+  bevelThickness: 0.015,
+  bevelSize: 0.015,
+  bevelSegments: 1,
+})
+TWINKLE_STATUE_GEOM.center()
+
 function FairyLightsModel({ reducedMotion }: { reducedMotion: boolean }) {
   const orbs = useRef<(Group | null)[]>([])
   const stars = useRef<(Mesh | null)[]>([])
@@ -1207,30 +2228,54 @@ function DecorModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolea
     }
     case 'clock':
       return <ClockModel a={a} reducedMotion={reducedMotion} />
-    case 'pillar': // statue — a little figure on a plinth
-    default:
+    case 'pillar':
+    default: {
+      // The statue is TWINKLE — the meadow's own star guide, carved in stone on
+      // a two-tier plinth, complete with the carved face (eyes + smile).
+      const stone = a.color
+      const carved = '#8f877b' // recessed/carved details read darker
       return (
         <group>
-          <mesh castShadow position={[0, 0.06, 0]}>
-            <boxGeometry args={[0.28, 0.12, 0.28]} />
+          {/* plinth */}
+          <mesh castShadow position={[0, 0.05, 0]}>
+            <boxGeometry args={[0.36, 0.1, 0.36]} />
             {M({ color: '#b8b0a4' })}
           </mesh>
-          <mesh castShadow position={[0, 0.32, 0]}>
-            <coneGeometry args={[0.15, 0.4, 10]} />
-            {M({ color: a.color })}
+          <mesh castShadow position={[0, 0.14, 0]}>
+            <boxGeometry args={[0.26, 0.08, 0.26]} />
+            {M({ color: '#a89f92' })}
           </mesh>
-          <mesh castShadow position={[0, 0.58, 0]}>
-            <sphereGeometry args={[0.11, 12, 10]} />
-            {M({ color: a.color })}
+          {/* the star, standing upright (rotated so a spike points up) */}
+          <mesh
+            castShadow
+            position={[0, 0.44, 0]}
+            rotation={[0, 0, Math.PI]}
+            geometry={TWINKLE_STATUE_GEOM}
+          >
+            {M({ color: stone })}
           </mesh>
-          {[-0.15, 0.15].map((x, i) => (
-            <mesh key={i} castShadow position={[x, 0.36, 0]} rotation={[0, 0, x * 2]}>
-              <capsuleGeometry args={[0.035, 0.16, 3, 6]} />
-              {M({ color: a.color })}
+          {/* carved face on the front */}
+          {[-0.055, 0.055].map((x, i) => (
+            <mesh key={i} position={[x, 0.47, 0.056]}>
+              <sphereGeometry args={[0.02, 8, 8]} />
+              {M({ color: carved })}
+            </mesh>
+          ))}
+          {/* smile — the bottom half of a thin torus */}
+          <mesh position={[0, 0.41, 0.056]} rotation={[0, 0, Math.PI]}>
+            <torusGeometry args={[0.045, 0.011, 6, 14, Math.PI]} />
+            {M({ color: carved })}
+          </mesh>
+          {/* rosy-cheek carvings, faint */}
+          {[-0.095, 0.095].map((x, i) => (
+            <mesh key={i} position={[x, 0.42, 0.052]}>
+              <sphereGeometry args={[0.016, 8, 8]} />
+              {M({ color: '#9d938a' })}
             </mesh>
           ))}
         </group>
       )
+    }
   }
 }
 
@@ -1287,19 +2332,159 @@ function FountainModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boo
 }
 
 /** Carousel: a striped canopy over horses that turn on a platform. */
-function CarouselModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean }) {
-  const spin = useRef<Group>(null)
-  useFrame((_, dt) => {
-    if (reducedMotion || !spin.current) return
-    spin.current.rotation.y += dt * 0.5
+/** Hip anchor points for the four legs (built facing +x). */
+const HORSE_LEGS: { x: number; z: number }[] = [
+  { x: 0.095, z: -0.032 }, // front left
+  { x: 0.095, z: 0.032 }, // front right
+  { x: -0.095, z: -0.032 }, // rear left
+  { x: -0.095, z: 0.032 }, // rear right
+]
+
+/**
+ * A stylized carousel horse, built facing +x: capsule body, arched neck, head
+ * with snout + ears, a mane of blobs, a tail, and a gold saddle where the brass
+ * pole passes through. The four legs hinge at the HIP and trot in a loop —
+ * diagonal pairs swing together (front-left with rear-right), like a real walk.
+ * Hooves rest near y=0 so the parent can bob the whole horse along its pole.
+ */
+function CarouselHorse({
+  color,
+  mane,
+  phase = 0,
+  reducedMotion = false,
+}: {
+  color: string
+  mane: string
+  phase?: number
+  reducedMotion?: boolean
+}) {
+  const legs = useRef<(Group | null)[]>([])
+  useFrame((s) => {
+    if (reducedMotion) return
+    const t = s.clock.elapsedTime * 5.5 + phase
+    legs.current.forEach((g, i) => {
+      if (!g) return
+      // Trot: legs 0 & 3 are one diagonal pair, 1 & 2 the other (anti-phase).
+      const diag = i === 0 || i === 3 ? 0 : Math.PI
+      g.rotation.z = Math.sin(t + diag) * 0.45
+    })
   })
-  const horseCols = ['#ff6b6b', '#4bb3ff', '#ffcf4b', '#f6f0f7']
   return (
     <group>
-      {/* platform */}
+      {/* body */}
+      <mesh castShadow position={[0, 0.17, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <capsuleGeometry args={[0.055, 0.15, 4, 10]} />
+        {M({ color })}
+      </mesh>
+      {/* chest — fills the body-to-neck join */}
+      <mesh castShadow position={[0.085, 0.185, 0]}>
+        <sphereGeometry args={[0.05, 10, 8]} />
+        {M({ color })}
+      </mesh>
+      {/* arched neck, rising up-forward */}
+      <mesh castShadow position={[0.1, 0.25, 0]} rotation={[0, 0, -0.55]}>
+        <capsuleGeometry args={[0.032, 0.11, 4, 8]} />
+        {M({ color })}
+      </mesh>
+      {/* head */}
+      <mesh castShadow position={[0.148, 0.315, 0]}>
+        <sphereGeometry args={[0.037, 10, 8]} />
+        {M({ color })}
+      </mesh>
+      {/* snout, angled down-forward */}
+      <mesh castShadow position={[0.19, 0.29, 0]} rotation={[0, 0, -2.1]}>
+        <capsuleGeometry args={[0.02, 0.045, 3, 8]} />
+        {M({ color })}
+      </mesh>
+      {/* eyes */}
+      {[-0.03, 0.03].map((z, j) => (
+        <mesh key={j} position={[0.165, 0.325, z]}>
+          <sphereGeometry args={[0.009, 6, 6]} />
+          {M({ color: '#2a2320' })}
+        </mesh>
+      ))}
+      {/* ears */}
+      {[-0.017, 0.017].map((z, j) => (
+        <mesh key={j} castShadow position={[0.132, 0.36, z]} rotation={[0, 0, 0.18]}>
+          <coneGeometry args={[0.011, 0.034, 5]} />
+          {M({ color })}
+        </mesh>
+      ))}
+      {/* mane — blobs down the back of the neck + a forelock */}
+      {[
+        [0.122, 0.352],
+        [0.095, 0.325],
+        [0.07, 0.295],
+        [0.05, 0.262],
+      ].map(([mx, my], j) => (
+        <mesh key={j} castShadow position={[mx - 0.028, my, 0]}>
+          <sphereGeometry args={[0.019, 8, 6]} />
+          {M({ color: mane })}
+        </mesh>
+      ))}
+      {/* legs — hinged at the hip; swung by the trot loop above. The static
+          rotation is the reduced-motion resting pose. */}
+      {HORSE_LEGS.map(({ x, z }, i) => (
+        <group
+          key={i}
+          ref={(g) => {
+            legs.current[i] = g
+          }}
+          position={[x, 0.14, z]}
+          rotation={[0, 0, i < 2 ? -0.3 : 0.35]}
+        >
+          <mesh castShadow position={[0, -0.058, 0]}>
+            <capsuleGeometry args={[0.014, 0.09, 3, 6]} />
+            {M({ color })}
+          </mesh>
+          {/* hoof */}
+          <mesh castShadow position={[0, -0.112, 0]}>
+            <cylinderGeometry args={[0.016, 0.014, 0.02, 8]} />
+            {M({ color: '#5a4a3a' })}
+          </mesh>
+        </group>
+      ))}
+      {/* tail, streaming back */}
+      <mesh castShadow position={[-0.14, 0.155, 0]} rotation={[0, 0, 0.95]}>
+        <capsuleGeometry args={[0.017, 0.08, 3, 6]} />
+        {M({ color: mane })}
+      </mesh>
+      {/* saddle: blanket + seat, where the pole passes through */}
+      <mesh castShadow position={[0, 0.222, 0]}>
+        <boxGeometry args={[0.095, 0.018, 0.095]} />
+        {M({ color: '#d64550' })}
+      </mesh>
+      <mesh castShadow position={[0, 0.238, 0]}>
+        <cylinderGeometry args={[0.036, 0.042, 0.022, 10]} />
+        {M({ color: '#ffd94b' })}
+      </mesh>
+    </group>
+  )
+}
+
+function CarouselModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boolean }) {
+  const spin = useRef<Group>(null)
+  const horses = useRef<(Group | null)[]>([])
+  useFrame((s, dt) => {
+    if (reducedMotion || !spin.current) return
+    spin.current.rotation.y += dt * 0.5
+    // The signature carousel bob — alternate horses rise as their neighbours dip.
+    horses.current.forEach((h, i) => {
+      if (h) h.position.y = 0.13 + Math.sin(s.clock.elapsedTime * 2.2 + i * (Math.PI / 2)) * 0.035
+    })
+  })
+  const horseCols = ['#ff6b6b', '#4bb3ff', '#ffcf4b', '#f6f0f7']
+  const maneCols = ['#8a3f34', '#2a5a8a', '#a06a1a', '#c9a0ff']
+  return (
+    <group>
+      {/* platform + trim band */}
       <mesh castShadow position={[0, 0.06, 0]}>
         <cylinderGeometry args={[0.42, 0.44, 0.12, 20]} />
         {M({ color: '#efe0c4' })}
+      </mesh>
+      <mesh position={[0, 0.115, 0]}>
+        <cylinderGeometry args={[0.425, 0.425, 0.015, 20]} />
+        {M({ color: a.accent ?? '#ff7aa8' })}
       </mesh>
       {/* center pole */}
       <mesh castShadow position={[0, 0.36, 0]}>
@@ -1317,27 +2502,32 @@ function CarouselModel({ a, reducedMotion }: { a: Appearance; reducedMotion: boo
         <sphereGeometry args={[0.05, 8, 8]} />
         {M({ color: '#ffd94b' })}
       </mesh>
-      {/* turning ring of horses */}
+      {/* turning ring of horses, each facing its direction of travel */}
       <group ref={spin}>
         {[0, 1, 2, 3].map((i) => {
           const t = (i / 4) * Math.PI * 2
           const x = Math.cos(t) * 0.3
           const z = Math.sin(t) * 0.3
           return (
-            <group key={i} position={[x, 0, z]}>
+            <group key={i} position={[x, 0, z]} rotation={[0, Math.PI / 2 - t, 0]}>
+              {/* brass pole (static — the horse slides along it) */}
               <mesh position={[0, 0.36, 0]}>
                 <cylinderGeometry args={[0.012, 0.012, 0.5, 6]} />
                 {M({ color: '#c9a94a' })}
               </mesh>
-              {/* horse body + head */}
-              <mesh castShadow position={[0, 0.24, 0]} rotation={[0, 0, Math.PI / 2]}>
-                <capsuleGeometry args={[0.06, 0.14, 3, 8]} />
-                {M({ color: horseCols[i] })}
-              </mesh>
-              <mesh castShadow position={[0.1, 0.32, 0]} rotation={[0, 0, 0.6]}>
-                <capsuleGeometry args={[0.035, 0.1, 3, 6]} />
-                {M({ color: horseCols[i] })}
-              </mesh>
+              <group
+                ref={(g) => {
+                  horses.current[i] = g
+                }}
+                position={[0, 0.13, 0]}
+              >
+                <CarouselHorse
+                  color={horseCols[i]}
+                  mane={maneCols[i]}
+                  phase={i * 0.8}
+                  reducedMotion={reducedMotion}
+                />
+              </group>
             </group>
           )
         })}

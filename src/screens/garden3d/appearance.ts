@@ -9,14 +9,21 @@ import type { GardenItem, GardenKind } from '../../content/garden'
 
 export type ModelVariant =
   | 'flower'
+  | 'tulip'
+  | 'rose'
   | 'tall-flower'
   | 'tree'
   | 'cactus'
   | 'bush'
+  | 'fern'
   | 'stalk'
   | 'mushroom'
   | 'lotus'
   | 'critter'
+  | 'quad'
+  | 'bunny'
+  | 'frog'
+  | 'panda'
   | 'chick'
   | 'flyer'
   | 'bee'
@@ -49,24 +56,27 @@ export type ModelVariant =
   | 'pagoda'
 
 export type Ears = 'long' | 'round' | 'pointy' | 'none'
+export type Tail = 'curl' | 'stub' | 'bushy'
 
 export interface Appearance {
   variant: ModelVariant
   color: string
   accent?: string
   ears?: Ears
+  /** Quadruped ('quad') pets only: which tail they wear. */
+  tail?: Tail
 }
 
 const A: Record<string, Appearance> = {
   // Plants
   'plant-blossom': { variant: 'flower', color: '#6aa84f', accent: '#ff9ec4' },
-  'plant-tulip': { variant: 'flower', color: '#6aa84f', accent: '#ff6b6b' },
+  'plant-tulip': { variant: 'tulip', color: '#6aa84f', accent: '#ff6b6b' },
   'plant-mushroom': { variant: 'mushroom', color: '#e8503a', accent: '#f5ead5' },
-  'plant-fern': { variant: 'bush', color: '#4f9d5b' },
+  'plant-fern': { variant: 'fern', color: '#4f9d5b' },
   'plant-cactus': { variant: 'cactus', color: '#4c9a5a', accent: '#ff9ec4' },
   'plant-sunflower': { variant: 'tall-flower', color: '#ffcf4b', accent: '#7a4a2a' },
   'plant-wheat': { variant: 'stalk', color: '#d9a94a' },
-  'plant-rose': { variant: 'flower', color: '#5f9a48', accent: '#d64550' },
+  'plant-rose': { variant: 'rose', color: '#5f9a48', accent: '#d64550' },
   'plant-lotus': { variant: 'lotus', color: '#ff9ec4', accent: '#ffe08a' },
   'plant-tree': { variant: 'tree', color: '#5aa15c', accent: '#8a5a3c' },
   // Toys
@@ -89,17 +99,17 @@ const A: Record<string, Appearance> = {
   'deco-clock': { variant: 'clock', color: '#6a5a8a', accent: '#f5ead5' },
   'deco-statue': { variant: 'pillar', color: '#cfc7bd', accent: '#cfc7bd' },
   // Pets
-  'pet-bunny': { variant: 'critter', color: '#f3ede4', accent: '#ffb4c8', ears: 'long' },
+  'pet-bunny': { variant: 'bunny', color: '#f3ede4', accent: '#ffb4c8' },
   'pet-chick': { variant: 'chick', color: '#ffd94b', accent: '#ff8f3a' },
-  'pet-frog': { variant: 'critter', color: '#6bbf59', accent: '#f5ead5', ears: 'none' },
-  'pet-cat': { variant: 'critter', color: '#e39a4a', accent: '#2a2a2a', ears: 'pointy' },
-  'pet-puppy': { variant: 'critter', color: '#b07a4a', accent: '#7a5030', ears: 'round' },
+  'pet-frog': { variant: 'frog', color: '#6bbf59', accent: '#e7f3cf' },
+  'pet-cat': { variant: 'quad', color: '#e39a4a', accent: '#f5e7d0', ears: 'pointy', tail: 'curl' },
+  'pet-puppy': { variant: 'quad', color: '#c08e55', accent: '#efdfc2', ears: 'round', tail: 'stub' },
   'pet-turtle': { variant: 'shell', color: '#6bbf59', accent: '#4a7a3a' },
   'pet-butterfly': { variant: 'flyer', color: '#ff9ec4', accent: '#6a4a8a' },
   'pet-bee': { variant: 'bee', color: '#ffcf4b', accent: '#2a2018' },
   'pet-hedgehog': { variant: 'spiky', color: '#a98a5f', accent: '#5a4530' },
-  'pet-fox': { variant: 'critter', color: '#e2703a', accent: '#f5ead5', ears: 'pointy' },
-  'pet-panda': { variant: 'critter', color: '#f3ede4', accent: '#2a2a2a', ears: 'round' },
+  'pet-fox': { variant: 'quad', color: '#e2703a', accent: '#f5ead5', ears: 'pointy', tail: 'bushy' },
+  'pet-panda': { variant: 'panda', color: '#f3ede4', accent: '#2e2a28' },
   'pet-unicorn': { variant: 'horned', color: '#f6f0f7', accent: '#c9a0ff' },
   // Builds
   'build-tent': { variant: 'tent', color: '#d76a6a', accent: '#f5ead5' },
@@ -141,6 +151,8 @@ export function modelScale(item: GardenItem): number {
     case 'pet-butterfly':
     case 'pet-bee':
       return 0.42
+    case 'pet-unicorn':
+      return 0.8 // the dream pet stands taller than the other animals
     default:
       break
   }
