@@ -4,16 +4,19 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `7dfab57` (committed & pushed to
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `3db4b0d` (committed & pushed to
 [jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — working tree CLEAN.
 **Recent arc (see §7): warm-premium redesign → Garden reward economy → real 3D garden →
-free-placement garden → lesson/class system → practice mode → deeper mastery goals. 247
+free-placement garden → lesson/class system → practice mode → deeper mastery goals →
+FULL 3D ART PASS (all plants & pets redesigned from user screenshots, `3db4b0d`). 247
 tests green, build & lint clean.** Resume pointers: the DEV-only 🔧 button in the garden
-header (`import.meta.env.DEV`-gated) grants currency for auditing the 3D item models
-(several are still stylised approximations — iterate from user screenshots); mastery
-goals are tunable in `MASTERY_OVERRIDE` (math.ts). **The user plans to publish to the
-GOOGLE PLAY STORE — see §5's "Google Play Store launch" checklist (TWA/PWA wrap; the
-app's local-only, no-data, no-ads, no-SDK design makes kids'-app compliance the easy
+header (`import.meta.env.DEV`-gated) grants currency for auditing items; plants & pets
+are DONE — remaining un-audited models are mostly toys/decor/builds (ball, balloon,
+blocks, teddy, kite, sandcastle, slide, bench, lantern, nest, bunting, rainbow, stone,
+clock, tent, hut, fountain, bridge, cottage, pagoda — several already reworked earlier);
+mastery goals are tunable in `MASTERY_OVERRIDE` (math.ts). **The user plans to publish
+to the GOOGLE PLAY STORE — see §5's "Google Play Store launch" checklist (TWA/PWA wrap;
+the app's local-only, no-data, no-ads, no-SDK design makes kids'-app compliance the easy
 path; the real gaps are HTTPS hosting + rasterized PNG icons + a privacy-policy page).**_
 
 ---
@@ -1079,3 +1082,32 @@ no third-party SDKs, no ads, offline-capable — which makes the kids'-app compl
   per-chapter overrides (tables/place-value/fractions 6; decimals/percents/ratios
   7); `MASTERY_OVERRIDE` is the one place to retune. Committed & pushed as
   **`7dfab57`**.
+- **2026-07-05 — THE 3D ART PASS: all plants & pets redesigned (screenshot-driven,
+  ~20 fixes in one session).** The user audited the garden item-by-item with the
+  DEV 🔧 currency button and screenshotted everything that looked wrong; each got a
+  dedicated rebuild in [`garden3d/models.tsx`](src/screens/garden3d/models.tsx) /
+  [`appearance.ts`](src/screens/garden3d/appearance.ts). **Pets** (each now a real
+  animal, not a recolored two-sphere "critter"): carousel horses (anatomy + hip-
+  hinged TROT loop — diagonal pairs in anti-phase — + pole-bob + travel-facing),
+  bunny on all fours, frog (squat, bulging top-eyes), chick (cone beak; eyes
+  surfaced), turtle (patterned shell + plastron, head out on a neck), hedgehog
+  (face resized/surfaced, 4 feet), panda (black eye patches/arms/legs on white),
+  a shared **quadruped model** for cat/puppy/fox with per-animal ears+tails —
+  dog de-beared (floppy ears, long snout, RED COLLAR, wag tail), fox truly foxy
+  (big dark-tipped ears, pointed snout, cheek tufts, black-sock legs, horizontal
+  white-tipped brush tail) — and the **UNICORN rebuilt as the majestic 20💎 dream
+  pet** (horse body, arched neck, glowing golden spiral horn, pastel mane/tail
+  cascades, golden hooves, raised foreleg, twinkling billboard sparkles, 0.8×
+  scale). **Plants**: tulip (closed cup + crown), mushroom (toadstool spots),
+  fern (arching frond rosette), sunflower (seed disc + 12 flat petals, sun-
+  tilted), wheat (eared sheaf), rose (flat cupped petal WHORLS matched to the
+  user's reference photo), lotus (layered whorls on a lily pad), and the **tree
+  unpotted** (plants straight into the lawn: mound, root flares, 4-mass canopy —
+  `PlantModel` branches; everything else keeps the terracotta pot). **Statue** =
+  Twinkle carved in stone (extruded 5-point star on a plinth, carved face).
+  **Recurring gotcha, now checked on every face placement**: a detail on a sphere
+  must satisfy |offset from centre| ≥ radius or it renders BURIED — this bit the
+  chick, hedgehog and panda in turn. Pets/plants authored facing **+z** (the
+  wander/fly convention) — the bunny and bee originally faced +x and moved
+  sideways until wrapped. **247 tests green**, build & lint clean. Committed &
+  pushed as **`3db4b0d`**.
