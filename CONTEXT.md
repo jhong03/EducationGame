@@ -4,16 +4,14 @@
 > product/architecture reference; **this file is the state-of-play** — what's done,
 > what's verified, what's next. Update it at the end of each working session.
 
-_Last updated: 2026-07-05 · Branch: `main` · HEAD: `3db4b0d` (committed & pushed to
+_Last updated: 2026-07-05 · Branch: `main` · HEAD: `f537b31` (committed & pushed to
 [jhong03/EducationGame](https://github.com/jhong03/EducationGame)) — working tree CLEAN.
 **Recent arc (see §7): warm-premium redesign → Garden reward economy → real 3D garden →
-free-placement garden → lesson/class system → practice mode → deeper mastery goals →
-FULL 3D ART PASS (all plants & pets redesigned from user screenshots, `3db4b0d`). 247
-tests green, build & lint clean.** Resume pointers: the DEV-only 🔧 button in the garden
-header (`import.meta.env.DEV`-gated) grants currency for auditing items; plants & pets
-are DONE — remaining un-audited models are mostly toys/decor/builds (ball, balloon,
-blocks, teddy, kite, sandcastle, slide, bench, lantern, nest, bunting, rainbow, stone,
-clock, tent, hut, fountain, bridge, cottage, pagoda — several already reworked earlier);
+free placement → lessons & practice → deeper mastery → full 3D art pass (`3db4b0d`) →
+garden SELLING + select/move/camera-follow + INTRO CLASSES FOR ALL 33 CHAPTERS
+(`f537b31`). 256 tests green, build & lint clean.** Resume pointers: the DEV-only 🔧
+button in the garden header (`import.meta.env.DEV`-gated) grants currency for auditing
+items; plants & pets are art-DONE — un-audited models are mostly toys/decor/builds;
 mastery goals are tunable in `MASTERY_OVERRIDE` (math.ts). **The user plans to publish
 to the GOOGLE PLAY STORE — see §5's "Google Play Store launch" checklist (TWA/PWA wrap;
 the app's local-only, no-data, no-ads, no-SDK design makes kids'-app compliance the easy
@@ -1111,3 +1109,29 @@ no third-party SDKs, no ads, offline-capable — which makes the kids'-app compl
   wander/fly convention) — the bunny and bee originally faced +x and moved
   sideways until wrapped. **247 tests green**, build & lint clean. Committed &
   pushed as **`3db4b0d`**.
+- **2026-07-05 — Garden selling & selection + INTRO CLASSES FOR EVERY CHAPTER.**
+  Two features in one session (user-directed). **(1) Garden economy &
+  interaction**: shop items now **SELL BACK for half price** (`sellRefund` =
+  ceil(price/2) in content/garden.ts; `sellItem` refunds by REDUCING the
+  `*Spent` counter, clamped ≥ 0 — wallets rise, lifetime earned stays honest;
+  only spare/unplaced copies sell) with per-item "Sell +N" chips and a
+  **"Sell all spares" row behind an explicit confirmation** ("placed items stay
+  safe"; atomic `sellAll` batch). Tapping a placed item now **SELECTS it**
+  (gold halo) instead of removing — an action bar offers **📍 Move** (relocates
+  the same instance via `moveItem` + a ground tap) / **🧺 Put back** /
+  deselect — and while selected the **camera glides onto and FOLLOWS the item**
+  (`CameraRig` lerps the OrbitControls target to the live scene node, so
+  wandering/flying pets pull the camera along; reduced-motion snaps).
+  Bug fixed en route: pets ignored `moveItem` entirely (their wander state
+  lives in refs and overwrites the group position every frame) — both pet
+  types now sync to a new stored home position. **(2) Chapter intros**: ALL 33
+  categories now have an illustrated class (was 8) — 25 new lessons authored
+  (early band pre-reader-simple) + **8 new figure kinds** in LessonVisual
+  (emoji-row, emoji-groups with +/−/vs/:, shape via ShapeGlyph, pattern strip,
+  bar-graph, expr card, grid-star, sizes). The **first visit to a completely
+  fresh chapter AUTO-OPENS its class** (decided in Home's onSelectCategory;
+  marked in new persisted `lessonsSeen` — additive migration, reset wipes it;
+  skippable, one-time, 📖 stays for re-reads). New content gate:
+  lessons.test asserts **every category has a lesson** — a future chapter
+  without one fails CI. **256 tests green**, build & lint clean. Committed &
+  pushed as **`f537b31`**.
