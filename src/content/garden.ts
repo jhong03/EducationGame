@@ -116,6 +116,15 @@ export function isLivelyKind(kind: GardenKind): boolean {
 }
 
 /**
+ * Selling an owned item back to the shop returns HALF its price (rounded up,
+ * so even the cheapest item refunds something) to the same wallet. The refund
+ * reduces the spent counter — lifetime earned totals never inflate.
+ */
+export function sellRefund(item: GardenItem): number {
+  return Math.ceil(item.price / 2)
+}
+
+/**
  * Placement layer. Most items sit ON the ground (height 0); a few float in the
  * air and render at this height above the spot where they're dropped. Used by
  * the 3D scene to lift floating items and by the HUD to label them.

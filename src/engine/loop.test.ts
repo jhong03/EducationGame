@@ -374,6 +374,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       diamondsSpent: 0,
       owned: {},
       garden: [],
+      lessonsSeen: {}, // …and the chapter-intro flags
     })
     expect('unlockedOrder' in migrated).toBe(false)
 
@@ -395,6 +396,7 @@ describe('persisted-state migration (v1 → v2)', () => {
       diamondsSpent: 0,
       owned: {},
       garden: [],
+      lessonsSeen: {},
     }
     expect(migratePersistedState(undefined)).toEqual({
       stars: 0,

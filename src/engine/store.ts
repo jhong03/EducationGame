@@ -65,10 +65,29 @@ interface GameActions {
    * negative and never touches the lifetime "earned" totals.
    */
   buyItem: (itemId: string, currency: WalletCurrency, price: number) => boolean
+  /**
+   * Sell one owned (unplaced) copy back to the shop. The refund reduces the
+   * matching *Spent counter (clamped ≥ 0) — the wallet rises, but the lifetime
+   * "earned" totals stay untouched. Placed copies must be picked up first.
+   * Returns whether the sale went through.
+   */
+  sellItem: (itemId: string, currency: WalletCurrency, refund: number) => boolean
+  /**
+   * Sell a batch in ONE update (the shop's "sell all spares"). Each entry is
+   * one copy; entries without a spare (all placed) are skipped, refunds pool
+   * per wallet under the same clamp-at-zero rule. Returns how many sold.
+   */
+  sellAll: (
+    sales: readonly { itemId: string; currency: WalletCurrency; refund: number }[],
+  ) => number
   /** Drop an owned (unplaced) item at a free (x,z) spot in the garden. */
   placeItem: (itemId: string, x: number, z: number) => void
+  /** Move an already-placed item to a new (x,z) spot. */
+  moveItem: (key: string, x: number, z: number) => void
   /** Pick a placed item up by its key (returns it to the tray — nothing lost). */
   removeItem: (key: string) => void
+  /** Record that a chapter's intro class has been shown (one-time welcome). */
+  markLessonSeen: (categoryId: string) => void
   /** Wipe all progress back to the start (used by the reset control / tests). */
   reset: () => void
 }
@@ -89,6 +108,7 @@ const initialState: GameState = {
   diamondsSpent: 0,
   owned: {},
   garden: [],
+  lessonsSeen: {},
 }
 
 /** One write path for names: trimmed, capped, empty → null. */
@@ -137,6 +157,12 @@ export function migratePersistedState(persisted: unknown): GameState {
       ),
     ),
     garden: migrateGarden(s.garden),
+    // Intro-seen chapter flags (additive; old saves just re-meet the intros).
+    lessonsSeen: Object.fromEntries(
+      Object.entries((s.lessonsSeen as Record<string, unknown>) ?? {}).filter(
+        ([, v]) => v === true,
+      ),
+    ) as Record<string, true>,
   }
 }
 
@@ -282,10 +308,62 @@ export const useGameStore = create<GameStore>()(
         return ok
       },
 
+      sellItem: (itemId, currency, refund) => {
+        let ok = false
+        set((s) => {
+          if (!(refund >= 0)) return s
+          // Only an unplaced spare can be sold — placed copies come back first.
+          if (availableCount(s.owned, s.garden, itemId) <= 0) return s
+          ok = true
+          const owned = { ...s.owned }
+          const left = (owned[itemId] ?? 0) - 1
+          if (left > 0) owned[itemId] = left
+          else delete owned[itemId]
+          return currency === 'star'
+            ? { owned, starsSpent: Math.max(0, s.starsSpent - refund) }
+            : { owned, diamondsSpent: Math.max(0, s.diamondsSpent - refund) }
+        })
+        return ok
+      },
+
+      sellAll: (sales) => {
+        let sold = 0
+        set((s) => {
+          const owned = { ...s.owned }
+          const placed: Record<string, number> = {}
+          for (const p of s.garden) placed[p.itemId] = (placed[p.itemId] ?? 0) + 1
+          let starRefund = 0
+          let diamondRefund = 0
+          for (const sale of sales) {
+            if (!(sale.refund >= 0)) continue
+            const have = owned[sale.itemId] ?? 0
+            if (have - (placed[sale.itemId] ?? 0) <= 0) continue // no spare copy
+            if (have - 1 > 0) owned[sale.itemId] = have - 1
+            else delete owned[sale.itemId]
+            if (sale.currency === 'star') starRefund += sale.refund
+            else diamondRefund += sale.refund
+            sold++
+          }
+          if (sold === 0) return s
+          return {
+            owned,
+            starsSpent: Math.max(0, s.starsSpent - starRefund),
+            diamondsSpent: Math.max(0, s.diamondsSpent - diamondRefund),
+          }
+        })
+        return sold
+      },
+
       placeItem: (itemId, x, z) =>
         set((s) => {
           if (availableCount(s.owned, s.garden, itemId) <= 0) return s // none spare
           return { garden: [...s.garden, { key: newPlacedKey(), itemId, x, z }] }
+        }),
+
+      moveItem: (key, x, z) =>
+        set((s) => {
+          if (!s.garden.some((p) => p.key === key)) return s
+          return { garden: s.garden.map((p) => (p.key === key ? { ...p, x, z } : p)) }
         }),
 
       removeItem: (key) =>
@@ -293,6 +371,13 @@ export const useGameStore = create<GameStore>()(
           const garden = s.garden.filter((p) => p.key !== key)
           return garden.length === s.garden.length ? s : { garden }
         }),
+
+      markLessonSeen: (categoryId) =>
+        set((s) =>
+          s.lessonsSeen[categoryId]
+            ? s
+            : { lessonsSeen: { ...s.lessonsSeen, [categoryId]: true } },
+        ),
 
       // Reset wipes the CHILD's progress, age AND name (a fresh start is
       // often a different child — the gate re-asks, placement re-offers).
@@ -324,6 +409,7 @@ export const useGameStore = create<GameStore>()(
         diamondsSpent: s.diamondsSpent,
         owned: s.owned,
         garden: s.garden,
+        lessonsSeen: s.lessonsSeen,
       }),
     },
   ),

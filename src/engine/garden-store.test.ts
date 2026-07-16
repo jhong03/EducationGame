@@ -54,6 +54,60 @@ describe('garden wallet', () => {
     expect(S().stars).toBe(0) // buying a pet never touched the star wallet
   })
 
+  it('selling refunds into the wallet by reducing spent — never inflating earned', () => {
+    useGameStore.setState({ stars: 20 })
+    S().buyItem('plant-rose', 'star', 10) // spent 10 → wallet 10
+    expect(S().sellItem('plant-rose', 'star', 5)).toBe(true)
+    const s = S()
+    expect(s.stars).toBe(20) // lifetime earned untouched
+    expect(s.starsSpent).toBe(5) // refund came off the spend
+    expect(starBalance(s)).toBe(15)
+    expect(s.owned['plant-rose']).toBeUndefined()
+  })
+
+  it('cannot sell a placed copy (pick it up first) or an unowned item', () => {
+    useGameStore.setState({
+      owned: { 'pet-cat': 1 },
+      garden: [{ key: 'k1', itemId: 'pet-cat', x: 0, z: 0 }],
+    })
+    expect(S().sellItem('pet-cat', 'diamond', 2)).toBe(false)
+    expect(S().sellItem('never-owned', 'star', 1)).toBe(false)
+    expect(S().owned['pet-cat']).toBe(1)
+  })
+
+  it('sellAll sells only spare copies, in one batch, refunding both wallets', () => {
+    useGameStore.setState({
+      stars: 30,
+      diamonds: 10,
+      starsSpent: 15,
+      diamondsSpent: 4,
+      owned: { 'plant-rose': 2, 'pet-cat': 1, 'toy-ball': 1 },
+      garden: [
+        { key: 'k1', itemId: 'plant-rose', x: 0, z: 0 },
+        { key: 'k2', itemId: 'toy-ball', x: 1, z: 1 },
+      ],
+    })
+    const sold = S().sellAll([
+      { itemId: 'plant-rose', currency: 'star', refund: 5 }, // the 1 spare of 2
+      { itemId: 'plant-rose', currency: 'star', refund: 5 }, // 2nd copy is placed → skip
+      { itemId: 'pet-cat', currency: 'diamond', refund: 2 },
+      { itemId: 'toy-ball', currency: 'star', refund: 8 }, // placed → skip
+    ])
+    expect(sold).toBe(2)
+    const s = S()
+    expect(s.owned).toEqual({ 'plant-rose': 1, 'toy-ball': 1 }) // placed copies stay owned
+    expect(s.starsSpent).toBe(10) // 15 − 5
+    expect(s.diamondsSpent).toBe(2) // 4 − 2
+    expect(s.stars).toBe(30) // lifetime earned untouched
+    expect(S().sellAll([])).toBe(0)
+  })
+
+  it('a refund can never push spent below zero', () => {
+    useGameStore.setState({ owned: { 'plant-rose': 1 }, starsSpent: 1 })
+    expect(S().sellItem('plant-rose', 'star', 5)).toBe(true)
+    expect(S().starsSpent).toBe(0)
+  })
+
   it('awardDiamonds only ever adds', () => {
     S().awardDiamonds(3)
     S().awardDiamonds(0)
@@ -78,6 +132,17 @@ describe('garden plot (free positions)', () => {
     const key = S().garden[0].key
     S().removeItem(key)
     expect(availableCount(S().owned, S().garden, 'plant-rose')).toBe(1)
+  })
+
+  it('moveItem repositions a placed item without changing anything else', () => {
+    useGameStore.setState({ owned: { 'plant-rose': 1 } })
+    S().placeItem('plant-rose', 0, 0)
+    const key = S().garden[0].key
+    S().moveItem(key, 1.5, -2)
+    expect(S().garden).toHaveLength(1)
+    expect(S().garden[0]).toMatchObject({ key, itemId: 'plant-rose', x: 1.5, z: -2 })
+    S().moveItem('not-a-key', 9, 9) // unknown key is a no-op
+    expect(S().garden[0].x).toBe(1.5)
   })
 
   it('stores each placement as an independent instance with its own position', () => {

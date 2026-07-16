@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LESSONS, lessonForCategory, hasLesson } from './lessons'
-import { categoryById } from './math'
+import { CATEGORIES, categoryById } from './math'
+import { shapeById } from './shapes'
 
 /**
  * Lessons are teaching content, but they still make claims the visuals render
@@ -23,6 +24,12 @@ describe('lessons', () => {
   it('has at most one lesson per category', () => {
     const ids = LESSONS.map((l) => l.categoryId)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('EVERY chapter has an intro class — no child meets a concept cold', () => {
+    for (const category of CATEGORIES) {
+      expect(hasLesson(category.id), `${category.id} has a lesson`).toBe(true)
+    }
   })
 
   it('every visual is internally consistent', () => {
@@ -50,6 +57,26 @@ describe('lessons', () => {
         } else if (v.kind === 'angle') {
           expect(v.degrees).toBeGreaterThan(0)
           expect(v.degrees).toBeLessThanOrEqual(180)
+        } else if (v.kind === 'emoji-row') {
+          expect(v.count).toBeGreaterThan(0)
+          expect(v.emoji.length).toBeGreaterThan(0)
+        } else if (v.kind === 'emoji-groups') {
+          expect(v.left.count).toBeGreaterThan(0)
+          expect(v.right.count).toBeGreaterThan(0)
+        } else if (v.kind === 'shape') {
+          expect(shapeById(v.shapeId), `${v.shapeId} is a real shape`).toBeTruthy()
+        } else if (v.kind === 'pattern') {
+          expect(v.motifs.length).toBeGreaterThanOrEqual(3)
+        } else if (v.kind === 'bar-graph') {
+          expect(v.bars.length).toBeGreaterThan(0)
+          for (const b of v.bars) expect(b.value).toBeGreaterThan(0)
+        } else if (v.kind === 'expr') {
+          expect(v.text.length).toBeGreaterThan(0)
+        } else if (v.kind === 'grid-star') {
+          expect(v.x).toBeGreaterThanOrEqual(0)
+          expect(v.x).toBeLessThanOrEqual(v.size)
+          expect(v.y).toBeGreaterThanOrEqual(0)
+          expect(v.y).toBeLessThanOrEqual(v.size)
         }
       }
     }
@@ -60,7 +87,7 @@ describe('lessons', () => {
       expect(hasLesson(l.categoryId)).toBe(true)
       expect(lessonForCategory(l.categoryId)?.title).toBe(l.title)
     }
-    expect(hasLesson('counting')).toBe(false)
+    expect(hasLesson('nope-not-real')).toBe(false)
     expect(lessonForCategory('nope-not-real')).toBeUndefined()
   })
 })

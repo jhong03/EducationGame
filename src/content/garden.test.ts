@@ -5,6 +5,7 @@ import {
   gardenItemById,
   itemsByKind,
   isLivelyKind,
+  sellRefund,
 } from './garden'
 
 /**
@@ -66,6 +67,15 @@ describe('garden catalogue', () => {
       expect(gardenItemById(item.id)).toBe(item)
     }
     expect(gardenItemById('nope-not-real')).toBeUndefined()
+  })
+
+  it('every item sells back for something, but never a profit', () => {
+    for (const item of GARDEN_ITEMS) {
+      const refund = sellRefund(item)
+      expect(refund, `${item.id} refunds something`).toBeGreaterThan(0)
+      expect(refund, `${item.id} never profits`).toBeLessThanOrEqual(item.price)
+      expect(Number.isInteger(refund), `${item.id} whole refund`).toBe(true)
+    }
   })
 
   it('only pets are lively (idle bob + tap reaction)', () => {

@@ -936,6 +936,13 @@ export interface GameState {
   owned: Record<string, number>
   /** Everything placed in the garden — free positions, not a grid (v4). */
   garden: PlacedItem[]
+  /**
+   * Chapters whose intro class has already been shown (category id → true).
+   * The first visit to a fresh chapter auto-opens its "what is this?" class;
+   * this makes that a one-time welcome, never a re-nag. Part of the child's
+   * profile, so reset clears it.
+   */
+  lessonsSeen: Record<string, true>
 }
 
 /**

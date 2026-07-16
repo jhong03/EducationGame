@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import { useGameStore, isLevelUnlocked } from './engine/store'
-import { levelsInCategory } from './content/math'
+import { CATEGORIES, levelsInCategory } from './content/math'
 import type { CountQuestion } from './engine/types'
 
 /**
@@ -37,11 +37,17 @@ vi.mock('./engine/generators', () => ({
 let container: HTMLDivElement
 let root: Root
 
+/** Every chapter's intro marked seen — the auto-intro has its own tests. */
+const ALL_LESSONS_SEEN = Object.fromEntries(
+  CATEGORIES.map((c) => [c.id, true as const]),
+)
+
 beforeEach(() => {
   vi.useFakeTimers()
   useGameStore.getState().reset()
-  // Most tests start past the first-launch age gate (the gate has its own test).
-  useGameStore.setState({ age: 5 })
+  // Most tests start past the first-launch age gate (the gate has its own
+  // test) and past the chapter intros (which have their own tests too).
+  useGameStore.setState({ age: 5, lessonsSeen: ALL_LESSONS_SEEN })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -511,20 +517,50 @@ describe('full play loop', () => {
     expect(useGameStore.getState().owned['plant-blossom']).toBe(1)
     expect(useGameStore.getState().starsSpent).toBe(5)
     expect(useGameStore.getState().stars).toBe(50)
+
+    // Selling it back refunds half (3 of 5, rounded up) into the wallet —
+    // spent drops, lifetime earned still untouched.
+    click(buttonByAria('Sell Blossom for 3 stars back'))
+    expect(useGameStore.getState().owned['plant-blossom']).toBeUndefined()
+    expect(useGameStore.getState().starsSpent).toBe(2)
+    expect(useGameStore.getState().stars).toBe(50)
   })
 
-  it('a topic class teaches the concept, then hands off to practice', () => {
+  it('sell-all asks for confirmation first, then sells every spare at once', () => {
     act(() => {
-      useGameStore.setState({ age: 9 }) // mid band — Fractions has a lesson
+      useGameStore.setState({ stars: 100 })
+    })
+    click(buttonByAria('My Garden'))
+    click(buttonByAria('Open the shop'))
+    click(buttonByAria('Buy Blossom for 5 stars'))
+    click(buttonByAria('Buy Tulip for 6 stars'))
+
+    // Asking to sell all sells NOTHING yet — a confirmation appears instead.
+    click(buttonByAria('Sell all spare items'))
+    expect(useGameStore.getState().owned['plant-blossom']).toBe(1)
+    expect(container.textContent).toContain('stays safe')
+
+    // Backing out keeps everything.
+    click(buttonByAria('No, keep them'))
+    expect(useGameStore.getState().owned['plant-tulip']).toBe(1)
+
+    // Confirming sells both spares: refunds 3 + 3 of the 11 spent.
+    click(buttonByAria('Sell all spare items'))
+    click(buttonByAria('Yes, sell them all'))
+    const s = useGameStore.getState()
+    expect(s.owned).toEqual({})
+    expect(s.starsSpent).toBe(5) // 11 spent − 6 refunded
+    expect(s.stars).toBe(100) // lifetime earned untouched
+  })
+
+  it('a fresh chapter auto-opens its intro class, then flows into practice', () => {
+    act(() => {
+      // Mid band, and NO intros seen — this child is brand new to Fractions.
+      useGameStore.setState({ age: 9, lessonsSeen: {} })
     })
     click(categoryCard('Fractions'))
 
-    // The "what is this?" class is offered on the category screen.
-    const learn = buttonByAria('Learn what Fractions is')
-    expect(learn).not.toBeNull()
-    click(learn)
-
-    // The class explains the idea, step by step.
+    // The class opened AUTOMATICALLY — a newcomer never meets the concept cold.
     expect(container.textContent).toContain('part of a whole')
     expect(container.textContent).toContain('Step 1 of 3')
     click(buttonByText('Next ›')) // → step 2
@@ -542,5 +578,18 @@ describe('full play loop', () => {
     click(buttonByAria('2'))
     advance(50)
     expect(useGameStore.getState().stars).toBeGreaterThan(0)
+  })
+
+  it('the intro shows only once — revisits land on the levels, 📖 still a tap away', () => {
+    act(() => {
+      useGameStore.setState({ age: 9 }) // beforeEach marked every intro seen
+    })
+    click(categoryCard('Fractions'))
+    // Straight to the level grid (no auto-class)…
+    const learn = buttonByAria('Learn what Fractions is')
+    expect(learn).not.toBeNull()
+    // …but the class stays one tap away for a re-read.
+    click(learn)
+    expect(container.textContent).toContain('Step 1 of 3')
   })
 })

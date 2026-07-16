@@ -113,7 +113,21 @@ export default function App() {
   const home = (
     <Home
       band={band}
-      onSelectCategory={(categoryId) => setRoute({ screen: 'category', categoryId })}
+      onSelectCategory={(categoryId) => {
+        // First visit to a completely fresh chapter → its intro class opens
+        // automatically (once ever; skippable inside). Any prior progress, or
+        // having seen it, goes straight to the levels.
+        const s = useGameStore.getState()
+        const untouched = levelsInCategoryForAge(categoryId, age).every(
+          (l) => !s.progress[l.id]?.cleared && !s.progress[l.id]?.attempts,
+        )
+        if (untouched && !s.lessonsSeen[categoryId] && lessonForCategory(categoryId)) {
+          s.markLessonSeen(categoryId)
+          setRoute({ screen: 'lesson', categoryId })
+        } else {
+          setRoute({ screen: 'category', categoryId })
+        }
+      }}
       onSelectLevel={(levelId) => setRoute({ screen: 'play', levelId })}
       onOpenParent={() => setRoute({ screen: 'parent' })}
       onOpenGarden={() => setRoute({ screen: 'garden' })}
